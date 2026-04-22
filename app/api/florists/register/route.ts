@@ -1,70 +1,89 @@
 import { NextResponse } from "next/server";
-import { supabase } from "@/lib/supabase";
-import bcrypt from "bcryptjs";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-
     const { email, firstName, lastName, password } = body;
 
-    if (!email || !password) {
+    if (!email || !firstName || !lastName || !password) {
       return NextResponse.json(
-        { error: "E-post och lösenord krävs" },
+        { error: "Alla fält måste fyllas i" },
         { status: 400 }
       );
     }
 
-    // 🚫 Kolla om email redan finns
-    const { data: existingFlorist, error: existingError } = await supabase
-      .from("florists")
-      .select("id")
-      .eq("email", email)
-      .maybeSingle();
-
-    if (existingError) {
+    if (password.length < 8) {
       return NextResponse.json(
-        { error: "Kunde inte kontrollera befintlig e-post" },
+        { error: "Lösenordet måste vara minst 8 tecken" },
+        { status: 400 }
+      );
+    }
+
+    const admin = createSupabaseAdminClient();
+
+    const { data: createdUserData, error: createUserError } =
+      await admin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: {
+          role: "florist",
+          first_name: firstName,
+          last_name: lastName,
+        },
+      });
+
+    if (createUserError) {
+      return NextResponse.json(
+        { error: createUserError.message },
+        { status: 400 }
+      );
+    }
+
+    const user = createdUserData.user;
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "Kunde inte skapa användaren" },
         { status: 500 }
       );
     }
 
-    if (existingFlorist) {
+    const { error: roleError } = await admin.from("user_roles").insert({
+      id: user.id,
+      role: "florist",
+    });
+
+    if (roleError) {
       return NextResponse.json(
-        { error: "E-postadressen används redan" },
-        { status: 409 }
+        { error: `Kunde inte spara roll: ${roleError.message}` },
+        { status: 500 }
       );
     }
 
-    // 🔐 Hasha lösenord
-    const hashedPassword = await bcrypt.hash(password, 12);
+    const { error: floristError } = await admin.from("florists").insert({
+      id: user.id,
+      email,
+      profile_name: `${firstName} ${lastName}`,
+    });
 
-    // 💾 Spara i databasen
-    const { error } = await supabase.from("florists").insert([
-      {
-        email,
-        first_name: firstName,
-        last_name: lastName,
-        password: hashedPassword,
-      },
-    ]);
-
-    if (error) {
-      console.error("Supabase insert error:", error);
+    if (floristError) {
       return NextResponse.json(
-        { error: `Kunde inte spara i databasen: ${error.message}` },
+        { error: `Kunde inte skapa floristprofil: ${floristError.message}` },
         { status: 500 }
       );
     }
 
     return NextResponse.json({
       success: true,
-      message: "Florist registrerad",
+      message: "Floristkonto skapat. Du kan nu logga in.",
     });
   } catch (error) {
-    console.error("Register route error:", error);
+    console.error("Florist register error:", error);
+
     return NextResponse.json(
-      { error: "Serverfel" },
+      { error: "Serverfel vid registrering" },
       { status: 500 }
     );
   }
