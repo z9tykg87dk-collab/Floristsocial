@@ -28,22 +28,28 @@ export default async function AdminPage() {
     );
   }
 
-  if (overview.access === "forbidden") {
-    return (
-      <main className="mx-auto flex min-h-screen max-w-3xl flex-col justify-center px-6 py-16">
-        <p className="text-sm font-semibold uppercase tracking-[0.35em] text-amber-700">
-          Admin
-        </p>
-        <h1 className="mt-4 text-4xl font-semibold tracking-tight text-stone-900">
-          This account does not have admin access.
-        </h1>
-        <p className="mt-4 max-w-2xl text-base leading-7 text-stone-600">
-          Current role: {overview.profile?.role ?? "unknown"}. Promote the user
-          to `admin` in Supabase before using this route.
-        </p>
-      </main>
-    );
-  }
+if (overview.access === "forbidden") {
+  return (
+    <main className="mx-auto flex min-h-screen max-w-3xl flex-col justify-center px-6 py-16">
+      <p className="text-sm font-semibold uppercase tracking-[0.35em] text-amber-700">
+        Admin
+      </p>
+      <h1 className="mt-4 text-4xl font-semibold tracking-tight text-stone-900">
+        You do not have access to this page.
+      </h1>
+      <p className="mt-4 max-w-2xl text-base leading-7 text-stone-600">
+        Your current role is: <strong>{overview.profile?.role ?? "unknown"}</strong>.
+        Only admins can access this page.
+      </p>
+      <Link
+        href="/dashboard"
+        className="mt-8 inline-flex w-fit rounded-full bg-stone-950 px-5 py-3 text-sm font-semibold text-stone-50 transition hover:bg-stone-800"
+      >
+        Go to dashboard
+      </Link>
+    </main>
+  );
+}
 
   const totalPlatformPayouts = overview.payouts
     .filter((payout) => payout.recipient_role === "admin")

@@ -1,11 +1,11 @@
-import { getMissingRequiredEnv } from "@/lib/env";
-
 export function getSupabaseEnv() {
-  const missing = getMissingRequiredEnv().filter(
-    (key) =>
-      key === "NEXT_PUBLIC_SUPABASE_URL" ||
-      key === "NEXT_PUBLIC_SUPABASE_ANON_KEY"
-  );
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  const missing: string[] = [];
+
+  if (!url) missing.push("NEXT_PUBLIC_SUPABASE_URL");
+  if (!anonKey) missing.push("NEXT_PUBLIC_SUPABASE_ANON_KEY");
 
   if (missing.length > 0) {
     throw new Error(
@@ -14,17 +14,19 @@ export function getSupabaseEnv() {
   }
 
   return {
-    url: process.env.NEXT_PUBLIC_SUPABASE_URL as string,
-    anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string,
+    url,
+    anonKey,
   };
 }
 
 export function getSupabaseServiceRoleEnv() {
-  const missing = getMissingRequiredEnv().filter(
-    (key) =>
-      key === "NEXT_PUBLIC_SUPABASE_URL" ||
-      key === "SUPABASE_SERVICE_ROLE_KEY"
-  );
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  const missing: string[] = [];
+
+  if (!url) missing.push("NEXT_PUBLIC_SUPABASE_URL");
+  if (!serviceRoleKey) missing.push("SUPABASE_SERVICE_ROLE_KEY");
 
   if (missing.length > 0) {
     throw new Error(
@@ -33,7 +35,7 @@ export function getSupabaseServiceRoleEnv() {
   }
 
   return {
-    url: process.env.NEXT_PUBLIC_SUPABASE_URL as string,
-    serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY as string,
+    url,
+    serviceRoleKey,
   };
 }

@@ -33,9 +33,24 @@ export default async function DashboardPage() {
   const missingEnv = getMissingRequiredEnv();
   const userEmail = await getUserEmail();
   const user = await getCurrentUser();
+  const { data: florist } = user
+    ? await supabase
+        .from("florists")
+        .select(
+          "id, email, first_name, last_name, role, shop_name, slug, city, stripe_account_id, stripe_onboarding_complete"
+        )
+        .eq("id", user.id)
+        .maybeSingle()
+    : { data: null };
+  
   const bundle = user ? await getCurrentProfileBundle(user.id) : null;
-  const floristProfile = bundle?.floristProfile ?? null;
+  const floristProfile = florist ?? bundle?.floristProfile ?? null;
   const profile = bundle?.profile ?? null;
+const { data: florist } = await supabase
+  .from("florists")
+  .select("id, email, first_name, last_name, role, shop_name, slug, city, stripe_account_id, stripe_onboarding_complete")
+  .eq("id", user.id)
+  .maybeSingle();
   const products = floristProfile
     ? await getProductsForFlorist(floristProfile.id)
     : [];
@@ -55,24 +70,6 @@ export default async function DashboardPage() {
       <p className="text-sm font-semibold uppercase tracking-[0.35em] text-amber-700">
         Florist dashboard
       </p>
-  <p className="text-sm font-semibold uppercase tracking-[0.35em] text-stone-500">
-  Florist dashboard
-  </p>
-
-  <a
-    href="/logout"
-    style={{
-      display: "inline-block",
-      marginTop: "1rem",
-      padding: "0.5rem 1rem",
-      background: "black",
-      color: "white",
-      borderRadius: "6px",
-      textDecoration: "none",
-    }}
-  >
-    Logga ut
-  </a>
       <h1 className="mt-4 text-4xl font-semibold tracking-tight text-stone-900">
         Orders, products and payout visibility in one place.
       </h1>
@@ -99,7 +96,8 @@ export default async function DashboardPage() {
         </p>
         {!userEmail ? (
           <Link
-            href="/auth/sign-in?next=/dashboard"
+  
+          href="/auth/sign-in?next=/dashboard"
             className="mt-6 inline-flex rounded-full bg-stone-950 px-5 py-3 text-sm font-semibold text-stone-50 transition hover:bg-stone-800"
           >
             Go to sign in
@@ -108,18 +106,18 @@ export default async function DashboardPage() {
       </div>
       {userEmail ? (
         <div className="mt-8 grid gap-4 md:grid-cols-3">
-        <div className="rounded-[2rem] border border-stone-300 bg-white/80 p-6">
-         <p className="text-sm font-semibold uppercase tracking-[0.3em] text-stone-500">
-           Role
-         </p>
-         <h2 className="mt-3 text-2xl font-semibold text-stone-900">
-           Florist
-         </h2>
-         <p className="mt-3 text-sm leading-6 text-stone-600">
-           The onboarding flow upgrades the signed-in account to `florist`
-           and stores the public shop details.
-         </p>
-       </div>
+          <div className="rounded-[2rem] border border-stone-300 bg-white/80 p-6">
+            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-stone-500">
+              Role
+            </p>
+            <h2 className="mt-3 text-2xl font-semibold text-stone-900">
+            {floristProfile?.role ?? "Not set"}
+            </h2>
+            <p className="mt-3 text-sm leading-6 text-stone-600">
+              The onboarding flow upgrades the signed-in account to `florist`
+              and stores the public shop details.
+            </p>
+          </div>
           <div className="rounded-[2rem] border border-stone-300 bg-white/80 p-6">
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-stone-500">
               Onboarding

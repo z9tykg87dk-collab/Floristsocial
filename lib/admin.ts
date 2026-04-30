@@ -1,22 +1,24 @@
 import { cache } from "react";
 
 import type { Database } from "@/lib/database.types";
-import { getCurrentUser } from "@/lib/auth";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { hasRequiredEnv } from "@/lib/env";
-import { getCurrentProfileBundle } from "@/lib/profile";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
 type ProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
-type FloristProfileRow = Database["public"]["Tables"]["florist_profiles"]["Row"];
+type FloristProfileRow =
+  Database["public"]["Tables"]["florist_profiles"]["Row"];
 type OrderRow = Database["public"]["Tables"]["orders"]["Row"];
-type PayoutRecordRow = Database["public"]["Tables"]["payout_records"]["Row"];
+type PayoutRecordRow =
+  Database["public"]["Tables"]["payout_records"]["Row"];
 
 export const getAdminOverview = cache(async () => {
-  if (!hasRequiredEnv()) {
-    return null;
-  }
 
-  const user = await getCurrentUser();
+  const supabaseAuth = await createSupabaseServerClient();
+
+  const {
+    data: { user },
+  } = await supabaseAuth.auth.getUser();
 
   if (!user) {
     return {
@@ -24,25 +26,40 @@ export const getAdminOverview = cache(async () => {
     };
   }
 
-  const { profile } = await getCurrentProfileBundle(user.id);
+  const supabase = createSupabaseAdminClient();
 
-  if (profile?.role !== "admin") {
+  const { data: florist } = await supabase
+    .from("florists")
+    .select("id, email, first_name, last_name, role")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (florist?.role !== "admin") {
     return {
       access: "forbidden" as const,
-      profile,
+      profile: {
+        role: florist?.role ?? "unknown",
+        full_name: florist
+          ? `${florist.first_name ?? ""} ${florist.last_name ?? ""}`.trim()
+          : null,
+      },
     };
   }
 
-  const supabase = createSupabaseAdminClient();
-
   const [profilesResult, floristsResult, ordersResult, payoutsResult] =
     await Promise.all([
-      supabase.from("profiles").select("*").order("created_at", { ascending: false }),
+      supabase
+        .from("profiles")
+        .select("*")
+        .order("created_at", { ascending: false }),
       supabase
         .from("florist_profiles")
         .select("*")
         .order("created_at", { ascending: false }),
-      supabase.from("orders").select("*").order("created_at", { ascending: false }),
+      supabase
+        .from("orders")
+        .select("*")
+        .order("created_at", { ascending: false }),
       supabase
         .from("payout_records")
         .select("*")
@@ -51,7 +68,12 @@ export const getAdminOverview = cache(async () => {
 
   return {
     access: "granted" as const,
-    profile,
+    profile: {
+      role: florist.role,
+      full_name:
+        `${florist.first_name ?? ""} ${florist.last_name ?? ""}`.trim() ||
+        florist.email,
+    },
     profiles: (profilesResult.data ?? []) as ProfileRow[],
     florists: (floristsResult.data ?? []) as FloristProfileRow[],
     orders: (ordersResult.data ?? []) as OrderRow[],
