@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { formatPrice } from "@/lib/money";
 import { getDirectoryFlorist } from "@/lib/directory";
 import { getMissingRequiredEnv } from "@/lib/env";
 import { getMarketplaceProducts } from "@/lib/products";
@@ -90,7 +91,7 @@ export default async function MarketplacePage({
                   </h2>
                 </div>
                 <div className="rounded-full bg-stone-950 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-stone-50">
-                  {product.price_amount} SEK
+                  {formatPrice(product.price_amount, product.currency)}
                 </div>
               </div>
               <p className="mt-4 min-h-24 text-sm leading-6 text-stone-600">

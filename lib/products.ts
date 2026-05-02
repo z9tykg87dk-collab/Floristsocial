@@ -5,8 +5,7 @@ import { hasRequiredEnv } from "@/lib/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type ProductRow = Database["public"]["Tables"]["products"]["Row"];
-type FloristProfileRow = Database["public"]["Tables"]["florist_profiles"]["Row"];
-
+type FloristProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
 export const getProductsForFlorist = cache(async (floristProfileId: string) => {
   if (!hasRequiredEnv()) {
     return [] as ProductRow[];
@@ -16,10 +15,11 @@ export const getProductsForFlorist = cache(async (floristProfileId: string) => {
   const { data, error } = await supabase
     .from("products")
     .select("*")
-    .eq("florist_profile_id", floristProfileId)
+    .eq("florist_id", floristProfileId) // 🔥 FIX
     .order("created_at", { ascending: false });
 
   if (error) {
+    console.error("ERROR getProductsForFlorist:", error);
     return [] as ProductRow[];
   }
 
@@ -39,6 +39,7 @@ export const getMarketplaceProducts = cache(async () => {
     .order("created_at", { ascending: false });
 
   if (error) {
+    console.error("ERROR getMarketplaceProducts:", error);
     return [] as ProductRow[];
   }
 
@@ -54,6 +55,7 @@ export const getMarketplaceProduct = cache(async (productId: string) => {
   }
 
   const supabase = await createSupabaseServerClient();
+
   const { data: product, error } = await supabase
     .from("products")
     .select("*")
@@ -62,17 +64,24 @@ export const getMarketplaceProduct = cache(async (productId: string) => {
     .maybeSingle();
 
   if (error || !product) {
+    console.error("PRODUCT NOT FOUND:", error);
     return {
       product: null,
       floristProfile: null,
     };
   }
 
-  const { data: floristProfile } = await supabase
+  console.log("PRODUCT:", product);
+  console.log("PRODUCT.florist_id:", product.florist_id);
+
+  const { data: floristProfile, error: floristError } = await supabase
     .from("florist_profiles")
     .select("*")
     .eq("id", product.florist_profile_id)
     .maybeSingle();
+
+  console.log("FLORIST PROFILE:", floristProfile);
+  console.log("FLORIST ERROR:", floristError);
 
   return {
     product: product as ProductRow,
