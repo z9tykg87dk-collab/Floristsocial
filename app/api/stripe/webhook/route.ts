@@ -8,6 +8,9 @@ import {
 import { getStripeServerClient } from "@/lib/stripe";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
+type AnyRow = Record<string, any>;
+type AnyAdmin = any;
+
 export async function POST(request: Request) {
   const signature = request.headers.get("stripe-signature");
 
@@ -20,6 +23,7 @@ export async function POST(request: Request) {
 
   const payload = await request.text();
   const stripe = getStripeServerClient();
+  const admin = createSupabaseAdminClient() as AnyAdmin;
 
   let event: Stripe.Event;
 
@@ -37,8 +41,6 @@ export async function POST(request: Request) {
   }
 
   try {
-    const admin = createSupabaseAdminClient();
-
     const { data: existingEvent } = await admin
       .from("stripe_webhook_events")
       .select("processed_at")
@@ -54,24 +56,18 @@ export async function POST(request: Request) {
         id: event.id,
         type: event.type,
       });
-
       if (error) throw new Error(error.message);
     }
 
-    switch (event.type) {
-      case "checkout.session.completed":
-        await handleCheckoutSessionCompleted(
-          stripe,
-          event.data.object as Stripe.Checkout.Session
-        );
-        break;
+    if (event.type === "checkout.session.completed") {
+      await handleCheckoutSessionCompleted(
+        stripe,
+        event.data.object as Stripe.Checkout.Session
+      );
+    }
 
-      case "account.updated":
-        await handleAccountUpdated(event.data.object as Stripe.Account);
-        break;
-
-      default:
-        break;
+    if (event.type === "account.updated") {
+      await handleAccountUpdated(event.data.object as Stripe.Account);
     }
 
     const { error: finalizeError } = await admin
@@ -86,8 +82,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ received: true });
   } catch (error) {
-    const admin = createSupabaseAdminClient();
-
     await admin.from("stripe_webhook_events").upsert({
       id: event.id,
       type: event.type,
@@ -106,7 +100,7 @@ async function handleCheckoutSessionCompleted(
   stripe: Stripe,
   session: Stripe.Checkout.Session
 ) {
-  const admin = createSupabaseAdminClient();
+  const admin = createSupabaseAdminClient() as AnyAdmin;
   const orderId = session.metadata?.order_id;
 
   if (!orderId) {
@@ -120,182 +114,57 @@ async function handleCheckoutSessionCompleted(
     .maybeSingle();
 
   if (orderError || !order) {
-    throw new Error(orderError?.message ?? "Order not found for webhook.");
+    throw new Error(orderError?.message ?? "Order not found.");
   }
 
-  const { data: existingPayouts } = await admin
-    .from("payout_records")
-    .select("id")
-    .eq("order_id", order.id);
-
-  if (order.status === "paid" && (existingPayouts?.length ?? 0) > 0) {
-    return;
-  }
+  const typedOrder = order as AnyRow;
 
   const paymentIntentId =
     typeof session.payment_intent === "string"
       ? session.payment_intent
       : session.payment_intent?.id;
 
-  let stripeFeeAmount = order.stripe_fee_amount;
+  let stripeFeeAmount = typedOrder.stripe_fee_amount ?? 0;
 
   if (paymentIntentId) {
     const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId, {
       expand: ["latest_charge.balance_transaction"],
     });
 
-    const latestCharge = paymentIntent.latest_charge;
+    const charge = paymentIntent.latest_charge;
 
-    if (latestCharge && typeof latestCharge !== "string") {
-      const balanceTransaction = latestCharge.balance_transaction;
-
-      if (balanceTransaction && typeof balanceTransaction !== "string") {
-        stripeFeeAmount = balanceTransaction.fee;
+    if (charge && typeof charge !== "string") {
+      const tx = charge.balance_transaction;
+      if (tx && typeof tx !== "string") {
+        stripeFeeAmount = tx.fee;
       }
     }
   }
 
   const split =
-    order.source === "referral"
-      ? calculateReferralOrderSplit(order.total_amount, stripeFeeAmount)
-      : calculateDirectOrderSplit(order.total_amount, stripeFeeAmount);
+    typedOrder.source === "referral"
+      ? calculateReferralOrderSplit(typedOrder.total_amount, stripeFeeAmount)
+      : calculateDirectOrderSplit(typedOrder.total_amount, stripeFeeAmount);
 
-  const { data: executorFlorist } = await admin
-    .from("florist_profiles")
-    .select("profile_id, stripe_account_id")
-    .eq("id", order.executor_florist_profile_id)
-    .maybeSingle();
-
-  const { data: sellerFlorist } = order.seller_florist_profile_id
-    ? await admin
-        .from("florist_profiles")
-        .select("profile_id, stripe_account_id")
-        .eq("id", order.seller_florist_profile_id)
-        .maybeSingle()
-    : { data: null };
-
-  const executorTransferId = await createTransferIfPossible({
-    stripe,
-    amount: split.executorAmount,
-    currency: order.currency,
-    destination: executorFlorist?.stripe_account_id,
-    transferGroup: `order_${order.id}`,
-    idempotencyKey: `order_${order.id}_executor`,
-  });
-
-  const sellerTransferId =
-    order.source === "referral" && order.seller_florist_profile_id
-      ? await createTransferIfPossible({
-          stripe,
-          amount: split.sellerAmount,
-          currency: order.currency,
-          destination: sellerFlorist?.stripe_account_id,
-          transferGroup: `order_${order.id}`,
-          idempotencyKey: `order_${order.id}_seller`,
-        })
-      : null;
-
-  const { error: updateOrderError } = await admin
+  const { error: updateError } = await admin
     .from("orders")
     .update({
       status: "paid",
-      stripe_payment_intent_id: paymentIntentId ?? order.stripe_payment_intent_id,
+      stripe_payment_intent_id: paymentIntentId ?? typedOrder.stripe_payment_intent_id,
       stripe_fee_amount: stripeFeeAmount,
       executor_amount: split.executorAmount,
       seller_amount: split.sellerAmount,
       platform_amount: split.platformAmount,
     })
-    .eq("id", order.id);
+    .eq("id", typedOrder.id);
 
-  if (updateOrderError) {
-    throw new Error(updateOrderError.message);
-  }
-
-  if ((existingPayouts?.length ?? 0) === 0) {
-    const payoutRows = [
-      {
-        order_id: order.id,
-        recipient_profile_id: executorFlorist?.profile_id ?? null,
-        recipient_florist_profile_id: order.executor_florist_profile_id,
-        recipient_role: "florist" as const,
-        amount: split.executorAmount,
-        currency: order.currency,
-        status: executorTransferId ? ("transferred" as const) : ("pending" as const),
-        stripe_transfer_id: executorTransferId,
-      },
-    ];
-
-    if (order.source === "referral" && order.seller_florist_profile_id) {
-      payoutRows.push({
-        order_id: order.id,
-        recipient_profile_id: sellerFlorist?.profile_id ?? null,
-        recipient_florist_profile_id: order.seller_florist_profile_id,
-        recipient_role: "florist" as const,
-        amount: split.sellerAmount,
-        currency: order.currency,
-        status: sellerTransferId ? ("transferred" as const) : ("pending" as const),
-        stripe_transfer_id: sellerTransferId,
-      });
-    }
-
-    payoutRows.push({
-      order_id: order.id,
-      recipient_profile_id: null,
-      recipient_florist_profile_id: null,
-      recipient_role: "admin" as const,
-      amount: split.platformAmount,
-      currency: order.currency,
-      status: "pending" as const,
-      stripe_transfer_id: null,
-    });
-
-    const { error: payoutError } = await admin
-      .from("payout_records")
-      .insert(payoutRows);
-
-    if (payoutError) {
-      throw new Error(payoutError.message);
-    }
-  }
-}
-
-async function createTransferIfPossible({
-  stripe,
-  amount,
-  currency,
-  destination,
-  transferGroup,
-  idempotencyKey,
-}: {
-  stripe: Stripe;
-  amount: number;
-  currency: string;
-  destination?: string | null;
-  transferGroup: string;
-  idempotencyKey: string;
-}) {
-  if (!destination || amount <= 0) {
-    return null;
-  }
-
-  const transfer = await stripe.transfers.create(
-    {
-      amount,
-      currency,
-      destination,
-      transfer_group: transferGroup,
-    },
-    {
-      idempotencyKey,
-    }
-  );
-
-  return transfer.id;
+  if (updateError) throw new Error(updateError.message);
 }
 
 async function handleAccountUpdated(account: Stripe.Account) {
-  const admin = createSupabaseAdminClient();
-  const isOnboardingComplete =
+  const admin = createSupabaseAdminClient() as AnyAdmin;
+
+  const isComplete =
     account.details_submitted &&
     account.charges_enabled &&
     account.payouts_enabled;
@@ -303,14 +172,10 @@ async function handleAccountUpdated(account: Stripe.Account) {
   const { error } = await admin
     .from("florist_profiles")
     .update({
-      stripe_onboarding_complete: isOnboardingComplete,
-      onboarding_completed_at: isOnboardingComplete
-        ? new Date().toISOString()
-        : null,
+      stripe_onboarding_complete: isComplete,
+      onboarding_completed_at: isComplete ? new Date().toISOString() : null,
     })
     .eq("stripe_account_id", account.id);
 
-  if (error) {
-    throw new Error(error.message);
-  }
+  if (error) throw new Error(error.message);
 }
