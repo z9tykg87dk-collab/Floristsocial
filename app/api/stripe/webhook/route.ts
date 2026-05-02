@@ -31,54 +31,31 @@ export async function POST(request: Request) {
     );
   } catch (error) {
     return NextResponse.json(
-      {
-        error:
-          error instanceof Error ? error.message : "Invalid webhook signature.",
-      },
+      { error: error instanceof Error ? error.message : "Invalid webhook signature." },
       { status: 400 }
     );
   }
 
   try {
-
     const admin = createSupabaseAdminClient();
 
-    const { data: existingEvent } = (await admin
-
+    const { data: existingEvent } = await admin
       .from("stripe_webhook_events")
-
       .select("processed_at")
-
       .eq("id", event.id)
-
-      .maybeSingle()) as { data: { processed_at: string | null } | null; error: unknown };
+      .maybeSingle();
 
     if (existingEvent?.processed_at) {
-
       return NextResponse.json({ received: true, duplicate: true });
-
     }
 
     if (!existingEvent) {
+      const { error } = await admin.from("stripe_webhook_events").insert({
+        id: event.id,
+        type: event.type,
+      });
 
-      const { error: insertEventError } = await admin
-
-        .from("stripe_webhook_events")
-
-        .insert({
-
-          id: event.id,
-
-          type: event.type,
-
-        });
-
-      if (insertEventError) {
-
-        throw new Error(insertEventError.message);
-
-      }
-
+      if (error) throw new Error(error.message);
     }
 
     switch (event.type) {
@@ -88,14 +65,16 @@ export async function POST(request: Request) {
           event.data.object as Stripe.Checkout.Session
         );
         break;
+
       case "account.updated":
         await handleAccountUpdated(event.data.object as Stripe.Account);
         break;
+
       default:
         break;
     }
 
-    const { error: finalizeEventError } = await admin
+    const { error: finalizeError } = await admin
       .from("stripe_webhook_events")
       .update({
         processed_at: new Date().toISOString(),
@@ -103,33 +82,21 @@ export async function POST(request: Request) {
       })
       .eq("id", event.id);
 
-    if (finalizeEventError) {
-      throw new Error(finalizeEventError.message);
-    }
+    if (finalizeError) throw new Error(finalizeError.message);
 
     return NextResponse.json({ received: true });
   } catch (error) {
-    try {
-      const admin = createSupabaseAdminClient();
-      await admin
-        .from("stripe_webhook_events")
-        .upsert({
-          id: event.id,
-          type: event.type,
-          processing_error:
-            error instanceof Error
-              ? error.message
-              : "Stripe webhook processing failed.",
-        });
-    } catch {}
+    const admin = createSupabaseAdminClient();
+
+    await admin.from("stripe_webhook_events").upsert({
+      id: event.id,
+      type: event.type,
+      processing_error:
+        error instanceof Error ? error.message : "Stripe webhook processing failed.",
+    });
 
     return NextResponse.json(
-      {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Stripe webhook processing failed.",
-      },
+      { error: error instanceof Error ? error.message : "Stripe webhook processing failed." },
       { status: 500 }
     );
   }
@@ -195,16 +162,38 @@ async function handleCheckoutSessionCompleted(
 
   const { data: executorFlorist } = await admin
     .from("florist_profiles")
-    .select("profile_id")
+    .select("profile_id, stripe_account_id")
     .eq("id", order.executor_florist_profile_id)
     .maybeSingle();
+
   const { data: sellerFlorist } = order.seller_florist_profile_id
     ? await admin
         .from("florist_profiles")
-        .select("profile_id")
+        .select("profile_id, stripe_account_id")
         .eq("id", order.seller_florist_profile_id)
         .maybeSingle()
     : { data: null };
+
+  const executorTransferId = await createTransferIfPossible({
+    stripe,
+    amount: split.executorAmount,
+    currency: order.currency,
+    destination: executorFlorist?.stripe_account_id,
+    transferGroup: `order_${order.id}`,
+    idempotencyKey: `order_${order.id}_executor`,
+  });
+
+  const sellerTransferId =
+    order.source === "referral" && order.seller_florist_profile_id
+      ? await createTransferIfPossible({
+          stripe,
+          amount: split.sellerAmount,
+          currency: order.currency,
+          destination: sellerFlorist?.stripe_account_id,
+          transferGroup: `order_${order.id}`,
+          idempotencyKey: `order_${order.id}_seller`,
+        })
+      : null;
 
   const { error: updateOrderError } = await admin
     .from("orders")
@@ -231,7 +220,8 @@ async function handleCheckoutSessionCompleted(
         recipient_role: "florist" as const,
         amount: split.executorAmount,
         currency: order.currency,
-        status: "pending" as const,
+        status: executorTransferId ? ("transferred" as const) : ("pending" as const),
+        stripe_transfer_id: executorTransferId,
       },
     ];
 
@@ -243,7 +233,8 @@ async function handleCheckoutSessionCompleted(
         recipient_role: "florist" as const,
         amount: split.sellerAmount,
         currency: order.currency,
-        status: "pending" as const,
+        status: sellerTransferId ? ("transferred" as const) : ("pending" as const),
+        stripe_transfer_id: sellerTransferId,
       });
     }
 
@@ -255,6 +246,7 @@ async function handleCheckoutSessionCompleted(
       amount: split.platformAmount,
       currency: order.currency,
       status: "pending" as const,
+      stripe_transfer_id: null,
     });
 
     const { error: payoutError } = await admin
@@ -265,6 +257,40 @@ async function handleCheckoutSessionCompleted(
       throw new Error(payoutError.message);
     }
   }
+}
+
+async function createTransferIfPossible({
+  stripe,
+  amount,
+  currency,
+  destination,
+  transferGroup,
+  idempotencyKey,
+}: {
+  stripe: Stripe;
+  amount: number;
+  currency: string;
+  destination?: string | null;
+  transferGroup: string;
+  idempotencyKey: string;
+}) {
+  if (!destination || amount <= 0) {
+    return null;
+  }
+
+  const transfer = await stripe.transfers.create(
+    {
+      amount,
+      currency,
+      destination,
+      transfer_group: transferGroup,
+    },
+    {
+      idempotencyKey,
+    }
+  );
+
+  return transfer.id;
 }
 
 async function handleAccountUpdated(account: Stripe.Account) {
@@ -288,61 +314,3 @@ async function handleAccountUpdated(account: Stripe.Account) {
     throw new Error(error.message);
   }
 }
-
-cd ~/Documents/FloristSocial/floristsocial
-
-
-cd ~/Documents/FloristSocial/floristsocial
-python3 - <<'PY'
-from pathlib import Path
-
-p = Path("app/api/stripe/webhook/route.ts")
-text = p.read_text()
-
-start_marker = '  try {\n    const admin = createSupabaseAdminClient();'
-end_marker = '    switch (event.type) {'
-
-start = text.find(start_marker)
-end = text.find(end_marker)
-
-if start == -1 or end == -1:
-    raise SystemExit("Kunde inte hitta blocket att laga i route.ts")
-
-replacement = '''  try {
-    const admin = createSupabaseAdminClient();
-
-    const { data: existingEvent } = (await admin
-      .from("stripe_webhook_events")
-      .select("processed_at")
-      .eq("id", event.id)
-      .maybeSingle()) as { data: { processed_at: string | null } | null; error: unknown };
-
-    if (existingEvent?.processed_at) {
-      return NextResponse.json({ received: true, duplicate: true });
-    }
-
-    if (!existingEvent) {
-      const { error: insertEventError } = await admin
-        .from("stripe_webhook_events")
-        .insert({
-          id: event.id,
-          type: event.type,
-        });
-
-      if (insertEventError) {
-        throw new Error(insertEventError.message);
-      }
-    }
-
-'''
-
-text = text[:start] + replacement + text[end:]
-p.write_text(text)
-print("route.ts lagad")
-PY
-switch (event.type) {
-
-
-
-
-
