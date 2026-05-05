@@ -44,7 +44,7 @@ export async function POST(req: Request) {
     const { data: florist, error: floristError } = await supabase
       .from("florists")
       .select("id, email, first_name, last_name")
-      .eq("id", data.user.id)
+      .eq("id" as any, data.user.id)
       .maybeSingle();
 
     if (floristError) {

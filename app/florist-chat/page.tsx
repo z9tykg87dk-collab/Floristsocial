@@ -1,178 +1,91 @@
-"use client";
+import Link from "next/link";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getFloristChatList } from "@/lib/chat/getFloristChatList";
 
-import { useEffect, useState } from "react";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
-import { useSearchParams } from "next/navigation";
+export default async function FloristChatPage() {
+  const supabase = await createSupabaseServerClient();
 
-export default function FloristChatPage() {
-  const supabase = createSupabaseBrowserClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  const [conversations, setConversations] = useState<any[]>([]);
-  const [activeChat, setActiveChat] = useState<any | null>(null);
-  const [messages, setMessages] = useState<any[]>([]);
-  const [text, setText] = useState("");
-  const searchParams = useSearchParams();
-  const conversationId = searchParams.get("c");
-
-  useEffect(() => {
-    loadConversations();
-
-    if (conversationId) {
-      openChat({ id: conversationId });
-    }
-  }, []);
-  async function loadConversations() {
-    const { data } = await supabase
-      .from("conversations")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    setConversations(data || []);
+  if (!user) {
+    return <div className="p-6">Inte inloggad</div>;
   }
 
-  async function openChat(convo: any) {
-    setActiveChat(convo);
-
-    const { data } = await supabase
-      .from("messages")
-      .select("*")
-      .eq("conversation_id", convo.id)
-      .order("created_at", { ascending: true });
-
-    setMessages(data || []);
-  }
-
-  async function sendMessage() {
-    if (!text.trim() || !activeChat) return;
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    await supabase.from("messages").insert({
-      conversation_id: activeChat.id,
-      sender_id: user?.id,
-      content: text,
-    });
-
-    setText("");
-    openChat(activeChat);
-  }
+  const chats = await getFloristChatList(supabase, user.id);
 
   return (
-    <main style={{ padding: "2rem", maxWidth: "900px", margin: "0 auto" }}>
-      <h1>Florist Chat</h1>
+    <main className="p-6">
+      <h1 className="mb-6 text-2xl font-bold">Florist Chat</h1>
 
-      <div style={{ display: "flex", gap: "1rem" }}>
+      {chats.length === 0 ? (
+        <p>Inga konversationer ännu</p>
+      ) : (
+        <div className="space-y-4">
+          {chats.map((chat) => (
+            <Link
+              key={chat.conversation_id}
+              href={`/florist-chat/${chat.conversation_id}`}
+              className="block rounded-xl border bg-white p-4 shadow-sm transition hover:bg-gray-50"
+            >
+              <h2 className="font-semibold">{chat.title}</h2>
 
-        {/* SIDEBAR */}
-        <div style={sidebar}>
-          <h3>Konversationer</h3>
+              <p className="text-sm text-gray-500">
+                Status: {chat.outcome}
+              </p>
 
-          {conversations.length === 0 ? (
-            <p>Inga chattar ännu</p>
-          ) : (
-            conversations.map((c) => (
-              <div
-                key={c.id}
-                style={chatItem}
-                onClick={() => openChat(c)}
-              >
-                Chat {c.id.slice(0, 4)}
-              </div>
-            ))
-          )}
-        </div>
+              <p className="text-sm text-gray-500">
+                Senaste aktivitet:{" "}
+                {chat.last_message_at
+                  ? new Date(chat.last_message_at).toLocaleString("sv-SE")
+                  : "Ingen aktivitet ännu"}
+              </p>
 
-        {/* CHAT AREA */}
-        <div style={chatBox}>
-          {!activeChat ? (
-            <p>Välj en chat</p>
-          ) : (
-            <>
-              <div style={messagesBox}>
-                {messages.map((m) => (
-                  <div key={m.id} style={message}>
-                    {m.content}
+              <div className="mt-4 space-y-2">
+                {chat.participants.map((p) => (
+                  <div key={p.id} className="flex items-center gap-2 text-sm">
+                    {p.logo_url || p.avatar_url ? (
+                      <img
+                        src={p.logo_url || p.avatar_url || ""}
+                        alt=""
+                        className="h-8 w-8 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="h-8 w-8 rounded-full bg-gray-200" />
+                    )}
+
+                    <div>
+                      <div>{p.display_name}</div>
+                      <div className="text-xs text-gray-400">
+                        {p.role}
+                        {p.florist_name ? ` · ${p.florist_name}` : ""}
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
 
-              <div style={inputRow}>
-                <input
-                  value={text}
-                  onChange={(e) => setText(e.target.value)}
-                  style={input}
-                  placeholder="Skriv meddelande..."
-                />
+              {chat.economy ? (
+                <div className="mt-4 border-t pt-3 text-sm">
+                  <p>Ordervärde: {chat.economy.order_value ?? 0} kr</p>
 
-                <button onClick={sendMessage} style={sendBtn}>
-                  Skicka
-                </button>
-              </div>
-            </>
-          )}
+                  {chat.economy.can_view_all ? (
+                    <>
+                      <p>Säljande florist: {chat.economy.seller_commission ?? 0} kr</p>
+                      <p>Utförande florist: {chat.economy.executor_commission ?? 0} kr</p>
+                      <p>FloristSocial: {chat.economy.platform_commission ?? 0} kr</p>
+                      <p>Kortavgift: {chat.economy.payment_fee ?? 0} kr</p>
+                    </>
+                  ) : (
+                    <p>Din intäkt: {chat.economy.own_commission ?? 0} kr</p>
+                  )}
+                </div>
+              ) : null}
+            </Link>
+          ))}
         </div>
-
-      </div>
+      )}
     </main>
   );
 }
-
-/* STYLES */
-
-const sidebar = {
-  width: "250px",
-  border: "1px solid #e5e7eb",
-  borderRadius: "12px",
-  padding: "1rem",
-  background: "#fff",
-};
-
-const chatItem = {
-  padding: "10px",
-  borderBottom: "1px solid #eee",
-  cursor: "pointer",
-};
-
-const chatBox = {
-  flex: 1,
-  border: "1px solid #e5e7eb",
-  borderRadius: "12px",
-  padding: "1rem",
-  background: "#fff",
-};
-
-const messagesBox = {
-  height: "400px",
-  overflowY: "auto" as const,
-  marginBottom: "1rem",
-};
-
-const message = {
-  padding: "8px",
-  borderRadius: "8px",
-  background: "#f3f4f6",
-  marginBottom: "6px",
-};
-
-const inputRow = {
-  display: "flex",
-  gap: "8px",
-};
-
-const input = {
-  flex: 1,
-  padding: "10px",
-  borderRadius: "8px",
-  border: "1px solid #ddd",
-};
-
-const sendBtn = {
-  padding: "10px 14px",
-  borderRadius: "8px",
-  background: "black",
-  color: "white",
-  border: "none",
-  cursor: "pointer",
-};
