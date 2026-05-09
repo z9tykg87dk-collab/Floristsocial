@@ -1,10 +1,10 @@
-import { Icons } from "@/components/icons";
 import Link from "next/link";
 import type React from "react";
 import { ArrowLeft, Camera, Paperclip, Phone, Video, Send } from "lucide-react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { sendMessage } from "../actions/sendMessage";
 import VoiceRecorder from "@/components/VoiceRecorder";
+import ChatScrollToBottom from "@/components/chat/ChatScrollToBottom";
 
 export default async function ChatDetailPage({
   params,
@@ -109,6 +109,8 @@ export default async function ChatDetailPage({
             </div>
           );
         })}
+
+        <ChatScrollToBottom />
       </section>
 
       <footer style={footerStyle}>
@@ -141,14 +143,16 @@ export default async function ChatDetailPage({
 }
 
 const pageStyle: React.CSSProperties = {
-  minHeight: "100vh",
+  height: "100dvh",
   background: "#f6f2ea",
   display: "flex",
   flexDirection: "column",
+  overflow: "hidden",
 };
 
 const headerStyle: React.CSSProperties = {
   height: 72,
+  flexShrink: 0,
   padding: "0 18px",
   background: "rgba(255,255,255,0.92)",
   borderBottom: "1px solid #e5e7eb",
@@ -156,8 +160,6 @@ const headerStyle: React.CSSProperties = {
   gridTemplateColumns: "48px 1fr 96px",
   alignItems: "center",
   gap: 12,
-  position: "sticky",
-  top: 0,
   zIndex: 20,
   backdropFilter: "blur(10px)",
 };
@@ -211,8 +213,8 @@ const headerActionsStyle: React.CSSProperties = {
 
 const messagesStyle: React.CSSProperties = {
   flex: 1,
+  overflowY: "auto",
   padding: "16px",
-  paddingBottom: 100,
 };
 
 const bubbleStyle: React.CSSProperties = {
@@ -237,14 +239,12 @@ const timeStyle: React.CSSProperties = {
 };
 
 const footerStyle: React.CSSProperties = {
-  position: "fixed",
-  bottom: 0,
-  left: 0,
-  right: 0,
+  flexShrink: 0,
   padding: 10,
-  background: "rgba(246,242,234,0.9)",
+  background: "rgba(246,242,234,0.96)",
   borderTop: "1px solid #ddd",
   backdropFilter: "blur(10px)",
+  zIndex: 30,
 };
 
 const formStyle: React.CSSProperties = {

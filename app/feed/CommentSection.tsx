@@ -3,15 +3,33 @@
 import { useEffect, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
+type Comment = {
+  id: string;
+  content: string;
+  created_at: string;
+  user_id: string;
+};
+
+function shortUserId(id: string) {
+  return `Användare ${id.slice(0, 6)}`;
+}
+
 export default function CommentSection({ postId }: { postId: string }) {
   const supabase = createSupabaseBrowserClient();
 
   const [open, setOpen] = useState(false);
-  const [comments, setComments] = useState<any[]>([]);
+  const [comments, setComments] = useState<Comment[]>([]);
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   async function loadComments() {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    setCurrentUserId(user?.id || null);
+
     const { data } = await supabase
       .from("post_comments")
       .select("id, content, created_at, user_id")
@@ -77,52 +95,69 @@ export default function CommentSection({ postId }: { postId: string }) {
 
     setContent("");
     setOpen(true);
+    loadComments();
   }
 
   return (
-    <div style={{ marginTop: "0.5rem" }}>
+    <>
       <button
         onClick={() => setOpen(!open)}
         style={{
+          minHeight: 44,
+          borderRadius: 999,
+          background: "#f9fafb",
           border: "1px solid #e5e7eb",
-          background: "#ffffff",
+          color: "#111827",
           cursor: "pointer",
-          padding: "6px 10px",
-          borderRadius: "999px",
-          fontSize: "14px",
-          fontWeight: 600,
+          padding: "0 12px",
+          fontSize: 15,
+          fontWeight: 800,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 6,
         }}
       >
-        💬 Kommentera {comments.length > 0 ? `· ${comments.length}` : "· 0"}
+        <span>💬 Kommentera</span>
+        <span>· {comments.length}</span>
       </button>
 
       {open && (
         <div
           style={{
-            marginTop: "1rem",
-            padding: "12px",
+            gridColumn: "1 / -1",
+            marginTop: 8,
+            padding: 14,
             border: "1px solid #e5e7eb",
-            borderRadius: "12px",
+            borderRadius: 16,
             background: "#f9fafb",
           }}
         >
           {comments.length === 0 ? (
-            <p style={{ color: "#666" }}>Inga kommentarer ännu.</p>
+            <p style={{ color: "#666", marginTop: 0 }}>Inga kommentarer ännu.</p>
           ) : (
-            comments.map((comment) => (
-              <div
-                key={comment.id}
-                style={{
-                  padding: "8px",
-                  borderBottom: "1px solid #e5e7eb",
-                }}
-              >
-                <p style={{ margin: 0 }}>{comment.content}</p>
-                <small style={{ color: "#777" }}>
-                  {new Date(comment.created_at).toLocaleString("sv-SE")}
-                </small>
-              </div>
-            ))
+            comments.map((comment) => {
+              const name =
+                comment.user_id === currentUserId
+                  ? "Du"
+                  : shortUserId(comment.user_id);
+
+              return (
+                <div
+                  key={comment.id}
+                  style={{
+                    padding: "10px 0",
+                    borderBottom: "1px solid #e5e7eb",
+                  }}
+                >
+                  <strong>{name}</strong>
+                  <p style={{ margin: "4px 0" }}>{comment.content}</p>
+                  <small style={{ color: "#777" }}>
+                    {new Date(comment.created_at).toLocaleString("sv-SE")}
+                  </small>
+                </div>
+              );
+            })
           )}
 
           <form onSubmit={addComment} style={{ marginTop: "1rem" }}>
@@ -133,9 +168,9 @@ export default function CommentSection({ postId }: { postId: string }) {
               placeholder="Skriv en kommentar..."
               style={{
                 width: "100%",
-                minHeight: "80px",
+                minHeight: "90px",
                 padding: "10px",
-                borderRadius: "8px",
+                borderRadius: "12px",
                 border: "1px solid #ddd",
               }}
             />
@@ -144,12 +179,13 @@ export default function CommentSection({ postId }: { postId: string }) {
               disabled={loading}
               style={{
                 marginTop: "8px",
-                padding: "8px 12px",
-                borderRadius: "8px",
+                padding: "10px 14px",
+                borderRadius: "12px",
                 background: "black",
                 color: "white",
                 border: "none",
                 cursor: "pointer",
+                fontWeight: 800,
               }}
             >
               {loading ? "Skickar..." : "Skicka kommentar"}
@@ -157,6 +193,6 @@ export default function CommentSection({ postId }: { postId: string }) {
           </form>
         </div>
       )}
-    </div>
+    </>
   );
 }

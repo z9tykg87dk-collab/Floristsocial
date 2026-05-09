@@ -75,14 +75,14 @@ export default function PostMoreMenu() {
             }}
           >
             <button style={menuButton}>Om denna florist</button>
-            <button style={menuButton}>Därför ser du denna annons</button>
+            <button style={menuButton}>Därför ser du detta inlägg</button>
             <button style={menuButton}>
-              Allmän info om FloristSocial annonser
+              Allmän info om FloristSocial:s inlägg
             </button>
             <button style={menuButton}>Intresserad</button>
             <button style={menuButton}>Inte intresserad</button>
             <button style={{ ...menuButton, color: "crimson" }}>
-              Anmäl annons
+              Anmäl inlägg
             </button>
           </div>
 

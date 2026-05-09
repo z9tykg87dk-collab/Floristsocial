@@ -2,7 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ImagePlus, Video, UploadCloud, CheckCircle2 } from "lucide-react";
+import {
+  ImagePlus,
+  Video,
+  UploadCloud,
+  CheckCircle2,
+  Trash2,
+  Save,
+} from "lucide-react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 const TITLE_MAX = 80;
@@ -20,52 +27,131 @@ export default function NewPostPage() {
   const [price, setPrice] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [mediaSaved, setMediaSaved] = useState(false);
   const [loading, setLoading] = useState(false);
 
   function hashtagCount() {
-    return hashtags.split(" ").filter((tag) => tag.trim().startsWith("#")).length;
+    return hashtags
+      .split(" ")
+      .filter((tag) => tag.trim().startsWith("#")).length;
   }
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const selected = e.target.files?.[0];
+  function handleSelectedFile(selected: File | null) {
     if (!selected) return;
+
+    const fileName = selected.name.toLowerCase();
+
+    const isHeicOrHeif =
+      fileName.endsWith(".heic") ||
+      fileName.endsWith(".heif") ||
+      selected.type === "image/heic" ||
+      selected.type === "image/heif";
+
+    const isImage =
+      selected.type.startsWith("image/") || isHeicOrHeif;
+
+    const isVideo = selected.type.startsWith("video/");
+
+    if (!isImage && !isVideo) {
+      alert("Välj en bild eller video.");
+      return;
+    }
+
+    if (preview) URL.revokeObjectURL(preview);
 
     setFile(selected);
     setPreview(URL.createObjectURL(selected));
+    setMediaType(isVideo ? "video" : "image");
+    setMediaSaved(false);
+  }
+
+  function handleFileChange(
+    e: React.ChangeEvent<HTMLInputElement>
+  ) {
+    handleSelectedFile(e.target.files?.[0] || null);
+  }
+
+  function removeMedia() {
+    if (preview) URL.revokeObjectURL(preview);
+
+    setFile(null);
+    setPreview(null);
+    setMediaSaved(false);
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+
+    if (!file) {
+      alert("Välj bild eller video först.");
+      return;
+    }
+
+    if (!mediaSaved) {
+      alert("Klicka på Spara media innan du publicerar.");
+      return;
+    }
+
     setLoading(true);
 
     const {
       data: { user },
     } = await supabase.auth.getUser();
 
-    if (!user || !file) {
-      alert("Välj fil först");
+    if (!user) {
+      alert("Du måste vara inloggad.");
       setLoading(false);
       return;
     }
 
-    const filePath = `${user.id}/${Date.now()}-${file.name}`;
+    const safeFileName = file.name
+      .replaceAll(" ", "-")
+      .toLowerCase();
 
-    await supabase.storage.from("post-media").upload(filePath, file);
+    const filePath = `${user.id}/${Date.now()}-${safeFileName}`;
 
-    const { data } = supabase.storage.from("post-media").getPublicUrl(filePath);
+    const { error: uploadError } = await supabase.storage
+      .from("post-media")
+      .upload(filePath, file);
 
-    await supabase.from("posts").insert({
-      florist_id: user.id,
-      media_type: mediaType,
-      title,
-      caption,
-      hashtags,
-      price: price ? Number(price) : null,
-      image_url: mediaType === "image" ? data.publicUrl : null,
-      video_url: mediaType === "video" ? data.publicUrl : null,
-    });
+    if (uploadError) {
+      console.error("Upload error:", uploadError);
+
+      alert(
+        `Kunde inte ladda upp media: ${uploadError.message}`
+      );
+
+      setLoading(false);
+      return;
+    }
+
+    const { data } = supabase.storage
+      .from("post-media")
+      .getPublicUrl(filePath);
+
+    const { error: insertError } = await supabase
+      .from("posts")
+      .insert({
+        florist_id: user.id,
+        media_type: mediaType,
+        title,
+        caption,
+        hashtags,
+        price: price ? Number(price) : null,
+        image_url:
+          mediaType === "image" ? data.publicUrl : null,
+        video_url:
+          mediaType === "video" ? data.publicUrl : null,
+      });
+
+    if (insertError) {
+      alert("Kunde inte publicera inlägget.");
+      setLoading(false);
+      return;
+    }
 
     setLoading(false);
+
     router.push("/feed");
     router.refresh();
   }
@@ -73,8 +159,10 @@ export default function NewPostPage() {
   return (
     <main style={page}>
       <h1 style={titleStyle}>Skapa inlägg</h1>
+
       <p style={subtitleStyle}>
-        Lägg upp en bild eller video med namn, beskrivning och pris.
+        Lägg upp bild eller video med namn,
+        pris, beskrivning och hashtags.
       </p>
 
       <form onSubmit={handleSubmit}>
@@ -87,8 +175,14 @@ export default function NewPostPage() {
               onClick={() => setMediaType("image")}
               style={{
                 ...typeButton,
-                borderColor: mediaType === "image" ? "#16a34a" : "#e5e7eb",
-                background: mediaType === "image" ? "#ecfdf5" : "#fff",
+                borderColor:
+                  mediaType === "image"
+                    ? "#16a34a"
+                    : "#e5e7eb",
+                background:
+                  mediaType === "image"
+                    ? "#ecfdf5"
+                    : "#fff",
               }}
             >
               <ImagePlus size={20} />
@@ -100,8 +194,14 @@ export default function NewPostPage() {
               onClick={() => setMediaType("video")}
               style={{
                 ...typeButton,
-                borderColor: mediaType === "video" ? "#16a34a" : "#e5e7eb",
-                background: mediaType === "video" ? "#ecfdf5" : "#fff",
+                borderColor:
+                  mediaType === "video"
+                    ? "#16a34a"
+                    : "#e5e7eb",
+                background:
+                  mediaType === "video"
+                    ? "#ecfdf5"
+                    : "#fff",
               }}
             >
               <Video size={20} />
@@ -111,101 +211,218 @@ export default function NewPostPage() {
         </div>
 
         <div style={card}>
-          <label style={label}>Ladda upp {mediaType === "image" ? "bild" : "video"}</label>
+          <label style={label}>Ladda upp media</label>
 
-          <label style={uploadBox}>
-            {file ? (
-              <CheckCircle2 size={36} color="#16a34a" />
-            ) : (
-              <UploadCloud size={38} color="#16a34a" />
-            )}
+          <div
+            style={uploadBox}
+            onDragOver={(event) =>
+              event.preventDefault()
+            }
+            onDrop={(event) => {
+              event.preventDefault();
 
-            <strong>
-              {file ? file.name : "Klicka här för att välja fil"}
-            </strong>
+              handleSelectedFile(
+                event.dataTransfer.files?.[0] || null
+              );
+            }}
+          >
+            <label style={uploadInner}>
+              {file ? (
+                <CheckCircle2
+                  size={38}
+                  color="#16a34a"
+                />
+              ) : (
+                <UploadCloud
+                  size={40}
+                  color="#16a34a"
+                />
+              )}
 
-            <span style={uploadHint}>
-              {mediaType === "image"
-                ? "Ladda upp JPG, PNG eller WebP"
-                : "Ladda upp MP4, MOV eller WebM"}
-            </span>
+              <strong>
+                {file
+                  ? file.name
+                  : "Klicka eller dra in bild/video här"}
+              </strong>
 
-            <input
-              type="file"
-              accept={mediaType === "image" ? "image/*" : "video/*"}
-              onChange={handleFileChange}
-              style={{ display: "none" }}
-            />
-          </label>
+              <span style={uploadHint}>
+                JPG, PNG, WebP, HEIC, HEIF,
+                MP4, MOV eller WebM
+              </span>
+
+              <input
+                type="file"
+                accept="image/*,video/*,.heic,.heif"
+                onChange={handleFileChange}
+                style={{ display: "none" }}
+              />
+            </label>
+          </div>
 
           {preview && (
-            <div style={{ marginTop: "1rem" }}>
+            <div style={previewWrap}>
               {mediaType === "image" ? (
-                <img src={preview} alt="" style={previewStyle} />
+                <img
+                  src={preview}
+                  alt=""
+                  style={previewStyle}
+                />
               ) : (
-                <video src={preview} controls style={previewStyle} />
+                <video
+                  src={preview}
+                  controls
+                  style={previewStyle}
+                />
               )}
+
+              <div style={mediaActions}>
+                <span
+                  style={
+                    mediaSaved
+                      ? savedBadge
+                      : unsavedBadge
+                  }
+                >
+                  {mediaSaved
+                    ? "Sparad"
+                    : "Ej sparad"}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={() => setMediaSaved(true)}
+                  style={saveMediaButton}
+                >
+                  <Save size={16} />
+                  Spara media
+                </button>
+
+                <button
+                  type="button"
+                  onClick={removeMedia}
+                  style={removeButton}
+                >
+                  <Trash2 size={16} />
+                  Ta bort
+                </button>
+              </div>
             </div>
           )}
         </div>
 
         <div style={card}>
-          <label style={label}>Namn</label>
+          <label style={label}>Namn / titel</label>
+
           <input
             value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            onChange={(e) =>
+              setTitle(e.target.value)
+            }
             maxLength={TITLE_MAX}
             style={input}
             placeholder="Ex. Sommarbukett"
           />
-          <small>{title.length}/{TITLE_MAX}</small>
-        </div>
 
-        <div style={card}>
-          <label style={label}>Beskrivning</label>
-          <textarea
-            value={caption}
-            onChange={(e) => setCaption(e.target.value)}
-            maxLength={CAPTION_MAX}
-            style={{ ...input, minHeight: 120 }}
-            placeholder="Beskriv inlägget..."
-          />
-        </div>
-
-        <div style={card}>
-          <label style={label}>Hashtags</label>
-          <input
-            value={hashtags}
-            onChange={(e) => setHashtags(e.target.value)}
-            style={input}
-            placeholder="#bröllop #bukett #rosor"
-          />
-          <small>{hashtagCount()}/{HASHTAG_MAX}</small>
+          <small>
+            {title.length}/{TITLE_MAX}
+          </small>
         </div>
 
         <div style={card}>
           <label style={label}>Pris</label>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
             <input
               type="number"
               value={price}
-              onChange={(e) => setPrice(e.target.value)}
-              style={{ ...input, flex: 1 }}
+              onChange={(e) =>
+                setPrice(e.target.value)
+              }
+              style={{
+                ...input,
+                flex: 1,
+              }}
               placeholder="Ex. 595"
             />
-            <span style={{ fontWeight: 700 }}>kr</span>
+
+            <span style={{ fontWeight: 700 }}>
+              kr
+            </span>
           </div>
         </div>
 
-        <div style={{ ...card, background: "#f9fafb" }}>
+        <div style={card}>
+          <label style={label}>
+            Beskrivning
+          </label>
+
+          <textarea
+            value={caption}
+            onChange={(e) =>
+              setCaption(e.target.value)
+            }
+            maxLength={CAPTION_MAX}
+            style={{
+              ...input,
+              minHeight: 120,
+            }}
+            placeholder="Beskriv buketten, blommorna, storlek, färg eller stil..."
+          />
+
+          <small>
+            {caption.length}/{CAPTION_MAX}
+          </small>
+        </div>
+
+        <div style={card}>
+          <label style={label}>Hashtags</label>
+
+          <input
+            value={hashtags}
+            onChange={(e) =>
+              setHashtags(e.target.value)
+            }
+            style={input}
+            placeholder="#Bukett #Rosor #Bröllop"
+          />
+
+          <small>
+            {hashtagCount()}/{HASHTAG_MAX}
+          </small>
+        </div>
+
+        <div
+          style={{
+            ...card,
+            background: "#f9fafb",
+          }}
+        >
           <strong>Rättigheter</strong>
-          <p style={{ margin: 0, color: "#4b5563" }}>
-            Du ansvarar för att du har rätt att använda innehållet.
+
+          <p
+            style={{
+              margin: 0,
+              color: "#4b5563",
+            }}
+          >
+            Du ansvarar för att du har rätt att
+            använda innehållet.
           </p>
         </div>
 
-        <button style={button} disabled={loading}>
-          {loading ? "Publicerar..." : "Publicera"}
+        <button
+          style={button}
+          disabled={loading}
+        >
+          {loading
+            ? "Publicerar..."
+            : "Publicera"}
         </button>
       </form>
     </main>
@@ -214,7 +431,7 @@ export default function NewPostPage() {
 
 const page: React.CSSProperties = {
   padding: "2rem",
-  maxWidth: 680,
+  maxWidth: 760,
   margin: "0 auto",
   minHeight: "100vh",
   background: "#f6f2ea",
@@ -267,8 +484,11 @@ const typeButton: React.CSSProperties = {
 const uploadBox: React.CSSProperties = {
   border: "2px dashed #86efac",
   borderRadius: 18,
-  padding: "28px 18px",
+  padding: 12,
   background: "#f0fdf4",
+};
+
+const uploadInner: React.CSSProperties = {
   cursor: "pointer",
   display: "flex",
   flexDirection: "column",
@@ -276,6 +496,7 @@ const uploadBox: React.CSSProperties = {
   justifyContent: "center",
   gap: 8,
   textAlign: "center",
+  padding: "28px 18px",
 };
 
 const uploadHint: React.CSSProperties = {
@@ -291,10 +512,71 @@ const input: React.CSSProperties = {
   outline: "none",
 };
 
+const previewWrap: React.CSSProperties = {
+  marginTop: "1rem",
+  overflow: "hidden",
+  border: "1px solid #e5e7eb",
+  borderRadius: 18,
+  background: "#fff",
+};
+
 const previewStyle: React.CSSProperties = {
   width: "100%",
-  borderRadius: 16,
+  maxHeight: 520,
+  objectFit: "cover",
   display: "block",
+};
+
+const mediaActions: React.CSSProperties = {
+  display: "flex",
+  flexWrap: "wrap",
+  alignItems: "center",
+  gap: 10,
+  padding: 12,
+};
+
+const savedBadge: React.CSSProperties = {
+  borderRadius: 999,
+  background: "#dcfce7",
+  color: "#15803d",
+  padding: "7px 12px",
+  fontSize: 13,
+  fontWeight: 800,
+};
+
+const unsavedBadge: React.CSSProperties = {
+  borderRadius: 999,
+  background: "#fef3c7",
+  color: "#92400e",
+  padding: "7px 12px",
+  fontSize: 13,
+  fontWeight: 800,
+};
+
+const saveMediaButton: React.CSSProperties = {
+  border: "none",
+  borderRadius: 12,
+  background: "#16a34a",
+  color: "#fff",
+  padding: "9px 12px",
+  fontWeight: 800,
+  cursor: "pointer",
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 6,
+};
+
+const removeButton: React.CSSProperties = {
+  border: "1px solid #fecaca",
+  borderRadius: 12,
+  background: "#fff",
+  color: "#dc2626",
+  padding: "9px 12px",
+  fontWeight: 800,
+  cursor: "pointer",
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 6,
 };
 
 const button: React.CSSProperties = {

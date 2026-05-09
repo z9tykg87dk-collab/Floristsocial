@@ -1,0 +1,216 @@
+import VoiceRecorder from "@/components/VoiceRecorder";
+import Link from "next/link";
+import type React from "react";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { sendMessage } from "../actions/sendMessage";
+
+export default async function ChatDetailPage({
+  params,
+}: {
+  params: Promise<{ conversation_id: string }>;
+}) {
+  const { conversation_id } = await params;
+  const supabase = await createSupabaseServerClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const { data: participants } = await supabase
+    .from("conversation_participants")
+    .select("display_name, florist_name, logo_url")
+    .eq("conversation_id", conversation_id);
+
+  const other = participants?.find((p) => p.display_name !== "Nick");
+
+  const { data: messages } = await supabase
+    .from("messages")
+    .select(
+      "id, sender_id, sender_display_name, sender_florist_name, content, created_at, read_at, message_type, audio_url"
+    )
+    .eq("conversation_id", conversation_id)
+    .order("created_at", { ascending: true });
+
+  return (
+    <main
+      style={{
+        minHeight: "100vh",
+        background: "#f6f2ea",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      <header
+        style={{
+          height: 72,
+          padding: "0 18px",
+          background: "#fff",
+          borderBottom: "1px solid #e5e7eb",
+          display: "grid",
+          gridTemplateColumns: "48px 1fr 96px",
+          alignItems: "center",
+          gap: 12,
+          position: "sticky",
+          top: 0,
+          zIndex: 20,
+        }}
+      >
+        <Link href="/florist-chat" style={{ fontSize: 24, textDecoration: "none", color: "#111", textAlign: "center" }}>
+          ←
+        </Link>
+
+        <div style={{ display: "flex", alignItems: "center", gap: 12, justifyContent: "center", minWidth: 0 }}>
+          <div style={{ width: 44, height: 44, borderRadius: "50%", background: "#e5e7eb", overflow: "hidden", flexShrink: 0 }}>
+            {other?.logo_url ? (
+              <img src={other.logo_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            ) : null}
+          </div>
+
+          <div style={{ minWidth: 0, textAlign: "left" }}>
+            <div style={{ fontWeight: 700, fontSize: 15, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {other?.florist_name || "Florist"}
+            </div>
+            <div style={{ fontSize: 12, color: "#666", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {other?.display_name || "Deltagare"}
+            </div>
+          </div>
+        </div>
+
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, alignItems: "center" }}>
+          <button type="button" title="Samtal" style={iconButtonStyle}>📞</button>
+          <button type="button" title="Video" style={iconButtonStyle}>🎥</button>
+        </div>
+      </header>
+
+      <section
+        style={{
+          flex: 1,
+          width: "100%",
+          maxWidth: 920,
+          margin: "0 auto",
+          padding: "18px 12px 106px",
+        }}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          {(messages ?? []).map((msg) => {
+            const isMine =
+              msg.sender_id === user?.id || msg.sender_display_name === "Nick";
+
+            return (
+              <div key={msg.id} style={{ display: "flex", justifyContent: isMine ? "flex-end" : "flex-start" }}>
+                <div
+                  style={{
+                    width: "fit-content",
+                    maxWidth: "min(78%, 520px)",
+                    padding: "12px 14px",
+                    borderRadius: isMine ? "18px 18px 4px 18px" : "18px 18px 18px 4px",
+                    backgroundColor: isMine ? (msg.read_at ? "#dcfce7" : "#dbeafe") : "#ffffff",
+                    border: isMine ? "1px solid #93c5fd" : "1px solid #e5e7eb",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+                    wordBreak: "break-word",
+                    overflowWrap: "break-word",
+                  }}
+                >
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#555" }}>
+                    {msg.sender_display_name || "Okänd"}
+                    {msg.sender_florist_name ? ` från ${msg.sender_florist_name}` : ""}
+                  </div>
+
+                  <div style={{ marginTop: 4, fontSize: 15, lineHeight: 1.5, maxWidth: "65ch", wordBreak: "break-word", overflowWrap: "break-word" }}>
+                    {msg.message_type === "audio" && msg.audio_url ? (
+                      <audio controls src={msg.audio_url} />
+                     ) : (
+                       msg.content
+                     )}
+                  </div>
+
+                  <div style={{ marginTop: 7, fontSize: 11, color: "#777", textAlign: "right" }}>
+                    {new Date(msg.created_at).toLocaleString("sv-SE")}
+                    {isMine ? ` · ${msg.read_at ? "Läst" : "Skickat"}` : ""}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      <footer
+        style={{
+          position: "fixed",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          padding: "10px 12px",
+          background: "rgba(246, 242, 234, 0.95)",
+          backdropFilter: "blur(10px)",
+          borderTop: "1px solid #e5ddd0",
+        }}
+      >
+        <form
+          action={sendMessage}
+          encType="multipart/form-data"
+          style={{
+            maxWidth: 920,
+            margin: "0 auto",
+            display: "grid",
+            gridTemplateColumns: "40px 40px 40px 1fr auto",
+            gap: 8,
+            alignItems: "center",
+          }}
+        >
+          <input type="hidden" name="conversation_id" value={conversation_id} />
+
+          <button type="button" title="Bifoga fil" style={iconButtonStyle}>📎</button>
+          <button type="button" title="Ta bild eller video" style={iconButtonStyle}>📷</button>
+          <button type="button" title="Spela in ljud" style={iconButtonStyle}><VoiceRecorder conversationId={conversation_id} />️</button>
+
+          <input
+            name="content"
+            placeholder="Skriv meddelande..."
+            style={{
+              minWidth: 0,
+              padding: "13px 15px",
+              borderRadius: 999,
+              border: "1px solid #d1d5db",
+              background: "#fff",
+              fontSize: 15,
+              outline: "none",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+            }}
+          />
+
+          <button type="submit" style={sendButtonStyle}>
+            Skicka
+          </button>
+        </form>
+      </footer>
+    </main>
+  );
+}
+
+const iconButtonStyle: React.CSSProperties = {
+  width: 40,
+  height: 40,
+  borderRadius: "50%",
+  border: "1px solid #ddd",
+  background: "#fff",
+  cursor: "pointer",
+  fontSize: 18,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+};
+
+const sendButtonStyle: React.CSSProperties = {
+  padding: "13px 18px",
+  borderRadius: 999,
+  backgroundColor: "#16a34a",
+  color: "white",
+  fontWeight: 700,
+  border: "none",
+  cursor: "pointer",
+  whiteSpace: "nowrap",
+  boxShadow: "0 2px 8px rgba(22,163,74,0.35)",
+};

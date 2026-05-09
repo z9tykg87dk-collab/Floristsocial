@@ -3,12 +3,21 @@
 import { useEffect, useState } from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
+type Like = {
+  user_id: string;
+};
+
+function shortUserId(id: string) {
+  return `Användare ${id.slice(0, 6)}`;
+}
+
 export default function LikeButton({ postId }: { postId: string }) {
   const supabase = createSupabaseBrowserClient();
 
   const [liked, setLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(0);
+  const [likes, setLikes] = useState<Like[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
   useEffect(() => {
     loadLikes();
@@ -19,22 +28,18 @@ export default function LikeButton({ postId }: { postId: string }) {
       data: { user },
     } = await supabase.auth.getUser();
 
-    const { count } = await supabase
+    setCurrentUserId(user?.id || null);
+
+    const { data } = await supabase
       .from("post_likes")
-      .select("*", { count: "exact", head: true })
+      .select("user_id")
       .eq("post_id", postId);
 
-    setLikeCount(count || 0);
+    const allLikes = data || [];
+    setLikes(allLikes);
 
     if (user) {
-      const { data } = await supabase
-        .from("post_likes")
-        .select("id")
-        .eq("post_id", postId)
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      setLiked(!!data);
+      setLiked(allLikes.some((like) => like.user_id === user.id));
     }
 
     setLoading(false);
@@ -56,47 +61,49 @@ export default function LikeButton({ postId }: { postId: string }) {
     }
 
     if (liked) {
-      const { error } = await supabase
+      await supabase
         .from("post_likes")
         .delete()
         .eq("post_id", postId)
         .eq("user_id", user.id);
-
-      if (!error) {
-        setLiked(false);
-        setLikeCount((count) => Math.max(0, count - 1));
-      }
     } else {
-      const { error } = await supabase.from("post_likes").insert({
+      await supabase.from("post_likes").insert({
         post_id: postId,
         user_id: user.id,
       });
-
-      if (!error) {
-        setLiked(true);
-        setLikeCount((count) => count + 1);
-      }
     }
 
+    await loadLikes();
     setLoading(false);
   }
+
+  const likerNames = likes
+    .map((like) => (like.user_id === currentUserId ? "Du" : shortUserId(like.user_id)))
+    .join(", ");
 
   return (
     <button
       onClick={toggleLike}
       disabled={loading}
+      title={likerNames ? `Gillas av: ${likerNames}` : "Inga likes ännu"}
       style={{
+        minHeight: 44,
+        borderRadius: 999,
+        background: liked ? "#fff1f2" : "#f9fafb",
         border: "1px solid #e5e7eb",
-        background: liked ? "#fff1f2" : "#ffffff",
         color: liked ? "#e11d48" : "#111827",
-        cursor: "pointer",
-        padding: "6px 10px",
-        borderRadius: "999px",
-        fontSize: "14px",
-        fontWeight: 600,
+        cursor: loading ? "not-allowed" : "pointer",
+        padding: "0 12px",
+        fontSize: 15,
+        fontWeight: 800,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 6,
       }}
     >
-      {liked ? "❤️ Gillad" : "🤍 Gilla"} · {likeCount}
+      <span>{liked ? "❤️ Gillad" : "🤍 Gilla"}</span>
+      <span>· {likes.length}</span>
     </button>
   );
 }

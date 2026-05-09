@@ -48,7 +48,9 @@ export default async function FeedPage() {
       <section style={hero}>
         <div>
           <div style={eyebrow}>FloristSocial</div>
+
           <h1 style={title}>Florist Feed</h1>
+
           <p style={subtitle}>
             Dela buketter, inspiration, video och produkter med andra florister.
           </p>
@@ -89,6 +91,7 @@ export default async function FeedPage() {
             <div style={header}>
               <div>
                 <strong>Florist</strong>
+
                 <div style={timeText}>
                   {new Date(post.created_at).toLocaleString("sv-SE")}
                 </div>
@@ -104,18 +107,32 @@ export default async function FeedPage() {
               {post.media_type === "video" && post.video_url ? (
                 <video src={post.video_url} controls style={media} />
               ) : (
-                post.image_url && <img src={post.image_url} alt="" style={media} />
+                post.image_url && (
+                  <img
+                    src={post.image_url}
+                    alt=""
+                    style={media}
+                  />
+                )
               )}
             </div>
 
             <div style={contentBox}>
-              {post.title && <h2 style={postTitle}>{post.title}</h2>}
+              {post.title && (
+                <h2 style={postTitle}>{post.title}</h2>
+              )}
 
-              {post.caption && <p style={caption}>{post.caption}</p>}
+              {post.caption && (
+                <p style={caption}>{post.caption}</p>
+              )}
 
-              {post.hashtags && <p style={hashtags}>{post.hashtags}</p>}
+              {post.hashtags && (
+                <p style={hashtags}>{post.hashtags}</p>
+              )}
 
-              {post.price && <p style={priceText}>{post.price} kr</p>}
+              {post.price && (
+                <p style={priceText}>{post.price} kr</p>
+              )}
             </div>
 
             {post.florist_id === user.id && (
@@ -125,13 +142,9 @@ export default async function FeedPage() {
             )}
 
             <div style={actionBar}>
-              <div style={actionItem}>
-                <LikeButton postId={post.id} />
-              </div>
+              <LikeButton postId={post.id} />
 
-              <div style={actionItem}>
-                <CommentSection postId={post.id} />
-              </div>
+              <CommentSection postId={post.id} />
 
               <div style={actionItem}>
                 <ShareButton postId={post.id} />
@@ -359,11 +372,11 @@ const actionBar: React.CSSProperties = {
   gridTemplateColumns: "1fr 1fr 1fr",
   gap: 8,
   marginBottom: "1rem",
-  alignItems: "center",
+  alignItems: "start",
 };
 
 const actionItem: React.CSSProperties = {
-  minHeight: 40,
+  minHeight: 44,
   borderRadius: 999,
   background: "#f9fafb",
   border: "1px solid #e5e7eb",
