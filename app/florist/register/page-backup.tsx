@@ -1,39 +1,60 @@
 "use client";
 
 import {
-  useEffect,
   useMemo,
   useState,
+  type Dispatch,
   type ReactNode,
+  type SetStateAction,
 } from "react";
 import {
-  Building2,
-  CalendarDays,
-  Camera,
-  Check,
-  Clock,
-  CreditCard,
-  Eye,
-  Flower2,
-  Globe,
-  ImagePlus,
-  KeyRound,
-  Mail,
-  MapPin,
-  Phone,
-  Plus,
-  Save,
-  Send,
-  ShieldCheck,
-  Store,
-  Trash2,
-  Truck,
-  UploadCloud,
   User,
+  Mail,
+  Phone,
+  Camera,
+  Building2,
+  Store,
+  Globe,
+  MapPin,
+  Clock,
+  Truck,
+  Plus,
+  Trash2,
+  Flower2,
+  ImagePlus,
+  UploadCloud,
+  Eye,
+  CreditCard,
+  ShieldCheck,
+  Check,
   X,
+  Save,
+  KeyRound,
+  Send,
 } from "lucide-react";
 
-const DRAFT_KEY = "florist-registration-draft-v3";
+function normalizeUrl(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed;
+  return "https://" + trimmed;
+}
+
+function normalizeSwedishPhone(value: string) {
+  const trimmed = value.trim().replace(/\s+/g, "");
+  if (!trimmed) return "";
+  if (trimmed.startsWith("+")) return trimmed;
+  if (trimmed.startsWith("00")) return "+" + trimmed.slice(2);
+  if (trimmed.startsWith("0")) return "+46" + trimmed.slice(1);
+  return "+46" + trimmed;
+}
+
+function generatePassword() {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!?#";
+  const array = new Uint32Array(12);
+  crypto.getRandomValues(array);
+  return Array.from(array, (x) => chars[x % chars.length]).join("");
+}
 
 const swedishCities = [
   "Stockholm", "Göteborg", "Malmö", "Uppsala", "Västerås", "Örebro",
@@ -59,13 +80,6 @@ const styleOptions = [
   "Lyxigt", "Färgstarkt", "Minimalistiskt", "Säsongsbaserat", "Exklusivt",
 ];
 
-const swedishHolidays = [
-  "Nyårsdagen", "Trettondedag jul", "Långfredagen", "Påskafton", "Påskdagen",
-  "Annandag påsk", "Första maj", "Kristi himmelsfärdsdag", "Nationaldagen",
-  "Midsommarafton", "Midsommardagen", "Alla helgons dag", "Julafton",
-  "Juldagen", "Annandag jul", "Nyårsafton",
-];
-
 const priceLevels = ["Budget", "Mellan", "Premium", "Lyx", "Varierar per uppdrag"];
 const deliveryTypes = ["Lokal leverans", "Regional leverans", "Nationella uppdrag", "Endast upphämtning", "Ingen leverans"];
 const statusOptions = ["Ny ansökan", "Under granskning", "Godkänd", "Behöver kompletteras", "Pausad"];
@@ -80,15 +94,6 @@ const defaultOpeningHours = [
   { id: 6, dayLabel: "Lördag", openTime: "10:00", closeTime: "16:00", isClosed: false, note: "" },
   { id: 7, dayLabel: "Söndag", openTime: "11:00", closeTime: "15:00", isClosed: false, note: "" },
 ];
-
-type OpeningHour = {
-  id: number;
-  dayLabel: string;
-  openTime: string;
-  closeTime: string;
-  isClosed: boolean;
-  note: string;
-};
 
 type CoverageArea = {
   id: number;
@@ -113,117 +118,20 @@ type PortfolioDraftItem = UploadedImage & {
   isSaved: boolean;
 };
 
-type HolidayOverride = {
-  id: string;
-  name: string;
-  status: "open" | "closed";
-  note: string;
-};
-
-type CalendarEvent = {
-  id: string;
-  date: string;
-  status: "open" | "closed" | "special-hours" | "activity";
-  title: string;
-  note: string;
+type OpeningHour = {
+  id: number;
+  dayLabel: string;
   openTime: string;
   closeTime: string;
-};
-
-type SeasonalClosure = {
-  id: string;
-  from: string;
-  to: string;
-  title: string;
+  isClosed: boolean;
   note: string;
 };
-
-function normalizeUrl(value: string) {
-  const trimmed = value.trim();
-  if (!trimmed) return "";
-  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed;
-  return "https://" + trimmed;
-}
-
-function normalizeSwedishPhone(value: string) {
-  const trimmed = value.trim().replace(/\s+/g, "");
-  if (!trimmed) return "";
-  if (trimmed.startsWith("+")) return trimmed;
-  if (trimmed.startsWith("00")) return "+" + trimmed.slice(2);
-  if (trimmed.startsWith("0")) return "+46" + trimmed.slice(1);
-  return "+46" + trimmed;
-}
-
-function generatePassword() {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!?#";
-  const array = new Uint32Array(12);
-  crypto.getRandomValues(array);
-  return Array.from(array, (x) => chars[x % chars.length]).join("");
-}
-
-function maskOrgNumber(value: string) {
-  const trimmed = value.trim();
-  if (!trimmed) return "";
-  if (trimmed.length <= 4) return "XXXXXX-XXXX";
-  return "XXXXXX-" + trimmed.slice(-4);
-}
-
-function collectFormDraft(form: HTMLFormElement) {
-  const formData = new FormData(form);
-  const draft: Record<string, string> = {};
-
-  formData.forEach((value, key) => {
-    if (typeof value === "string") draft[key] = value;
-  });
-
-  return draft;
-}
-
-function restoreFormDraft(form: HTMLFormElement, draft: Record<string, string>) {
-  Object.entries(draft).forEach(([key, value]) => {
-    const field = form.elements.namedItem(key);
-    if (!field) return;
-    if (field instanceof HTMLInputElement || field instanceof HTMLTextAreaElement || field instanceof HTMLSelectElement) {
-      field.value = value;
-    }
-  });
-}
-
-function getNextTwoMonths() {
-  const today = new Date();
-
-  return [0, 1].map((offset) => {
-    const first = new Date(today.getFullYear(), today.getMonth() + offset, 1);
-    const year = first.getFullYear();
-    const month = first.getMonth();
-    const numberOfDays = new Date(year, month + 1, 0).getDate();
-    const startDay = (first.getDay() + 6) % 7;
-
-    return {
-      label: first.toLocaleDateString("sv-SE", { month: "long", year: "numeric" }),
-      blanks: Array.from({ length: startDay }),
-      days: Array.from({ length: numberOfDays }, (_, index) => {
-        const date = new Date(year, month, index + 1);
-        return {
-          day: index + 1,
-          value: date.toISOString().slice(0, 10),
-        };
-      }),
-    };
-  });
-}
 
 export default function FloristSocialRegistrationPage() {
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [selectedStyles, setSelectedStyles] = useState<string[]>([]);
   const [deliveryRadius, setDeliveryRadius] = useState(15);
   const [openingHours, setOpeningHours] = useState<OpeningHour[]>(defaultOpeningHours);
-  const [holidayOverrides, setHolidayOverrides] = useState<HolidayOverride[]>(
-    swedishHolidays.map((name) => ({ id: name, name, status: "closed", note: "" }))
-  );
-  const [calendarEvents, setCalendarEvents] = useState<CalendarEvent[]>([]);
-  const [seasonalClosures, setSeasonalClosures] = useState<SeasonalClosure[]>([]);
-  const [selectedCalendarDate, setSelectedCalendarDate] = useState("");
   const [serviceUploadPrompt, setServiceUploadPrompt] = useState<string | null>(null);
   const [servicePortfolioItems, setServicePortfolioItems] = useState<Record<string, PortfolioDraftItem[]>>({});
   const [generalPortfolioItems, setGeneralPortfolioItems] = useState<PortfolioDraftItem[]>([]);
@@ -239,131 +147,53 @@ export default function FloristSocialRegistrationPage() {
     { id: 1, city: "Stockholm", area: "Annat område", postalCode: "", radius: 15, price: "" },
   ]);
 
-  useEffect(() => {
-    const savedDraft = localStorage.getItem(DRAFT_KEY);
-    if (!savedDraft) return;
+  const servicePortfolioCount = Object.values(servicePortfolioItems).reduce(
+    (total, items) => total + items.filter((item) => item.isSaved).length,
+    0
+  );
 
-    try {
-      const draft = JSON.parse(savedDraft) as Record<string, string>;
-      const form = document.querySelector<HTMLFormElement>("form[data-florist-register-form='true']");
-      if (form) restoreFormDraft(form, draft);
-    } catch (error) {
-      console.error("Kunde inte läsa sparat utkast:", error);
-    }
-  }, []);
-
-  const portfolioCount =
-    Object.values(servicePortfolioItems).reduce((total, items) => total + items.filter((item) => item.isSaved).length, 0) +
-    generalPortfolioItems.filter((item) => item.isSaved).length;
+  const generalPortfolioCount = generalPortfolioItems.filter((item) => item.isSaved).length;
+  const portfolioCount = servicePortfolioCount + generalPortfolioCount;
 
   const completionScore = useMemo(() => {
     let score = 20;
     if (selectedServices.length > 0) score += 20;
     if (selectedStyles.length > 0) score += 10;
-    if (coverageAreas.some((item) => item.city && item.price)) score += 20;
-    if (portfolioCount > 0) score += 20;
-    if (holidayOverrides.length > 0 || calendarEvents.length > 0 || seasonalClosures.length > 0) score += 10;
+    if (deliveryRadius >= 10) score += 15;
+    if (coverageAreas.length > 0) score += 20;
+    if (coverageAreas.some((item) => item.city && item.price)) score += 15;
     return Math.min(score, 100);
-  }, [selectedServices, selectedStyles, coverageAreas, portfolioCount, holidayOverrides, calendarEvents, seasonalClosures]);
+  }, [selectedServices, selectedStyles, deliveryRadius, coverageAreas]);
 
-  function saveDraft() {
-    const form = document.querySelector<HTMLFormElement>("form[data-florist-register-form='true']");
-    if (!form) return;
-    const draft = collectFormDraft(form);
-    localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
-    setSubmitSuccess("✅ Utkast sparat i webbläsaren. Bilder behöver väljas igen senare.");
-    setSubmitError("");
-  }
-
-  function clearDraft() {
-    localStorage.removeItem(DRAFT_KEY);
-    setSubmitSuccess("Utkastet är raderat från webbläsaren.");
-    setSubmitError("");
-  }
-
-  function toggleService(value: string) {
-    const exists = selectedServices.includes(value);
-    setSelectedServices(exists ? selectedServices.filter((item) => item !== value) : [...selectedServices, value]);
-    if (!exists) setServiceUploadPrompt(value);
-  }
-
-  function toggleStyle(value: string) {
-    setSelectedStyles((styles) => styles.includes(value) ? styles.filter((item) => item !== value) : [...styles, value]);
+  function toggleItem(value: string, list: string[], setter: Dispatch<SetStateAction<string[]>>) {
+    const exists = list.includes(value);
+    setter(exists ? list.filter((item) => item !== value) : [...list, value]);
+    if (!exists && setter === setSelectedServices) setServiceUploadPrompt(value);
   }
 
   function updateOpeningHour(id: number, field: keyof OpeningHour, value: string | boolean) {
-    setOpeningHours((rows) => rows.map((row) => row.id === id ? { ...row, [field]: value } : row));
-  }
-
-  function updateHoliday(id: string, field: keyof HolidayOverride, value: string) {
-    setHolidayOverrides((items) => items.map((item) => item.id === id ? { ...item, [field]: value } : item));
+    setOpeningHours((rows) => rows.map((row) => (row.id === id ? { ...row, [field]: value } : row)));
   }
 
   function updateCoverageArea(id: number, field: keyof CoverageArea, value: string | number) {
-    setCoverageAreas((areas) => areas.map((area) => {
-      if (area.id !== id) return area;
-      if (field === "city") return { ...area, city: String(value), area: "Annat område" };
-      return { ...area, [field]: value };
-    }));
+    setCoverageAreas((areas) =>
+      areas.map((area) => {
+        if (area.id !== id) return area;
+        if (field === "city") return { ...area, city: String(value), area: "Annat område" };
+        return { ...area, [field]: value };
+      })
+    );
   }
 
   function addCoverageArea() {
-    setCoverageAreas((areas) => [...areas, { id: Date.now(), city: "Stockholm", area: "Annat område", postalCode: "", radius: deliveryRadius, price: "" }]);
+    setCoverageAreas((areas) => [
+      ...areas,
+      { id: Date.now(), city: "Stockholm", area: "Annat område", postalCode: "", radius: deliveryRadius, price: "" },
+    ]);
   }
 
   function removeCoverageArea(id: number) {
     setCoverageAreas((areas) => areas.filter((area) => area.id !== id));
-  }
-
-  function addCalendarEvent(date: string) {
-    const existing = calendarEvents.find((event) => event.date === date);
-    if (existing) {
-      setSelectedCalendarDate(date);
-      return;
-    }
-
-    setCalendarEvents((events) => [
-      ...events,
-      {
-        id: `${date}-${Date.now()}`,
-        date,
-        status: "closed",
-        title: "Stängt",
-        note: "",
-        openTime: "",
-        closeTime: "",
-      },
-    ]);
-    setSelectedCalendarDate(date);
-  }
-
-  function updateCalendarEvent(id: string, field: keyof CalendarEvent, value: string) {
-    setCalendarEvents((events) => events.map((event) => event.id === id ? { ...event, [field]: value } : event));
-  }
-
-  function removeCalendarEvent(id: string) {
-    setCalendarEvents((events) => events.filter((event) => event.id !== id));
-  }
-
-  function addSeasonalClosure() {
-    setSeasonalClosures((items) => [
-      ...items,
-      {
-        id: `${Date.now()}`,
-        from: "",
-        to: "",
-        title: "Sommarstängt",
-        note: "",
-      },
-    ]);
-  }
-
-  function updateSeasonalClosure(id: string, field: keyof SeasonalClosure, value: string) {
-    setSeasonalClosures((items) => items.map((item) => item.id === id ? { ...item, [field]: value } : item));
-  }
-
-  function removeSeasonalClosure(id: string) {
-    setSeasonalClosures((items) => items.filter((item) => item.id !== id));
   }
 
   function addPortfolioFilesToForm(requestFormData: FormData) {
@@ -426,19 +256,15 @@ export default function FloristSocialRegistrationPage() {
       const requestFormData = new FormData();
       const { servicePortfolioPayload, generalPortfolioPayload } = addPortfolioFilesToForm(requestFormData);
 
+      const ownerPhone = normalizeSwedishPhone(String(formData.get("ownerPhone") || ""));
+      const shopPhone = normalizeSwedishPhone(String(formData.get("shopPhone") || formData.get("phone") || ""));
       const ownerEmail = String(formData.get("ownerEmail") || "").trim();
       const shopEmail = String(formData.get("shopEmail") || "").trim();
       const password = String(formData.get("password") || generatedPassword || "");
       const confirmPassword = String(formData.get("confirmPassword") || "");
 
-      if (!ownerEmail.includes("@") || !shopEmail.includes("@")) {
-        setSubmitError("Kontrollera e-postadresserna. Både ägarens e-post och butikens e-post måste vara giltiga.");
-        setSubmitting(false);
-        return;
-      }
-
       if (!password || password.length < 8) {
-        setSubmitError("Lösenordet måste vara minst 8 tecken.");
+        setSubmitError("Lösenordet måste vara minst 8 tecken. Generera gärna ett starkt lösenord.");
         setSubmitting(false);
         return;
       }
@@ -462,15 +288,12 @@ export default function FloristSocialRegistrationPage() {
         maskedOrganizationNumber: maskOrgNumber(String(formData.get("organizationNumber") || "")),
         shopEmail,
         publicEmail: shopEmail,
-        ownerPhone: normalizeSwedishPhone(String(formData.get("ownerPhone") || "")),
-        shopPhone: normalizeSwedishPhone(String(formData.get("shopPhone") || "")),
-        phone: normalizeSwedishPhone(String(formData.get("shopPhone") || "")),
+        ownerPhone,
+        shopPhone,
+        phone: shopPhone,
         city: String(formData.get("city") || ""),
         postalCode: String(formData.get("postalCode") || ""),
         streetAddress: String(formData.get("streetAddress") || ""),
-        addressLine2: String(formData.get("addressLine2") || ""),
-        municipality: String(formData.get("municipality") || ""),
-        county: String(formData.get("county") || ""),
         countryName: "Sverige",
         websiteUrl: normalizeUrl(String(formData.get("websiteUrl") || "")),
         instagramHandle: String(formData.get("instagramHandle") || ""),
@@ -488,26 +311,23 @@ export default function FloristSocialRegistrationPage() {
         servicePortfolioItems: servicePortfolioPayload,
         generalPortfolioItems: generalPortfolioPayload,
         openingHours,
-        holidayOverrides,
-        calendarEvents,
-        seasonalClosures,
-        closedDates: [
-          ...holidayOverrides.filter((item) => item.status === "closed").map((item) => item.name),
-          ...calendarEvents.filter((item) => item.status === "closed").map((item) => item.date),
-        ],
         status: String(formData.get("status") || "Ny ansökan"),
         plan: String(formData.get("plan") || "Free"),
         adminOwner: String(formData.get("adminOwner") || ""),
         adminNote: String(formData.get("adminNote") || ""),
         editPolicy: {
-          floristCanEdit: ["open_closed", "prices", "images", "delivery_areas", "style", "services", "opening_hours", "bio", "calendar_events", "seasonal_closures"],
+          floristCanEdit: ["open_closed", "prices", "images", "delivery_areas", "style", "services", "opening_hours", "bio"],
           requiresAdminRequest: ["address", "phone", "email", "business_name", "organization_number", "website", "contact_person", "stripe_account_id"],
         },
       };
 
       requestFormData.append("payload", JSON.stringify(payload));
 
-      const response = await fetch("/api/florists/register", { method: "POST", body: requestFormData });
+      const response = await fetch("/api/florists/register", {
+        method: "POST",
+        body: requestFormData,
+      });
+
       const result = await response.json();
 
       if (!response.ok) {
@@ -516,7 +336,6 @@ export default function FloristSocialRegistrationPage() {
         return;
       }
 
-      localStorage.removeItem(DRAFT_KEY);
       setSubmitSuccess(`✅ Registreringen skickades och floristkontot skapades. Profil: ${result.profileUrl || "skapad"}`);
     } catch (error) {
       console.error(error);
@@ -529,14 +348,15 @@ export default function FloristSocialRegistrationPage() {
   async function handleInterestSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    console.log("FloristSocial intresseanmälan:", {
+    const interest = {
       name: String(formData.get("interestName") || ""),
       company: String(formData.get("interestCompany") || ""),
       phone: normalizeSwedishPhone(String(formData.get("interestPhone") || "")),
       email: String(formData.get("interestEmail") || ""),
       message: String(formData.get("interestMessage") || ""),
       createdAt: new Date().toISOString(),
-    });
+    };
+    console.log("FloristSocial intresseanmälan:", interest);
     setSubmitSuccess("✅ Tack! Intresseanmälan är mottagen lokalt. Nästa steg är att koppla den till API/databas.");
   }
 
@@ -582,34 +402,40 @@ export default function FloristSocialRegistrationPage() {
         <div className="relative mx-auto grid max-w-7xl gap-8 lg:grid-cols-[1fr_360px]">
           <div>
             <header className="mb-8 max-w-3xl">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-medium shadow-sm"><Flower2 size={16} /> FloristSocial floristregistrering</div>
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-medium shadow-sm">
+                <Flower2 size={16} /> FloristSocial floristregistrering
+              </div>
               <h1 className="text-4xl font-semibold tracking-tight md:text-6xl">Registrera florist till FloristSocial.</h1>
-              <p className="mt-5 text-lg leading-8 text-stone-600">Komplett profil för butik, leverans, tjänster, bilder, öppettider, helgdagar och floristkalender.</p>
-              <button type="button" onClick={() => setShowInterestForm(true)} className="mt-5 rounded-2xl border border-stone-300 bg-white px-5 py-3 text-sm font-semibold hover:bg-stone-50">Vill du bara visa intresse? Öppna intresseanmälan</button>
+              <p className="mt-5 text-lg leading-8 text-stone-600">
+                Komplett profil för butik, leverans, tjänster, bilder, öppettider och admin-granskning.
+              </p>
+              <button type="button" onClick={() => setShowInterestForm(true)} className="mt-5 rounded-2xl border border-stone-300 bg-white px-5 py-3 text-sm font-semibold hover:bg-stone-50">
+                Vill du bara visa intresse? Öppna intresseanmälan
+              </button>
             </header>
 
-            <form data-florist-register-form="true" className="space-y-6" onSubmit={handleSubmit}>
+            <form className="space-y-6" onSubmit={handleSubmit}>
               <Card>
-                <SectionHeader icon={<User size={20} />} title="1. Kontaktperson & inloggning" description="Ägarens/kontaktpersonens e-post används för inloggning. Butikens e-post visas inte publikt direkt utan kontakt sker via FloristSocial." />
+                <SectionHeader icon={<User size={20} />} title="1. Kontaktperson & inloggning" description="Ägarens/kontaktpersonens e-post används för inloggning. Butikens e-post visas publikt på profilen." />
                 <div className="grid gap-4 md:grid-cols-2">
                   <Field required name="firstName" label="Förnamn" placeholder="Ex. Nick" />
                   <Field required name="lastName" label="Efternamn" placeholder="Ex. Hojjati" />
                   <Field required name="ownerEmail" label="Ägarens e-post / login" placeholder="login@foretag.se" type="email" icon={<Mail size={18} />} />
                   <Field required name="ownerPhone" label="Kontaktpersonens mobil" placeholder="070 000 00 00" type="tel" icon={<Phone size={18} />} />
-                  <PasswordFields generatedPassword={generatedPassword} onGenerated={setGeneratedPassword} />
+                  <PasswordFields generatedPassword={generatedPassword} onGenerate={() => setGeneratedPassword(generatePassword())} />
                   <Field required name="contactRole" label="Roll i företaget" placeholder="Ex. Ägare, huvudflorist, butikschef" />
                 </div>
               </Card>
 
               <Card>
-                <SectionHeader icon={<Building2 size={20} />} title="2. Företagsinformation" description="Företagsnamn kan visas på profilen. Organisationsnummer sparas men visas inte publikt." />
+                <SectionHeader icon={<Building2 size={20} />} title="2. Företagsinformation" description="Dessa uppgifter visas på floristprofilen. Organisationsnummer visas maskerat publikt." />
                 <div className="grid gap-4 md:grid-cols-2">
                   <Field required name="shopName" label="Florist namn / Butiksnamn" placeholder="Ex. Makalösa Blommor" icon={<Store size={18} />} />
                   <Field required name="legalBusinessName" label="Juridiskt företagsnamn" placeholder="Ex. Makalösa Blommor AB" />
                   <Field required name="organizationNumber" label="Organisationsnummer" placeholder="XXXXXX-XXXX" />
                   <SelectField required name="vatRegistered" label="Momsregistrerad" options={["Ja", "Nej", "Ej angivet"]} />
-                  <Field required name="shopEmail" label="Butikens e-post" placeholder="info@dinbutik.se" type="email" icon={<Mail size={18} />} />
-                  <Field required name="shopPhone" label="Butikens telefon" placeholder="08 000 00 00" type="tel" icon={<Phone size={18} />} />
+                  <Field required name="shopEmail" label="Butikens publika e-post" placeholder="info@dinbutik.se" type="email" icon={<Mail size={18} />} />
+                  <Field required name="shopPhone" label="Butikens publika telefon" placeholder="08 000 00 00" type="tel" icon={<Phone size={18} />} />
                   <UrlField name="websiteUrl" label="Webbplats" placeholder="makalosablommor.se" icon={<Globe size={18} />} />
                   <Field name="instagramHandle" label="Instagram företag" placeholder="@dinblomsterbutik" icon={<Camera size={18} />} />
                 </div>
@@ -629,19 +455,12 @@ export default function FloristSocialRegistrationPage() {
               </Card>
 
               <Card>
-                <SectionHeader icon={<Clock size={20} />} title="4. Veckoöppettider" description="Ordinarie öppettider måndag–söndag. Detta påverkar butikens grundschema." />
+                <SectionHeader icon={<Clock size={20} />} title="4. Öppettider" description="Kalender för stängda dagar flyttas senare till floristens profil/adminvy. Här registreras grundschema." />
                 <OpeningHoursEditor openingHours={openingHours} onChange={updateOpeningHour} />
               </Card>
 
               <Card>
-                <SectionHeader icon={<CalendarDays size={20} />} title="5. Helgdagar, floristkalender och specialstängt" description="Här anges svenska helgdagar, avvikande datum, aktiviteter och längre stängda perioder som sommarstängt." />
-                <HolidayOverrideEditor holidays={holidayOverrides} onChange={updateHoliday} />
-                <FloristCalendarEditor selectedDate={selectedCalendarDate} events={calendarEvents} onSelectDate={addCalendarEvent} onChange={updateCalendarEvent} onRemove={removeCalendarEvent} />
-                <SeasonalClosureEditor closures={seasonalClosures} onAdd={addSeasonalClosure} onChange={updateSeasonalClosure} onRemove={removeSeasonalClosure} />
-              </Card>
-
-              <Card>
-                <SectionHeader icon={<Truck size={20} />} title="6. Leveransradie & täckningsområden" description="Det viktigaste är stad, pris och radie. Område är valfritt och står som Annat område som standard." />
+                <SectionHeader icon={<Truck size={20} />} title="5. Leveransradie & täckningsområden" description="Det viktigaste är stad, pris och radie. Område är valfritt och står som Annat område som standard." />
                 <div className="grid gap-4 md:grid-cols-2">
                   <SelectField required name="deliveryModel" label="Leveransmodell" options={deliveryTypes} />
                   <Field required name="primaryDeliveryArea" label="Primärt leveransområde" placeholder="Ex. Stockholm med omnejd" />
@@ -674,14 +493,21 @@ export default function FloristSocialRegistrationPage() {
                       <div key={coverage.id} className="rounded-3xl border border-stone-200 bg-white p-4">
                         <div className="mb-4 flex items-center justify-between gap-3">
                           <h4 className="font-semibold">Leveransområde {index + 1}</h4>
-                          {coverageAreas.length > 1 && <button type="button" onClick={() => removeCoverageArea(coverage.id)} className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-red-600 hover:bg-red-50"><Trash2 size={16} /> Ta bort</button>}
+                          {coverageAreas.length > 1 && (
+                            <button type="button" onClick={() => removeCoverageArea(coverage.id)} className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-red-600 hover:bg-red-50">
+                              <Trash2 size={16} /> Ta bort
+                            </button>
+                          )}
                         </div>
                         <div className="grid gap-4 md:grid-cols-5">
                           <ControlledSelect label="Stad" value={coverage.city} options={swedishCities} onChange={(value) => updateCoverageArea(coverage.id, "city", value)} />
                           <ControlledSelect label="Område" value={coverage.area || "Annat område"} options={areas} onChange={(value) => updateCoverageArea(coverage.id, "area", value)} />
                           <ControlledInput label="Postnummer/gräns" value={coverage.postalCode} onChange={(value) => updateCoverageArea(coverage.id, "postalCode", value)} placeholder="Valfritt" />
                           <ControlledInput label="Pris kr" value={coverage.price} onChange={(value) => updateCoverageArea(coverage.id, "price", value)} placeholder="Ex. 99" />
-                          <label className="block"><span className="mb-2 block text-sm font-semibold">Radie: {coverage.radius} km</span><input type="range" min="1" max="150" value={coverage.radius} onChange={(event) => updateCoverageArea(coverage.id, "radius", Number(event.target.value))} className="mt-4 w-full accent-stone-900" /></label>
+                          <label className="block">
+                            <span className="mb-2 block text-sm font-semibold">Radie: {coverage.radius} km</span>
+                            <input type="range" min="1" max="150" value={coverage.radius} onChange={(event) => updateCoverageArea(coverage.id, "radius", Number(event.target.value))} className="mt-4 w-full accent-stone-900" />
+                          </label>
                         </div>
                       </div>
                     );
@@ -690,18 +516,23 @@ export default function FloristSocialRegistrationPage() {
               </Card>
 
               <Card>
-                <SectionHeader icon={<Flower2 size={20} />} title="7. Tjänster & specialiteter" description="Välj tjänster och lägg till bilder med titel, pris, beskrivning och hashtags per tjänst." />
+                <SectionHeader icon={<Flower2 size={20} />} title="6. Tjänster & specialiteter" description="Välj tjänster och lägg till bilder med titel, pris, beskrivning och hashtags per tjänst." />
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {serviceOptions.map((service) => {
                     const savedCount = servicePortfolioItems[service]?.filter((item) => item.isSaved).length || 0;
                     return (
                       <div key={service} className="space-y-2">
-                        <PillButton active={selectedServices.includes(service)} onClick={() => toggleService(service)}>{service}</PillButton>
-                        {selectedServices.includes(service) && <button type="button" onClick={() => setServiceUploadPrompt(service)} className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3 text-left text-xs font-medium text-stone-600 transition hover:border-stone-400 hover:bg-stone-50">{savedCount > 0 ? `✅ ${savedCount} portfolio-bild(er) sparade` : "Lägg till portfolio, pris och hashtags"}</button>}
+                        <PillButton active={selectedServices.includes(service)} onClick={() => toggleItem(service, selectedServices, setSelectedServices)}>{service}</PillButton>
+                        {selectedServices.includes(service) && (
+                          <button type="button" onClick={() => setServiceUploadPrompt(service)} className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3 text-left text-xs font-medium text-stone-600 transition hover:border-stone-400 hover:bg-stone-50">
+                            {savedCount > 0 ? `✅ ${savedCount} portfolio-bild(er) sparade` : "Lägg till portfolio, pris och hashtags"}
+                          </button>
+                        )}
                       </div>
                     );
                   })}
                 </div>
+
                 <div className="mt-8 grid gap-4 md:grid-cols-2">
                   <SelectField required name="priceLevel" label="Prisnivå" options={priceLevels} />
                   <Field required name="minimumBookingValue" label="Minsta bokningsvärde för event/bröllop" placeholder="Ex. 8 000 kr" inputMode="numeric" />
@@ -712,7 +543,7 @@ export default function FloristSocialRegistrationPage() {
               </Card>
 
               <Card>
-                <SectionHeader icon={<ImagePlus size={20} />} title="8. Bilder, logotyp & portfolio" description="Profilbild, logotyp och omslagsbild är valfria. Portfolio kan få titel, beskrivning, pris och hashtags." />
+                <SectionHeader icon={<ImagePlus size={20} />} title="7. Bilder, logotyp & portfolio" description="Profilbild, logotyp och omslagsbild är valfria. Portfolio kan få titel, beskrivning, pris och hashtags." />
                 <div className="grid gap-4 md:grid-cols-2">
                   <SingleImagePicker label="Profilbild" description="Visas på floristprofilen." value={profileImage} onChange={setProfileImage} />
                   <SingleImagePicker label="Logotyp" description="Visas som varumärke på profilen." value={logoImage} onChange={setLogoImage} />
@@ -726,14 +557,16 @@ export default function FloristSocialRegistrationPage() {
               </Card>
 
               <Card>
-                <SectionHeader icon={<Eye size={20} />} title="9. Stil, profil & synlighet" description="Dessa stilar visas senare på floristprofilen och hjälper kunder att välja rätt florist." />
+                <SectionHeader icon={<Eye size={20} />} title="8. Stil, profil & synlighet" description="Dessa stilar visas senare på floristprofilen och hjälper kunder att välja rätt florist." />
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                  {styleOptions.map((style) => <PillButton key={style} active={selectedStyles.includes(style)} variant="pink" onClick={() => toggleStyle(style)}>{style}</PillButton>)}
+                  {styleOptions.map((style) => (
+                    <PillButton key={style} active={selectedStyles.includes(style)} variant="pink" onClick={() => toggleItem(style, selectedStyles, setSelectedStyles)}>{style}</PillButton>
+                  ))}
                 </div>
               </Card>
 
               <Card>
-                <SectionHeader icon={<CreditCard size={20} />} title="10. Stripe & utbetalningar" description="Stripe-kontonummer sparas men ändring senare kräver adminbegäran." />
+                <SectionHeader icon={<CreditCard size={20} />} title="9. Stripe & utbetalningar" description="Stripe-kontonummer sparas men ändring senare kräver adminbegäran." />
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="rounded-3xl border border-stone-200 bg-stone-50 p-5">
                     <label className="flex items-center gap-3"><input type="radio" name="stripe_option" defaultChecked /> <strong>Har redan Stripe-konto</strong></label>
@@ -748,7 +581,7 @@ export default function FloristSocialRegistrationPage() {
               </Card>
 
               <Card>
-                <SectionHeader icon={<ShieldCheck size={20} />} title="11. Admin & godkännande" description="Intern information för granskning innan publicering." />
+                <SectionHeader icon={<ShieldCheck size={20} />} title="10. Admin & godkännande" description="Intern information för granskning innan publicering." />
                 <div className="grid gap-4 md:grid-cols-2">
                   <SelectField required name="status" label="Status" options={statusOptions} />
                   <SelectField required name="plan" label="Plan" options={planOptions} />
@@ -766,8 +599,7 @@ export default function FloristSocialRegistrationPage() {
               {submitSuccess && <div className="rounded-2xl bg-emerald-50 p-4 text-sm font-medium text-emerald-700">{submitSuccess}</div>}
 
               <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-                <Button type="button" variant="outline" onClick={saveDraft}>Spara som utkast</Button>
-                <Button type="button" variant="outline" onClick={clearDraft}>Radera utkast</Button>
+                <Button type="button" variant="outline">Spara som utkast</Button>
                 <Button type="submit">{submitting ? "Skickar..." : "Skicka registrering"}</Button>
               </div>
             </form>
@@ -776,7 +608,7 @@ export default function FloristSocialRegistrationPage() {
           <aside className="lg:sticky lg:top-8 lg:h-fit">
             <div className="rounded-3xl border-none bg-white p-6 shadow-xl">
               <h2 className="text-xl font-semibold">Profilstatus</h2>
-              <p className="mt-2 text-sm leading-6 text-stone-600">Fyll i stad, radie, pris, tjänster, bilder och kalender för att göra profilen stark.</p>
+              <p className="mt-2 text-sm leading-6 text-stone-600">Fyll i stad, radie, pris, tjänster och bilder för att göra profilen stark.</p>
               <div className="mt-6">
                 <div className="mb-2 flex items-center justify-between text-sm"><span className="font-medium">Komplett profil</span><span>{completionScore}%</span></div>
                 <div className="h-3 overflow-hidden rounded-full bg-stone-100"><div className="h-full rounded-full bg-stone-900 transition-all" style={{ width: `${completionScore}%` }} /></div>
@@ -788,7 +620,9 @@ export default function FloristSocialRegistrationPage() {
                 <StatusItem done={selectedServices.length > 0} label="Tjänster valda" />
                 <StatusItem done={selectedStyles.length > 0} label="Stilar valda" />
                 <StatusItem done={portfolioCount > 0} label={`${portfolioCount} portfolio-bild(er) sparade`} />
-                <StatusItem done={holidayOverrides.length > 0 || calendarEvents.length > 0} label="Kalender och stängda dagar" />
+              </div>
+              <div className="mt-6 rounded-2xl bg-[#fbf7f2] p-4 text-sm leading-6 text-stone-600">
+                Ändring av adress, telefon, e-post, företagsnamn, organisationsnummer, hemsida, kontaktperson och Stripe ska senare gå via adminbegäran.
               </div>
             </div>
           </aside>
@@ -798,13 +632,20 @@ export default function FloristSocialRegistrationPage() {
   );
 }
 
-function PasswordFields({ generatedPassword, onGenerated }: { generatedPassword: string; onGenerated: (value: string) => void }) {
+function maskOrgNumber(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  if (trimmed.length <= 5) return "XXXXXX-XXXX";
+  return "XXXXXX-" + trimmed.slice(-4);
+}
+
+function PasswordFields({ generatedPassword, onGenerate }: { generatedPassword: string; onGenerate: () => void }) {
   const [password, setPassword] = useState(generatedPassword);
   const [confirmPassword, setConfirmPassword] = useState(generatedPassword);
 
   function generate() {
+    onGenerate();
     const next = generatePassword();
-    onGenerated(next);
     setPassword(next);
     setConfirmPassword(next);
   }
@@ -819,8 +660,14 @@ function PasswordFields({ generatedPassword, onGenerated }: { generatedPassword:
         <Button type="button" onClick={generate}><KeyRound size={16} /> Generera lösenord</Button>
       </div>
       <div className="grid gap-4 md:grid-cols-2">
-        <label className="block"><span className="mb-2 block text-sm font-semibold">Lösenord</span><input name="password" required type="text" minLength={8} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Minst 8 tecken" className="h-12 w-full rounded-2xl border border-stone-200 bg-white px-4 outline-none transition placeholder:text-stone-400 focus:border-stone-500" /></label>
-        <label className="block"><span className="mb-2 block text-sm font-semibold">Bekräfta lösenord</span><input name="confirmPassword" required type="text" minLength={8} value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} placeholder="Upprepa lösenordet" className="h-12 w-full rounded-2xl border border-stone-200 bg-white px-4 outline-none transition placeholder:text-stone-400 focus:border-stone-500" /></label>
+        <label className="block">
+          <span className="mb-2 block text-sm font-semibold">Lösenord</span>
+          <input name="password" required type="text" minLength={8} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Minst 8 tecken" className="h-12 w-full rounded-2xl border border-stone-200 bg-white px-4 outline-none transition placeholder:text-stone-400 focus:border-stone-500" />
+        </label>
+        <label className="block">
+          <span className="mb-2 block text-sm font-semibold">Bekräfta lösenord</span>
+          <input name="confirmPassword" required type="text" minLength={8} value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} placeholder="Upprepa lösenordet" className="h-12 w-full rounded-2xl border border-stone-200 bg-white px-4 outline-none transition placeholder:text-stone-400 focus:border-stone-500" />
+        </label>
       </div>
     </div>
   );
@@ -837,106 +684,6 @@ function OpeningHoursEditor({ openingHours, onChange }: { openingHours: OpeningH
             <input type="time" value={row.openTime} disabled={row.isClosed} onChange={(event) => onChange(row.id, "openTime", event.target.value)} className="h-11 rounded-xl border border-stone-200 px-3 disabled:bg-stone-100" />
             <input type="time" value={row.closeTime} disabled={row.isClosed} onChange={(event) => onChange(row.id, "closeTime", event.target.value)} className="h-11 rounded-xl border border-stone-200 px-3 disabled:bg-stone-100" />
             <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={row.isClosed} onChange={(event) => onChange(row.id, "isClosed", event.target.checked)} /> Stängt</label>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function HolidayOverrideEditor({ holidays, onChange }: { holidays: HolidayOverride[]; onChange: (id: string, field: keyof HolidayOverride, value: string) => void }) {
-  return (
-    <div className="rounded-3xl bg-stone-50 p-5">
-      <h3 className="mb-2 font-semibold">Svenska helgdagar</h3>
-      <p className="mb-4 text-sm text-stone-600">Välj om floristen håller öppet eller stängt på respektive helgdag.</p>
-      <div className="grid gap-3 md:grid-cols-2">
-        {holidays.map((holiday) => (
-          <div key={holiday.id} className="rounded-2xl bg-white border border-stone-200 p-4">
-            <div className="font-semibold text-sm">{holiday.name}</div>
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              <button type="button" onClick={() => onChange(holiday.id, "status", "open")} className={`rounded-xl px-3 py-2 text-sm font-medium ${holiday.status === "open" ? "bg-emerald-600 text-white" : "bg-stone-100 text-stone-700"}`}>Öppet</button>
-              <button type="button" onClick={() => onChange(holiday.id, "status", "closed")} className={`rounded-xl px-3 py-2 text-sm font-medium ${holiday.status === "closed" ? "bg-red-600 text-white" : "bg-stone-100 text-stone-700"}`}>Stängt</button>
-            </div>
-            <input value={holiday.note} onChange={(event) => onChange(holiday.id, "note", event.target.value)} placeholder="Notering, t.ex. öppet 11–14" className="mt-3 h-11 w-full rounded-xl border border-stone-200 px-3 text-sm outline-none focus:border-stone-500" />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function FloristCalendarEditor({ selectedDate, events, onSelectDate, onChange, onRemove }: { selectedDate: string; events: CalendarEvent[]; onSelectDate: (date: string) => void; onChange: (id: string, field: keyof CalendarEvent, value: string) => void; onRemove: (id: string) => void }) {
-  const months = getNextTwoMonths();
-  const eventByDate = new Map(events.map((event) => [event.date, event]));
-  const selectedEvent = events.find((event) => event.date === selectedDate);
-  const weekdays = ["M", "T", "O", "T", "F", "L", "S"];
-
-  return (
-    <div className="mt-6 rounded-3xl bg-stone-50 p-5">
-      <h3 className="mb-2 font-semibold">Floristkalender: två kommande månader</h3>
-      <p className="mb-4 text-sm text-stone-600">Klicka på datum för avvikande stängt, specialöppet, aktivitet eller notering.</p>
-      <div className="grid gap-5 lg:grid-cols-2">
-        {months.map((month) => (
-          <div key={month.label} className="rounded-2xl bg-white p-4 border border-stone-200">
-            <h4 className="mb-3 font-semibold capitalize">{month.label}</h4>
-            <div className="mb-2 grid grid-cols-7 gap-1 text-center text-xs text-stone-400">
-              {weekdays.map((day, index) => <div key={`${day}-${index}`}>{day}</div>)}
-            </div>
-            <div className="grid grid-cols-7 gap-1">
-              {month.blanks.map((_, index) => <div key={`blank-${month.label}-${index}`} />)}
-              {month.days.map((day) => {
-                const event = eventByDate.get(day.value);
-                return (
-                  <button key={day.value} type="button" onClick={() => onSelectDate(day.value)} className={`aspect-square rounded-xl text-sm font-medium border ${event?.status === "closed" ? "bg-red-500 text-white border-red-500" : event?.status === "open" ? "bg-emerald-500 text-white border-emerald-500" : event?.status === "special-hours" ? "bg-amber-500 text-white border-amber-500" : event?.status === "activity" ? "bg-blue-500 text-white border-blue-500" : selectedDate === day.value ? "bg-stone-900 text-white border-stone-900" : "bg-white text-stone-700 border-stone-200 hover:border-stone-400"}`}>
-                    {day.day}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {selectedEvent && (
-        <div className="mt-5 rounded-2xl bg-white border border-stone-200 p-4">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <h4 className="font-semibold">Datum: {selectedEvent.date}</h4>
-            <button type="button" onClick={() => onRemove(selectedEvent.id)} className="rounded-xl px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50">Ta bort</button>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            <ControlledSelect label="Typ" value={selectedEvent.status} options={["closed", "open", "special-hours", "activity"]} onChange={(value) => onChange(selectedEvent.id, "status", value)} />
-            <ControlledInput label="Titel" value={selectedEvent.title} onChange={(value) => onChange(selectedEvent.id, "title", value)} placeholder="Ex. Stängt, Workshop, Specialöppet" />
-            <ControlledInput label="Öppnar" value={selectedEvent.openTime} onChange={(value) => onChange(selectedEvent.id, "openTime", value)} placeholder="Ex. 11:00" />
-            <ControlledInput label="Stänger" value={selectedEvent.closeTime} onChange={(value) => onChange(selectedEvent.id, "closeTime", value)} placeholder="Ex. 15:00" />
-            <div className="md:col-span-2"><SmallTextarea label="Notering" value={selectedEvent.note} onChange={(value) => onChange(selectedEvent.id, "note", value)} placeholder="Ex. Sommarstängt, privat event, extraöppet inför högtid." /></div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-function SeasonalClosureEditor({ closures, onAdd, onChange, onRemove }: { closures: SeasonalClosure[]; onAdd: () => void; onChange: (id: string, field: keyof SeasonalClosure, value: string) => void; onRemove: (id: string) => void }) {
-  return (
-    <div className="mt-6 rounded-3xl bg-stone-50 p-5">
-      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h3 className="font-semibold">Längre stängda perioder</h3>
-          <p className="mt-1 text-sm text-stone-600">Till exempel sommarstängt, renovering eller semesterperiod.</p>
-        </div>
-        <Button type="button" onClick={onAdd}><Plus size={16} /> Lägg till period</Button>
-      </div>
-      <div className="space-y-3">
-        {closures.length === 0 && <p className="text-sm text-stone-500">Ingen längre stängd period registrerad.</p>}
-        {closures.map((closure) => (
-          <div key={closure.id} className="rounded-2xl bg-white border border-stone-200 p-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <ControlledInput label="Från" value={closure.from} onChange={(value) => onChange(closure.id, "from", value)} placeholder="YYYY-MM-DD" />
-              <ControlledInput label="Till" value={closure.to} onChange={(value) => onChange(closure.id, "to", value)} placeholder="YYYY-MM-DD" />
-              <ControlledInput label="Rubrik" value={closure.title} onChange={(value) => onChange(closure.id, "title", value)} placeholder="Ex. Sommarstängt" />
-              <div className="flex items-end"><button type="button" onClick={() => onRemove(closure.id)} className="h-12 rounded-2xl px-4 text-sm font-medium text-red-600 hover:bg-red-50">Ta bort period</button></div>
-              <div className="md:col-span-2"><SmallTextarea label="Text till kunder" value={closure.note} onChange={(value) => onChange(closure.id, "note", value)} placeholder="Ex. Vi har sommarstängt vecka 29–31 och öppnar igen den 5 augusti." /></div>
-            </div>
           </div>
         ))}
       </div>
@@ -965,7 +712,7 @@ function ServiceUploadModal({ service, initialItems, onClose, onSave }: { servic
   }
 
   function updateItem(id: string, field: keyof PortfolioDraftItem, value: string | boolean) {
-    setItems((current) => current.map((item) => item.id === id ? { ...item, [field]: value } : item));
+    setItems((current) => current.map((item) => (item.id === id ? { ...item, [field]: value } : item)));
   }
 
   function removeItem(id: string) {
@@ -986,13 +733,22 @@ function ServiceUploadModal({ service, initialItems, onClose, onSave }: { servic
           </div>
           <button type="button" onClick={onClose} className="rounded-full p-2 hover:bg-stone-100"><X size={18} /></button>
         </div>
+
         <div onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); addFiles(event.dataTransfer.files); }} className="rounded-3xl border-2 border-dashed border-stone-300 bg-stone-50 p-5 transition hover:border-stone-500">
           <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl bg-white px-4 py-8 text-center text-sm text-stone-600 transition hover:bg-stone-100">
             <UploadCloud size={32} /> Klicka eller dra in bild/video för {service}
             <input type="file" accept="image/*,video/*" multiple onChange={(event) => addFiles(event.target.files)} className="hidden" />
           </label>
         </div>
-        {items.length > 0 && <div className="mt-5 grid gap-4 md:grid-cols-2">{items.map((item) => <PortfolioEditCard key={item.id} item={item} onUpdate={(field, value) => updateItem(item.id, field, value)} onRemove={() => removeItem(item.id)} />)}</div>}
+
+        {items.length > 0 && (
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+            {items.map((item) => (
+              <PortfolioEditCard key={item.id} item={item} onUpdate={(field, value) => updateItem(item.id, field, value)} onRemove={() => removeItem(item.id)} />
+            ))}
+          </div>
+        )}
+
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
           <Button type="button" variant="outline" onClick={onClose}>Stäng utan att fortsätta</Button>
           <Button type="button" onClick={() => onSave(items)}>Spara och fortsätt</Button>
@@ -1030,16 +786,45 @@ function SingleImagePicker({ label, description, value, onChange }: { label: str
     onChange({ id: `${file.name}-${file.size}-${Date.now()}`, file, previewUrl: URL.createObjectURL(file) });
   }
 
+  function handlePaste(event: React.ClipboardEvent<HTMLDivElement>) {
+    event.preventDefault();
+    event.stopPropagation();
+    addFile(event.clipboardData.files);
+  }
+
   return (
-    <div tabIndex={0} onDragOver={(event) => { event.preventDefault(); event.stopPropagation(); }} onDrop={(event) => { event.preventDefault(); event.stopPropagation(); addFile(event.dataTransfer.files); }} onPaste={(event) => { event.preventDefault(); event.stopPropagation(); addFile(event.clipboardData.files); }} className="rounded-3xl border-2 border-dashed border-stone-300 bg-white p-5 transition hover:border-stone-500 focus:border-stone-700 focus:outline-none">
+    <div
+      tabIndex={0}
+      onDragOver={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+      }}
+      onDrop={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        addFile(event.dataTransfer.files);
+      }}
+      onPaste={handlePaste}
+      className="rounded-3xl border-2 border-dashed border-stone-300 bg-white p-5 transition hover:border-stone-500 focus:border-stone-700 focus:outline-none"
+    >
       <h3 className="text-sm font-semibold">{label}</h3>
       <p className="mt-1 text-sm text-stone-500">{description}</p>
-      <p className="mt-2 text-xs text-stone-400">Tips: klicka i rutan och klistra in bild med Cmd+V / Ctrl+V.</p>
+      <p className="mt-2 text-xs text-stone-400">Tips: klicka i rutan och klistra in bild med ⌘V / Ctrl+V.</p>
+
       <label className="mt-4 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl bg-stone-50 px-4 py-6 text-center text-sm text-stone-600 transition hover:bg-stone-100">
         <UploadCloud size={28} /> Klicka, dra in eller klistra in bild här
         <input type="file" accept="image/*" onChange={(event) => addFile(event.target.files)} className="hidden" />
       </label>
-      {value && <div className="mt-4 overflow-hidden rounded-2xl border border-stone-200 bg-stone-50"><img src={value.previewUrl} alt={value.file.name} className="h-36 w-full object-cover" /><div className="flex items-center justify-between gap-2 p-3"><p className="truncate text-xs font-medium text-stone-700">{value.file.name}</p><button type="button" onClick={() => onChange(null)} className="rounded-xl px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50">Ta bort</button></div></div>}
+
+      {value && (
+        <div className="mt-4 overflow-hidden rounded-2xl border border-stone-200 bg-stone-50">
+          <img src={value.previewUrl} alt={value.file.name} className="h-36 w-full object-cover" />
+          <div className="flex items-center justify-between gap-2 p-3">
+            <p className="truncate text-xs font-medium text-stone-700">{value.file.name}</p>
+            <button type="button" onClick={() => onChange(null)} className="rounded-xl px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50">Ta bort</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1047,14 +832,27 @@ function SingleImagePicker({ label, description, value, onChange }: { label: str
 function GeneralPortfolioEditor({ items, onChange }: { items: PortfolioDraftItem[]; onChange: (items: PortfolioDraftItem[]) => void }) {
   function addFiles(fileList: FileList | null) {
     if (!fileList) return;
-    const nextItems = Array.from(fileList)
-      .filter((file) => file.type.startsWith("image/") || file.type.startsWith("video/"))
-      .map((file) => ({ id: `${file.name}-${file.size}-${Date.now()}-${Math.random()}`, file, previewUrl: URL.createObjectURL(file), title: "", price: "", description: "", hashtags: "", isSaved: false }));
+    const nextItems = Array.from(fileList).filter((file) => file.type.startsWith("image/") || file.type.startsWith("video/")).map((file) => ({
+      id: `${file.name}-${file.size}-${Date.now()}-${Math.random()}`,
+      file,
+      previewUrl: URL.createObjectURL(file),
+      title: "",
+      price: "",
+      description: "",
+      hashtags: "",
+      isSaved: false,
+    }));
     onChange([...items, ...nextItems]);
   }
 
+  function handlePaste(event: React.ClipboardEvent<HTMLDivElement>) {
+    event.preventDefault();
+    event.stopPropagation();
+    addFiles(event.clipboardData.files);
+  }
+
   function updateItem(id: string, field: keyof PortfolioDraftItem, value: string | boolean) {
-    onChange(items.map((item) => item.id === id ? { ...item, [field]: value } : item));
+    onChange(items.map((item) => (item.id === id ? { ...item, [field]: value } : item)));
   }
 
   function removeItem(id: string) {
@@ -1064,15 +862,34 @@ function GeneralPortfolioEditor({ items, onChange }: { items: PortfolioDraftItem
   }
 
   return (
-    <div tabIndex={0} onDragOver={(event) => { event.preventDefault(); event.stopPropagation(); }} onDrop={(event) => { event.preventDefault(); event.stopPropagation(); addFiles(event.dataTransfer.files); }} onPaste={(event) => { event.preventDefault(); event.stopPropagation(); addFiles(event.clipboardData.files); }} className="md:col-span-2 rounded-3xl border-2 border-dashed border-stone-300 bg-white p-5 transition hover:border-stone-500 focus:border-stone-700 focus:outline-none">
+    <div
+      tabIndex={0}
+      onDragOver={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+      }}
+      onDrop={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        addFiles(event.dataTransfer.files);
+      }}
+      onPaste={handlePaste}
+      className="md:col-span-2 rounded-3xl border-2 border-dashed border-stone-300 bg-white p-5 transition hover:border-stone-500 focus:border-stone-700 focus:outline-none"
+    >
       <h3 className="text-sm font-semibold">Allmän portfolio</h3>
       <p className="mt-1 text-sm text-stone-500">Frivilliga bilder med titel, beskrivning, pris och hashtags.</p>
-      <p className="mt-2 text-xs text-stone-400">Tips: klicka i rutan och klistra in bild med Cmd+V / Ctrl+V.</p>
+      <p className="mt-2 text-xs text-stone-400">Tips: klicka i rutan och klistra in bild med ⌘V / Ctrl+V.</p>
+
       <label className="mt-4 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl bg-stone-50 px-4 py-8 text-center text-sm text-stone-600 transition hover:bg-stone-100">
         <UploadCloud size={32} /> Klicka, dra in eller klistra in flera bilder/videos
         <input type="file" accept="image/*,video/*" multiple onChange={(event) => addFiles(event.target.files)} className="hidden" />
       </label>
-      {items.length > 0 && <div className="mt-5 grid gap-4 md:grid-cols-2">{items.map((item) => <PortfolioEditCard key={item.id} item={item} onUpdate={(field, value) => updateItem(item.id, field, value)} onRemove={() => removeItem(item.id)} />)}</div>}
+
+      {items.length > 0 && (
+        <div className="mt-5 grid gap-4 md:grid-cols-2">
+          {items.map((item) => <PortfolioEditCard key={item.id} item={item} onUpdate={(field, value) => updateItem(item.id, field, value)} onRemove={() => removeItem(item.id)} />)}
+        </div>
+      )}
     </div>
   );
 }
@@ -1089,16 +906,38 @@ function Button({ children, onClick, type = "button", variant = "default" }: { c
 }
 
 function SectionHeader({ icon, title, description }: { icon: ReactNode; title: string; description: string }) {
-  return <div className="mb-6 flex gap-3"><div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-stone-900 text-white">{icon}</div><div><h2 className="text-xl font-semibold">{title}</h2><p className="mt-1 text-sm leading-6 text-stone-600">{description}</p></div></div>;
+  return (
+    <div className="mb-6 flex gap-3">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-stone-900 text-white">{icon}</div>
+      <div><h2 className="text-xl font-semibold">{title}</h2><p className="mt-1 text-sm leading-6 text-stone-600">{description}</p></div>
+    </div>
+  );
 }
 
 function Field({ name, label, placeholder, icon, type = "text", inputMode, required = false, value, readOnly = false }: { name?: string; label: string; placeholder: string; icon?: ReactNode; type?: "text" | "email" | "tel" | "password"; inputMode?: "text" | "numeric" | "decimal" | "tel" | "email" | "url"; required?: boolean; value?: string; readOnly?: boolean }) {
-  return <label className="block"><span className="mb-2 block text-sm font-semibold">{label}</span><div className="relative">{icon ? <div className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400">{icon}</div> : null}<input name={name} required={required} type={type} inputMode={inputMode} placeholder={placeholder} defaultValue={value} readOnly={readOnly} className={`h-12 w-full rounded-2xl border border-stone-200 bg-white px-4 outline-none transition placeholder:text-stone-400 focus:border-stone-500 ${icon ? "pl-12" : ""} ${readOnly ? "bg-stone-100 text-stone-500" : ""}`} /></div></label>;
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm font-semibold">{label}</span>
+      <div className="relative">
+        {icon ? <div className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400">{icon}</div> : null}
+        <input name={name} required={required} type={type} inputMode={inputMode} placeholder={placeholder} defaultValue={value} readOnly={readOnly} className={`h-12 w-full rounded-2xl border border-stone-200 bg-white px-4 outline-none transition placeholder:text-stone-400 focus:border-stone-500 ${icon ? "pl-12" : ""} ${readOnly ? "bg-stone-100 text-stone-500" : ""}`} />
+      </div>
+    </label>
+  );
 }
 
 function UrlField({ name, label, placeholder, icon, required = false }: { name?: string; label: string; placeholder: string; icon?: ReactNode; required?: boolean }) {
   const [value, setValue] = useState("");
-  return <label className="block"><span className="mb-2 block text-sm font-semibold">{label}</span><div className="relative">{icon ? <div className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400">{icon}</div> : null}<input name={name} required={required} type="text" inputMode="url" value={value} onChange={(event) => setValue(event.target.value)} onBlur={() => setValue((current) => normalizeUrl(current))} placeholder={placeholder} className={`h-12 w-full rounded-2xl border border-stone-200 bg-white px-4 outline-none transition placeholder:text-stone-400 focus:border-stone-500 ${icon ? "pl-12" : ""}`} /></div><p className="mt-2 text-xs text-stone-500">Skriv t.ex. makalosablommor.se — vi lägger till https:// automatiskt.</p></label>;
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm font-semibold">{label}</span>
+      <div className="relative">
+        {icon ? <div className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400">{icon}</div> : null}
+        <input name={name} required={required} type="text" inputMode="url" value={value} onChange={(event) => setValue(event.target.value)} onBlur={() => setValue((current) => normalizeUrl(current))} placeholder={placeholder} className={`h-12 w-full rounded-2xl border border-stone-200 bg-white px-4 outline-none transition placeholder:text-stone-400 focus:border-stone-500 ${icon ? "pl-12" : ""}`} />
+      </div>
+      <p className="mt-2 text-xs text-stone-500">Skriv t.ex. makalosablommor.se — vi lägger till https:// automatiskt.</p>
+    </label>
+  );
 }
 
 function ControlledInput({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (value: string) => void; placeholder: string }) {

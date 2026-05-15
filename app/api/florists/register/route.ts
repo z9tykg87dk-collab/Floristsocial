@@ -1,293 +1,379 @@
-import { NextResponse } from "next/server";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
-function createSlug(value: string) {
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+type JsonRecord = Record<string, any>;
+
+type UploadedFileInfo = {
+  path: string;
+  url: string;
+  name: string;
+  type: string;
+  size: number;
+};
+
+function requiredEnv(name: string) {
+  const value = process.env[name];
+  if (!value) throw new Error(`Missing environment variable: ${name}`);
+  return value;
+}
+
+const supabaseUrl = requiredEnv("NEXT_PUBLIC_SUPABASE_URL");
+const serviceRoleKey = requiredEnv("SUPABASE_SERVICE_ROLE_KEY");
+
+const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false,
+  },
+});
+
+function asString(value: unknown) {
+  if (typeof value === "string") return value.trim();
+  if (value === null || value === undefined) return "";
+  return String(value).trim();
+}
+
+function normalizeSlug(value: string) {
   return value
     .toLowerCase()
     .trim()
-    .replaceAll("å", "a")
-    .replaceAll("ä", "a")
-    .replaceAll("ö", "o")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/å/g, "a")
+    .replace(/ä/g, "a")
+    .replace(/ö/g, "o")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 }
 
-function toNumberOrNull(value: unknown) {
-  if (value === null || value === undefined || value === "") return null;
-
-  const cleaned = String(value).replace(/[^\d]/g, "");
-  if (!cleaned) return null;
-
-  const number = Number(cleaned);
-  return Number.isFinite(number) ? number : null;
+function makeSlug(value: string) {
+  const base = normalizeSlug(value || "florist");
+  return `${base}-${Date.now()}`;
 }
 
-export async function POST(req: Request) {
+function parsePayload(formData: FormData): JsonRecord {
+  const rawPayload = formData.get("payload");
+
+  if (!rawPayload || typeof rawPayload !== "string") return {};
+
   try {
-    const body = await req.json();
+    const parsed = JSON.parse(rawPayload);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) return parsed;
+    return {};
+  } catch (error) {
+    console.error("Could not parse register payload:", error);
+    return {};
+  }
+}
 
-    const {
-      email,
-      firstName,
-      lastName,
-      password,
-      shopName,
-      phone,
-      city,
-      postalCode,
-      streetAddress,
-      websiteUrl,
-      instagramHandle,
-      bio,
-      deliveryRadiusKm,
-      stripeAccountId,
-      selectedServices = [],
-      coverageAreas = [],
-      servicePortfolioItems = {},
-      closedDates = [],
-      priceLevel,
-      minimumEventPrice,
-    } = body;
+function getPayloadString(payload: JsonRecord, names: string[], fallback = "") {
+  for (const name of names) {
+    const value = asString(payload[name]);
+    if (value) return value;
+  }
 
-    if (!email || !firstName || !lastName || !password) {
+  return fallback;
+}
+
+function asArray(value: any) {
+  return Array.isArray(value) ? value : [];
+}
+
+function asObject(value: any) {
+  if (value && typeof value === "object" && !Array.isArray(value)) return value;
+  return {};
+}
+
+function maskOrgNumber(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return "";
+  if (trimmed.length <= 4) return "XXXXXX-XXXX";
+  return `XXXXXX-${trimmed.slice(-4)}`;
+}
+
+async function uploadFile(bucket: string, folder: string, file: File | null): Promise<UploadedFileInfo | null> {
+  if (!file || file.size === 0) return null;
+
+  const ext = file.name.split(".").pop() || "bin";
+  const safeName =
+    file.name
+      .replace(/\.[^/.]+$/, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "upload";
+
+  const path = `${folder}/${Date.now()}-${crypto.randomUUID()}-${safeName}.${ext}`;
+  const buffer = Buffer.from(await file.arrayBuffer());
+
+  const { error } = await supabaseAdmin.storage.from(bucket).upload(path, buffer, {
+    contentType: file.type || "application/octet-stream",
+    upsert: false,
+  });
+
+  if (error) throw new Error(`Storage upload failed for ${file.name}: ${error.message}`);
+
+  const { data } = supabaseAdmin.storage.from(bucket).getPublicUrl(path);
+
+  return {
+    path,
+    url: data.publicUrl,
+    name: file.name,
+    type: file.type,
+    size: file.size,
+  };
+}
+
+function mapServicePortfolioWithUploads(
+  servicePortfolioItems: Record<string, any[]>,
+  uploadByFileKey: Record<string, UploadedFileInfo | null>
+) {
+  const result: Record<string, any[]> = {};
+
+  Object.entries(servicePortfolioItems).forEach(([serviceName, items]) => {
+    result[serviceName] = asArray(items)
+      .filter((item) => item?.isSaved)
+      .map((item) => ({
+        serviceName,
+        title: item.title || "",
+        price: item.price || "",
+        description: item.description || "",
+        hashtags: item.hashtags || "",
+        mediaType: item.mediaType || "image",
+        fileKey: item.fileKey || null,
+        image: item.fileKey ? uploadByFileKey[item.fileKey] || null : null,
+        url: item.fileKey ? uploadByFileKey[item.fileKey]?.url || null : null,
+      }));
+  });
+
+  return result;
+}
+
+function mapGeneralPortfolioWithUploads(items: any[], uploadByFileKey: Record<string, UploadedFileInfo | null>) {
+  return asArray(items)
+    .filter((item) => item?.isSaved)
+    .map((item) => ({
+      serviceName: item.serviceName || "Allmän portfolio",
+      title: item.title || "",
+      price: item.price || "",
+      description: item.description || "",
+      hashtags: item.hashtags || "",
+      mediaType: item.mediaType || "image",
+      fileKey: item.fileKey || null,
+      image: item.fileKey ? uploadByFileKey[item.fileKey] || null : null,
+      url: item.fileKey ? uploadByFileKey[item.fileKey]?.url || null : null,
+    }));
+}
+
+function flattenPortfolioImages(servicePortfolioItems: Record<string, any[]>, generalPortfolioItems: any[]) {
+  const serviceImages = Object.values(servicePortfolioItems)
+    .flat()
+    .filter((item) => item?.url || item?.image?.url);
+
+  const generalImages = asArray(generalPortfolioItems).filter((item) => item?.url || item?.image?.url);
+
+  return [...serviceImages, ...generalImages];
+}
+
+export async function POST(request: NextRequest) {
+  let authUserId: string | null = null;
+
+  try {
+    const formData = await request.formData();
+    const payload = parsePayload(formData);
+
+    console.log("REGISTER FORM KEYS:", Array.from(formData.keys()));
+    console.log("REGISTER PAYLOAD KEYS:", Object.keys(payload));
+    console.log("REGISTER PAYLOAD:", payload);
+
+    const ownerEmail = getPayloadString(payload, ["ownerEmail", "email"]);
+    const publicEmail = getPayloadString(payload, ["publicEmail", "shopEmail"], ownerEmail);
+    const password = getPayloadString(payload, ["password"]);
+    const shopName = getPayloadString(payload, ["shopName"], ownerEmail.split("@")[0] || "Florist");
+    const firstName = getPayloadString(payload, ["firstName"]);
+    const lastName = getPayloadString(payload, ["lastName"]);
+
+    if (!ownerEmail) {
       return NextResponse.json(
-        { error: "Förnamn, efternamn, e-post och lösenord måste fyllas i." },
+        { error: "E-post saknas.", receivedPayloadKeys: Object.keys(payload), receivedPayload: payload },
         { status: 400 }
       );
     }
 
-    if (password.length < 8) {
+    if (!password || password.length < 8) {
       return NextResponse.json(
-        { error: "Lösenordet måste vara minst 8 tecken." },
+        { error: "Lösenord saknas eller är för kort. Minst 8 tecken krävs." },
         { status: 400 }
       );
     }
 
-    const admin = createSupabaseAdminClient();
+    const slug = makeSlug(shopName);
+    const bucket = "florist-portfolio";
 
-    const fullName = (firstName + " " + lastName).trim();
-    const finalShopName = shopName?.trim() || fullName;
-    const slugBase = createSlug(finalShopName || "florist");
-    const slug = slugBase + "-" + Date.now();
+    const uploadByFileKey: Record<string, UploadedFileInfo | null> = {};
+    const portfolioFileEntries = Array.from(formData.entries()).filter(
+      ([key, value]) => key.startsWith("portfolioFile_") && value instanceof File && value.size > 0
+    ) as [string, File][];
 
-    const { data: createdUserData, error: createUserError } =
-      await admin.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: true,
-        user_metadata: {
-          role: "florist",
-          first_name: firstName,
-          last_name: lastName,
-          full_name: fullName,
-        },
-      });
-
-    if (createUserError) {
-      return NextResponse.json(
-        { error: createUserError.message },
-        { status: 400 }
-      );
+    for (const [fileKey, file] of portfolioFileEntries) {
+      uploadByFileKey[fileKey] = await uploadFile(bucket, `${slug}/portfolio`, file);
     }
 
-    const user = createdUserData.user;
-
-    if (!user) {
-      return NextResponse.json(
-        { error: "Kunde inte skapa användaren." },
-        { status: 500 }
-      );
-    }
-
-    const { error: profileError } = await admin.from("profiles").upsert(
-      {
-        id: user.id,
-        full_name: fullName,
-        phone: phone || null,
-        city: city || null,
-        company_name: finalShopName,
-        country_code: "SE",
-        role: "florist",
-        is_active: true,
-      },
-      { onConflict: "id" }
+    const profileUpload = await uploadFile(
+      bucket,
+      `${slug}/profile`,
+      formData.get("profileImage") instanceof File ? (formData.get("profileImage") as File) : null
     );
 
-    if (profileError) {
+    const logoUpload = await uploadFile(
+      bucket,
+      `${slug}/logo`,
+      formData.get("logo") instanceof File ? (formData.get("logo") as File) : null
+    );
+
+    const coverUpload = await uploadFile(
+      bucket,
+      `${slug}/cover`,
+      formData.get("coverImage") instanceof File ? (formData.get("coverImage") as File) : null
+    );
+
+    const servicePortfolioItems = mapServicePortfolioWithUploads(
+      asObject(payload.servicePortfolioItems),
+      uploadByFileKey
+    );
+
+    const generalPortfolioItems = mapGeneralPortfolioWithUploads(
+      asArray(payload.generalPortfolioItems),
+      uploadByFileKey
+    );
+
+    const portfolioImages = flattenPortfolioImages(servicePortfolioItems, generalPortfolioItems);
+
+    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email: ownerEmail,
+      password,
+      email_confirm: true,
+      user_metadata: {
+        role: "florist",
+        shop_name: shopName,
+        public_email: publicEmail,
+        slug,
+      },
+    });
+
+    if (authError || !authUser.user) {
       return NextResponse.json(
-        { error: "Kunde inte skapa/uppdatera profil: " + profileError.message },
-        { status: 500 }
+        { error: authError?.message || "Kunde inte skapa användare i Authentication." },
+        { status: 400 }
       );
     }
 
-    const { data: floristProfile, error: floristProfileError } = await admin
-      .from("florist_profiles")
-      .insert({
-        profile_id: user.id,
-        shop_name: finalShopName,
-        slug,
-        city: city || "Ej angivet",
-        country_code: "SE",
-        email,
-        phone: phone || null,
-        postal_code: postalCode || null,
-        street_address: streetAddress || null,
-        website_url: websiteUrl || null,
-        instagram_handle: instagramHandle || null,
-        bio: bio || null,
-        delivery_radius_km: deliveryRadiusKm ? Number(deliveryRadiusKm) : null,
-        stripe_account_id: stripeAccountId || null,
-        stripe_onboarding_complete: false,
-        accepts_referrals: true,
-        fulfills_orders: true,
-        onboarding_completed_at: null,
-      })
-      .select("id, slug")
+    authUserId = authUser.user.id;
+
+    const organizationNumber = getPayloadString(payload, ["organizationNumber"]);
+
+    const floristPayload: JsonRecord = {
+      id: authUser.user.id,
+      email: publicEmail,
+      owner_email: ownerEmail,
+      public_email: publicEmail,
+      first_name: firstName || null,
+      last_name: lastName || null,
+      shop_name: shopName,
+      legal_business_name: getPayloadString(payload, ["legalBusinessName"]),
+      organization_number: organizationNumber,
+      masked_organization_number: getPayloadString(payload, ["maskedOrganizationNumber"], maskOrgNumber(organizationNumber)),
+      role: "florist",
+      profile_name: slug,
+      slug,
+      florist_name: shopName,
+      bio: getPayloadString(payload, ["bio"], "Florist på FloristSocial 🌸"),
+      description: getPayloadString(payload, ["bio"]),
+      is_active: true,
+      phone: getPayloadString(payload, ["shopPhone", "phone"]),
+      owner_phone: getPayloadString(payload, ["ownerPhone"]),
+      website: getPayloadString(payload, ["websiteUrl"]),
+      instagram: getPayloadString(payload, ["instagramHandle"]),
+      address_line_1: getPayloadString(payload, ["streetAddress"]),
+      address_line_2: getPayloadString(payload, ["addressLine2"]),
+      postal_code: getPayloadString(payload, ["postalCode"]),
+      city: getPayloadString(payload, ["city"]),
+      municipality: getPayloadString(payload, ["municipality"]),
+      county: getPayloadString(payload, ["county"]),
+      country: getPayloadString(payload, ["country", "countryName"], "Sverige"),
+      delivery_model: getPayloadString(payload, ["deliveryModel"]),
+      delivery_radius_km: payload.deliveryRadiusKm ?? null,
+      delivery_areas: asArray(payload.coverageAreas),
+      services: asArray(payload.selectedServices),
+      styles: asArray(payload.selectedStyles),
+      price_level: getPayloadString(payload, ["priceLevel"]),
+      minimum_booking_value: getPayloadString(payload, ["minimumBookingValue"]),
+      years_in_business: getPayloadString(payload, ["yearsInBusiness"]),
+      team_size: getPayloadString(payload, ["teamSize"]),
+      opening_hours: asArray(payload.openingHours),
+      service_portfolio_items: servicePortfolioItems,
+      general_portfolio_items: generalPortfolioItems,
+      portfolio_images: portfolioImages,
+      stripe_account_id: getPayloadString(payload, ["stripeAccountId"]),
+      status: getPayloadString(payload, ["status"], "Ny ansökan"),
+      plan: getPayloadString(payload, ["plan"], "Free"),
+      admin_owner: getPayloadString(payload, ["adminOwner"]),
+      admin_note: getPayloadString(payload, ["adminNote"]),
+      edit_policy: payload.editPolicy || null,
+      profile_image_url: profileUpload?.url || logoUpload?.url || "https://placehold.co/100x100",
+      profile_image_path: profileUpload?.path || null,
+      logo_url: logoUpload?.url || null,
+      logo_path: logoUpload?.path || null,
+      cover_image_url: coverUpload?.url || null,
+      cover_image_path: coverUpload?.path || null,
+      updated_at: new Date().toISOString(),
+    };
+
+    const { data: florist, error: floristError } = await supabaseAdmin
+      .from("florists")
+      .insert(floristPayload)
+      .select("*")
       .single();
 
-    if (floristProfileError || !floristProfile) {
+    if (floristError) {
+      await supabaseAdmin.auth.admin.deleteUser(authUser.user.id);
+      authUserId = null;
+
       return NextResponse.json(
         {
-          error:
-            "Kunde inte skapa floristprofil: " +
-            (floristProfileError?.message || "Okänt fel"),
+          error: "Användaren skapades, men floristprofilen kunde inte sparas.",
+          details: floristError.message,
+          hint: "Kontrollera att nya kolumner finns i florists-tabellen.",
+          attemptedPayloadKeys: Object.keys(floristPayload),
         },
         { status: 500 }
       );
     }
 
-    const floristProfileId = floristProfile.id;
-
-    if (Array.isArray(coverageAreas) && coverageAreas.length > 0) {
-      const deliveryRows = coverageAreas
-        .filter((area: any) => area?.city || area?.area || area?.postalCode)
-        .map((area: any) => ({
-          florist_profile_id: floristProfileId,
-          city: area.city || city || "Ej angivet",
-          area: area.area || null,
-          postal_code: area.postalCode || null,
-          radius_km: area.radius ? Number(area.radius) : null,
-          delivery_price_amount: toNumberOrNull(area.price),
-        }));
-
-      if (deliveryRows.length > 0) {
-        const { error: deliveryError } = await admin
-          .from("florist_delivery_areas")
-          .insert(deliveryRows);
-
-        if (deliveryError) {
-          return NextResponse.json(
-            {
-              error:
-                "Kunde inte spara leveransområden: " + deliveryError.message,
-            },
-            { status: 500 }
-          );
-        }
-      }
-    }
-
-    if (Array.isArray(selectedServices) && selectedServices.length > 0) {
-      const serviceRows = selectedServices.map((serviceName: string) => ({
-        florist_profile_id: floristProfileId,
-        service_name: serviceName,
-        price_level: priceLevel || null,
-        minimum_price_amount: toNumberOrNull(minimumEventPrice),
-        description: null,
-        is_active: true,
-      }));
-
-      const { error: servicesError } = await admin
-        .from("florist_services")
-        .insert(serviceRows);
-
-      if (servicesError) {
-        return NextResponse.json(
-          { error: "Kunde inte spara tjänster: " + servicesError.message },
-          { status: 500 }
-        );
-      }
-    }
-
-    const portfolioRows: any[] = [];
-
-    if (servicePortfolioItems && typeof servicePortfolioItems === "object") {
-      Object.entries(servicePortfolioItems).forEach(([serviceName, items]) => {
-        if (!Array.isArray(items)) return;
-
-        items.forEach((item: any) => {
-          if (!item?.isSaved) return;
-
-          portfolioRows.push({
-            florist_profile_id: floristProfileId,
-            service_name: serviceName,
-            title: item.title || serviceName,
-            description: item.description || null,
-            price_amount: toNumberOrNull(item.price),
-            hashtags: item.hashtags || null,
-            media_url: item.mediaUrl || null,
-            media_type: item.mediaType || "image",
-            is_public: true,
-          });
-        });
-      });
-    }
-
-    if (portfolioRows.length > 0) {
-      const { error: portfolioError } = await admin
-        .from("florist_portfolio_items")
-        .insert(portfolioRows);
-
-      if (portfolioError) {
-        return NextResponse.json(
-          {
-            error:
-              "Kunde inte spara portfolio-bilder: " + portfolioError.message,
-          },
-          { status: 500 }
-        );
-      }
-    }
-
-    if (Array.isArray(closedDates) && closedDates.length > 0) {
-      const closedRows = closedDates.map((item: string) => {
-        const isDate = /^\d{4}-\d{2}-\d{2}$/.test(item);
-
-        return {
-          florist_profile_id: floristProfileId,
-          closed_label: item,
-          closed_date: isDate ? item : null,
-          reason: isDate ? "Stängd dag" : "Svensk helgdag",
-        };
-      });
-
-      const { error: closedDaysError } = await admin
-        .from("florist_closed_days")
-        .insert(closedRows);
-
-      if (closedDaysError) {
-        return NextResponse.json(
-          {
-            error:
-              "Kunde inte spara stängda dagar: " + closedDaysError.message,
-          },
-          { status: 500 }
-        );
-      }
-    }
-
-    return NextResponse.json({
-      success: true,
-      message: "Floristkonto skapat. Du kan nu logga in.",
-      userId: user.id,
-      floristProfileId,
-      slug: floristProfile.slug,
-    });
+    return NextResponse.json(
+      {
+        success: true,
+        florist,
+        floristId: florist.id,
+        slug: florist.slug,
+        profileUrl: `/florist/${florist.id}`,
+      },
+      { status: 201 }
+    );
   } catch (error) {
-    console.error("Florist register error:", error);
+    console.error("Florist registration error:", error);
+
+    if (authUserId) {
+      await supabaseAdmin.auth.admin.deleteUser(authUserId).catch(() => null);
+    }
 
     return NextResponse.json(
-      { error: "Serverfel vid registrering." },
+      {
+        error: "Registreringen misslyckades.",
+        details: error instanceof Error ? error.message : String(error),
+      },
       { status: 500 }
     );
   }

@@ -1,0 +1,332 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+type JsonRecord = Record<string, any>;
+
+type IncomingBody = {
+  kind: "form" | "json";
+  formData?: FormData;
+  json?: JsonRecord;
+};
+
+function getValue(body: IncomingBody, names: string[]) {
+  if (body.kind === "form" && body.formData) {
+    for (const name of names) {
+      const value = body.formData.get(name);
+      const text = asString(value);
+      if (text) return text;
+    }
+  }
+
+  if (body.kind === "json" && body.json) {
+    for (const name of names) {
+      const value = body.json[name];
+      const text = asString(value);
+      if (text) return text;
+    }
+  }
+
+  return "";
+}
+
+function getJsonValue(body: IncomingBody, names: string[], fallback: any) {
+  if (body.kind === "form" && body.formData) {
+    for (const name of names) {
+      const parsed = safeJsonParse(body.formData.get(name), undefined);
+      if (parsed !== undefined) return parsed;
+    }
+  }
+
+  if (body.kind === "json" && body.json) {
+    for (const name of names) {
+      if (body.json[name] !== undefined && body.json[name] !== null) return body.json[name];
+    }
+  }
+
+  return fallback;
+}
+
+function requiredEnv(name: string) {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`Missing environment variable: ${name}`);
+  }
+  return value;
+}
+
+const supabaseUrl = requiredEnv("NEXT_PUBLIC_SUPABASE_URL");
+const serviceRoleKey = requiredEnv("SUPABASE_SERVICE_ROLE_KEY");
+
+const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
+  auth: {
+    autoRefreshToken: false,
+    persistSession: false,
+  },
+});
+
+function normalizeSlug(value: string) {
+  return value
+    .toLowerCase()
+    .trim()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/å/g, "a")
+    .replace(/ä/g, "a")
+    .replace(/ö/g, "o")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function makeUniqueSlug(name: string) {
+  const base = normalizeSlug(name || "florist");
+  return `${base}-${Date.now()}`;
+}
+
+function asString(value: unknown) {
+  if (typeof value === "string") return value.trim();
+  if (value === null || value === undefined) return "";
+  return String(value).trim();
+}
+
+function safeJsonParse(value: FormDataEntryValue | null, fallback: any) {
+  if (!value || typeof value !== "string") return fallback;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+}
+
+async function uploadFile(bucket: string, folder: string, file: File | null) {
+  if (!file || file.size === 0) return null;
+
+  const ext = file.name.split(".").pop() || "bin";
+  const safeName = file.name
+    .replace(/\.[^/.]+$/, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "upload";
+
+  const path = `${folder}/${Date.now()}-${crypto.randomUUID()}-${safeName}.${ext}`;
+  const arrayBuffer = await file.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+
+  const { error } = await supabaseAdmin.storage
+    .from(bucket)
+    .upload(path, buffer, {
+      contentType: file.type || "application/octet-stream",
+      upsert: false,
+    });
+
+  if (error) {
+    throw new Error(`Storage upload failed for ${file.name}: ${error.message}`);
+  }
+
+  const { data } = supabaseAdmin.storage.from(bucket).getPublicUrl(path);
+
+  return {
+    path,
+    url: data.publicUrl,
+    name: file.name,
+    type: file.type,
+    size: file.size,
+  };
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const contentType = request.headers.get("content-type") || "";
+
+    let body: IncomingBody;
+
+    if (contentType.includes("application/json")) {
+      const json = (await request.json()) as JsonRecord;
+      body = { kind: "json", json };
+      console.log("REGISTER JSON KEYS:", Object.keys(json));
+    } else {
+      const formData = await request.formData();
+      body = { kind: "form", formData };
+      console.log("REGISTER FORM KEYS:", Array.from(formData.keys()));
+    }
+
+    console.log("REGISTER CONTENT TYPE:", contentType);
+
+    const email = getValue(body, [
+      "email",
+      "contactEmail",
+      "contact_email",
+      "businessEmail",
+      "business_email",
+      "ownerEmail",
+      "owner_email",
+      "personalEmail",
+      "personal_email",
+      "accountEmail",
+      "account_email",
+    ]);
+
+    const password = getValue(body, [
+      "password",
+      "confirmPassword",
+      "accountPassword",
+      "account_password",
+      "newPassword",
+      "new_password",
+    ]);
+
+    const floristName = getValue(body, [
+      "floristName",
+      "florist_name",
+      "businessName",
+      "business_name",
+      "shopName",
+      "shop_name",
+      "name",
+      "displayName",
+      "display_name",
+    ]);
+
+    const shopName = getValue(body, ["shopName", "shop_name", "businessName", "business_name"]) || floristName;
+
+    if (!email) {
+      return NextResponse.json({ error: "E-post saknas." }, { status: 400 });
+    }
+
+    if (!password || password.length < 6) {
+      return NextResponse.json(
+        { error: "Lösenord saknas eller är för kort." },
+        { status: 400 }
+      );
+    }
+
+    if (!floristName) {
+      return NextResponse.json(
+        { error: "Floristnamn/butiksnamn saknas." },
+        { status: 400 }
+      );
+    }
+
+    const slug = makeUniqueSlug(floristName);
+    const folder = slug;
+    const portfolioBucket = "portfolio";
+
+    const formData = body.kind === "form" ? body.formData! : null;
+
+    const logoFile = formData?.get("logo") instanceof File ? (formData.get("logo") as File) : null;
+    const coverFile = formData?.get("coverImage") instanceof File ? (formData.get("coverImage") as File) : null;
+    const profileFile = formData?.get("profileImage") instanceof File ? (formData.get("profileImage") as File) : null;
+
+    const portfolioFiles = formData
+      ? formData.getAll("portfolio").filter((item): item is File => item instanceof File && item.size > 0)
+      : [];
+
+    const [logoUpload, coverUpload, profileUpload] = await Promise.all([
+      uploadFile(portfolioBucket, `${folder}/logo`, logoFile),
+      uploadFile(portfolioBucket, `${folder}/cover`, coverFile),
+      uploadFile(portfolioBucket, `${folder}/profile`, profileFile),
+    ]);
+
+    const portfolioUploads = await Promise.all(
+      portfolioFiles.map((file) => uploadFile(portfolioBucket, `${folder}/portfolio`, file))
+    );
+
+    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: {
+        role: "florist",
+        florist_name: floristName,
+        shop_name: shopName,
+        slug,
+      },
+    });
+
+    if (authError || !authUser.user) {
+      return NextResponse.json(
+        { error: authError?.message || "Kunde inte skapa användare." },
+        { status: 400 }
+      );
+    }
+
+    const floristPayload: JsonRecord = {
+      user_id: authUser.user.id,
+      email,
+      slug,
+      florist_name: floristName,
+      shop_name: shopName,
+      phone: getValue(body, ["phone", "phoneNumber", "phone_number", "telephone"]),
+      website: getValue(body, ["website", "webUrl", "web_url"]),
+      instagram: getValue(body, ["instagram", "personalInstagram", "personal_instagram"]),
+      business_instagram: getValue(body, ["businessInstagram", "business_instagram", "companyInstagram", "company_instagram"]),
+      address_line_1: getValue(body, ["addressLine1", "address_line_1", "address", "streetAddress", "street_address"]),
+      address_line_2: getValue(body, ["addressLine2", "address_line_2"]),
+      postal_code: getValue(body, ["postalCode", "postal_code", "zip", "zipCode", "zip_code"]),
+      city: getValue(body, ["city", "stad"]),
+      area: getValue(body, ["area", "omrade", "område"]),
+      municipality: getValue(body, ["municipality", "kommun"]),
+      county: getValue(body, ["county", "lan", "län"]),
+      description: getValue(body, ["description", "about", "bio", "presentation"]),
+      delivery_model: getValue(body, ["deliveryModel", "delivery_model"]),
+      delivery_areas: getJsonValue(body, ["deliveryAreas", "delivery_areas"], []),
+      services: getJsonValue(body, ["services", "serviceTypes", "service_types"], []),
+      opening_hours: getJsonValue(body, ["openingHours", "opening_hours"], {}),
+      closed_dates: getJsonValue(body, ["closedDates", "closed_dates"], []),
+      stripe_account_id: getValue(body, ["stripeAccountId", "stripe_account_id"]),
+      logo_url: logoUpload?.url || null,
+      logo_path: logoUpload?.path || null,
+      cover_image_url: coverUpload?.url || null,
+      cover_image_path: coverUpload?.path || null,
+      profile_image_url: profileUpload?.url || null,
+      profile_image_path: profileUpload?.path || null,
+      portfolio_images: portfolioUploads.filter(Boolean),
+      status: "pending",
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+
+    const { data: florist, error: floristError } = await supabaseAdmin
+      .from("florists")
+      .insert(floristPayload)
+      .select("*")
+      .single();
+
+    if (floristError) {
+      await supabaseAdmin.auth.admin.deleteUser(authUser.user.id);
+
+      return NextResponse.json(
+        {
+          error: "Användaren skapades, men floristprofilen kunde inte sparas.",
+          details: floristError.message,
+          hint: "Kontrollera att tabellen florists och kolumnerna i floristPayload finns i Supabase.",
+        },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json(
+      {
+        success: true,
+        florist,
+        floristId: florist.id,
+        slug: florist.slug,
+        profileUrl: `/florist/${florist.slug}`,
+      },
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error("Florist registration error:", error);
+
+    return NextResponse.json(
+      {
+        error: "Registreringen misslyckades.",
+        details: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 }
+    );
+  }
+}
+
