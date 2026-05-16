@@ -16,7 +16,7 @@ type PageProps = {
 };
 
 function isUuid(value: string) {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 }
 
 function asArray(value: any) {
@@ -150,17 +150,30 @@ function nextTwoMonths() {
 
 export default async function FloristProfilePage({ params }: PageProps) {
   const { id } = await params;
-  const lookupColumn = isUuid(id) ? "id" : "slug";
+  const cleanedId = decodeURIComponent(id).trim();
 
-  const { data: florist, error } = await supabase
+  const idLookup = await supabase
     .from("florists")
     .select("*")
-    .eq(lookupColumn, id)
-    .single();
+    .eq("id", cleanedId)
+    .maybeSingle();
+
+  const slugLookup = idLookup.data
+    ? { data: null, error: null }
+    : await supabase
+        .from("florists")
+        .select("*")
+        .eq("slug", cleanedId)
+        .maybeSingle();
+
+  const florist = idLookup.data || slugLookup.data;
+  const error = idLookup.error || slugLookup.error;
 
   console.log("FLORIST PROFILE LOOKUP:", {
     id,
-    lookupColumn,
+    cleanedId,
+    isUuid: isUuid(cleanedId),
+    foundBy: idLookup.data ? "id" : slugLookup.data ? "slug" : "none",
     florist,
     error,
   });
@@ -245,27 +258,36 @@ export default async function FloristProfilePage({ params }: PageProps) {
             <div className="flex-1">
               <div className="flex flex-wrap gap-2 mb-4">
                 {florist.role && <span className="rounded-full bg-green-100 text-green-700 px-4 py-1 text-sm font-medium">{florist.role}</span>}
-                {florist.price_level && <span className="rounded-full bg-pink-100 text-pink-700 px-4 py-1 text-sm font-medium">{florist.price_level}</span>}
+                {florist.price_level && (
+                  <span className="rounded-full bg-pink-100 text-pink-700 px-4 py-1 text-sm font-medium">
+                    Prisklass: {florist.price_level}
+                  </span>
+                )}
                 {florist.delivery_model && <span className="rounded-full bg-blue-100 text-blue-700 px-4 py-1 text-sm font-medium">{florist.delivery_model}</span>}
               </div>
 
               <h2 className="text-3xl font-bold mb-3">{shopName}</h2>
               <p className="text-neutral-600 text-lg leading-relaxed max-w-3xl">{floristStory}</p>
-              {florist.bio && <p className="text-neutral-500 leading-7 mt-4 max-w-3xl">{florist.bio}</p>}
+              {florist.bio && (
+                <div className="mt-5 max-w-3xl rounded-3xl bg-neutral-50 border border-neutral-200 p-5">
+                  <h3 className="font-bold text-neutral-900 mb-2">Floristen beskriver sig</h3>
+                  <p className="text-neutral-600 leading-7">{florist.bio}</p>
+                </div>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-8 text-sm">
                 {florist.legal_business_name && <InfoCard label="Företagsnamn" value={florist.legal_business_name} />}
                 {florist.city && <InfoCard label="Stad" value={florist.city} />}
                 {florist.country && <InfoCard label="Land" value={florist.country} />}
-                {florist.price_level && <InfoCard label="Prisnivå" value={florist.price_level} />}
-                {florist.minimum_booking_value && <InfoCard label="Minsta bokningsvärde" value={formatPrice(florist.minimum_booking_value)} />}
+                {florist.price_level && <InfoCard label="Prisklass" value={florist.price_level} />}
+                {florist.minimum_booking_value && <InfoCard label="Minsta ordervärde" value={formatPrice(florist.minimum_booking_value)} />}
                 {florist.years_in_business && <InfoCard label="År i branschen" value={`${florist.years_in_business} år`} />}
                 {florist.team_size && <InfoCard label="Team" value={`${florist.team_size} florist(er)`} />}
               </div>
 
               <div className="mt-8 flex flex-col sm:flex-row gap-3">
-                <Link href={`/messages/new?floristId=${florist.id}`} className="rounded-2xl bg-black text-white px-6 py-3 text-center font-semibold hover:opacity-90 transition">
-                  Kontakta floristen via FloristSocial
+                <Link href={`/messages/new?floristId=${florist.id}`} className="rounded-2xl bg-pink-600 text-white px-6 py-3 text-center font-semibold hover:bg-pink-700 transition">
+                  Chatta via FloristSocial
                 </Link>
                 <Link href={`/orders/new?floristId=${florist.id}`} className="rounded-2xl border border-neutral-300 px-6 py-3 text-center font-semibold hover:bg-neutral-50 transition">
                   Starta beställning

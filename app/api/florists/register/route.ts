@@ -94,6 +94,37 @@ function maskOrgNumber(value: string) {
   return `XXXXXX-${trimmed.slice(-4)}`;
 }
 
+function buildClosedDates(payload: JsonRecord) {
+  const closedHolidayNames = asArray(payload.holidayOverrides)
+    .filter((item) => item?.status === "closed")
+    .map((item) => item?.name)
+    .filter(Boolean);
+
+  const closedCalendarDates = asArray(payload.calendarEvents)
+    .filter((item) => item?.status === "closed")
+    .map((item) => item?.date)
+    .filter(Boolean);
+
+  const seasonalDateRanges = asArray(payload.seasonalClosures)
+    .filter((item) => item?.from || item?.to || item?.title || item?.note)
+    .map((item) => ({
+      type: "seasonal_closure",
+      from: item?.from || "",
+      to: item?.to || "",
+      title: item?.title || "Stängt",
+      note: item?.note || "",
+    }));
+
+  return [
+    ...new Set([
+      ...asArray(payload.closedDates).map(String),
+      ...closedHolidayNames.map(String),
+      ...closedCalendarDates.map(String),
+    ]),
+    ...seasonalDateRanges,
+  ];
+}
+
 async function uploadFile(bucket: string, folder: string, file: File | null): Promise<UploadedFileInfo | null> {
   if (!file || file.size === 0) return null;
 
@@ -273,6 +304,10 @@ export async function POST(request: NextRequest) {
     authUserId = authUser.user.id;
 
     const organizationNumber = getPayloadString(payload, ["organizationNumber"]);
+    const closedDates = buildClosedDates(payload);
+    const holidayOverrides = asArray(payload.holidayOverrides);
+    const calendarEvents = asArray(payload.calendarEvents);
+    const seasonalClosures = asArray(payload.seasonalClosures);
 
     const floristPayload: JsonRecord = {
       id: authUser.user.id,
@@ -309,10 +344,14 @@ export async function POST(request: NextRequest) {
       services: asArray(payload.selectedServices),
       styles: asArray(payload.selectedStyles),
       price_level: getPayloadString(payload, ["priceLevel"]),
-      minimum_booking_value: getPayloadString(payload, ["minimumBookingValue"]),
+      minimum_booking_value: getPayloadString(payload, ["minimumOrderValue", "minimumBookingValue"]),
       years_in_business: getPayloadString(payload, ["yearsInBusiness"]),
       team_size: getPayloadString(payload, ["teamSize"]),
       opening_hours: asArray(payload.openingHours),
+      holiday_overrides: holidayOverrides,
+      calendar_events: calendarEvents,
+      seasonal_closures: seasonalClosures,
+      closed_dates: closedDates,
       service_portfolio_items: servicePortfolioItems,
       general_portfolio_items: generalPortfolioItems,
       portfolio_images: portfolioImages,
@@ -322,7 +361,7 @@ export async function POST(request: NextRequest) {
       admin_owner: getPayloadString(payload, ["adminOwner"]),
       admin_note: getPayloadString(payload, ["adminNote"]),
       edit_policy: payload.editPolicy || null,
-      profile_image_url: profileUpload?.url || logoUpload?.url || "https://placehold.co/100x100",
+      profile_image_url: profileUpload?.url || "https://placehold.co/100x100",
       profile_image_path: profileUpload?.path || null,
       logo_url: logoUpload?.url || null,
       logo_path: logoUpload?.path || null,
@@ -345,7 +384,7 @@ export async function POST(request: NextRequest) {
         {
           error: "Användaren skapades, men floristprofilen kunde inte sparas.",
           details: floristError.message,
-          hint: "Kontrollera att nya kolumner finns i florists-tabellen.",
+          hint: "Kontrollera att nya kolumner finns i florists-tabellen: holiday_overrides, calendar_events och seasonal_closures.",
           attemptedPayloadKeys: Object.keys(floristPayload),
         },
         { status: 500 }
