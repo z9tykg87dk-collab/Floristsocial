@@ -1,14 +1,15 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
+  AlertTriangle,
   Building2,
   CalendarDays,
   Check,
   Clock,
   CreditCard,
+  FileCheck2,
   FileText,
-  Gift,
   ImagePlus,
   KeyRound,
   Mail,
@@ -16,14 +17,15 @@ import {
   PackageCheck,
   Phone,
   Send,
+  ShieldCheck,
   ShoppingBag,
-  Sparkles,
   Truck,
   UploadCloud,
   User,
 } from "lucide-react";
 
 const invoiceMethods = ["E-post", "E-faktura", "Brev"];
+const paymentMethods = ["Betalkort med Stripe", "Klarna", "Banköverföring", "Faktura"];
 
 const orderTypes = [
   "Bukett",
@@ -56,16 +58,15 @@ const priceOptions = [
   "Annat pris",
 ];
 
-const cardOptions = ["Inget kort", "Gratis kort", "35 kr", "60 kr", "75 kr"];
+const cardOptions = ["35 kr", "60 kr", "75 kr"];
 const deliveryMethods = ["Avhämtning från butiken XXX", "Leverans"];
-const paymentMethods = ["Betalkort med Stripe", "Klarna", "Swish", "Banköverföring", "Faktura efter godkänd kreditkontroll"];
 const swedishCities = ["Stockholm", "Göteborg", "Malmö", "Uppsala", "Örebro", "Linköping", "Annan ort"];
-
-const PREVIEW_CUSTOMER_NUMBER = "FSF-26-PREVIEW";
-const PREVIEW_CREATED_AT = "2026-05-18 14:00";
+const invoiceStatuses = ["pending_review", "approved", "denied", "cash_only", "blocked"];
 
 function generateCustomerNumber() {
-  return PREVIEW_CUSTOMER_NUMBER;
+  const year = new Date().getFullYear().toString().slice(-2);
+  const random = Math.floor(100000 + Math.random() * 900000);
+  return `FSF-${year}-${random}`;
 }
 
 function generatePassword() {
@@ -76,28 +77,44 @@ function generatePassword() {
 }
 
 function nowStamp() {
-  return PREVIEW_CREATED_AT;
+  return new Date().toLocaleString("sv-SE", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 export default function CompanyRegistrationAndOrderPage() {
-  const [customerNumber] = useState(generateCustomerNumber);
-  const [createdAt] = useState(nowStamp);
+  const [mounted, setMounted] = useState(false);
+  const [customerNumber, setCustomerNumber] = useState("Skapas när sidan laddas");
+  const [createdAt, setCreatedAt] = useState("Skapas när sidan laddas");
   const [registrationCity, setRegistrationCity] = useState("Stockholm");
   const [generatedPassword, setGeneratedPassword] = useState("");
   const [selectedOrderType, setSelectedOrderType] = useState("Bukett");
   const [selectedPrice, setSelectedPrice] = useState("750 kr");
   const [customPrice, setCustomPrice] = useState("");
   const [quantity, setQuantity] = useState(1);
-  const [selectedCardPrice, setSelectedCardPrice] = useState("Inget kort");
+  const [selectedCardPrice, setSelectedCardPrice] = useState("35 kr");
   const [deliveryMethod, setDeliveryMethod] = useState("Leverans");
   const [paymentMethod, setPaymentMethod] = useState("Betalkort med Stripe");
+  const invoiceStatus = "pending_review";
   const [doorAllowed, setDoorAllowed] = useState(false);
   const [uploadedImageName, setUploadedImageName] = useState("");
   const [extraProducts, setExtraProducts] = useState<string[]>([]);
   const [submitMessage, setSubmitMessage] = useState("");
 
+  useEffect(() => {
+    setCustomerNumber(generateCustomerNumber());
+    setCreatedAt(nowStamp());
+    setMounted(true);
+  }, []);
+
   const orderCreatedText = useMemo(() => `${createdAt}, ${registrationCity}`, [createdAt, registrationCity]);
   const displayPrice = selectedPrice === "Annat pris" ? customPrice || "Annat pris" : selectedPrice;
+  const invoiceAllowed = invoiceStatus === "approved";
+  const selectedPaymentNeedsReview = paymentMethod === "Faktura" && !invoiceAllowed;
 
   function toggleExtraProduct(product: string) {
     setExtraProducts((items) => items.includes(product) ? items.filter((item) => item !== product) : [...items, product]);
@@ -105,12 +122,18 @@ export default function CompanyRegistrationAndOrderPage() {
 
   function handleRegistrationSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSubmitMessage(`✅ Företagsregistrering skapad för kundnummer ${customerNumber}. Nästa steg är att koppla formuläret till Supabase/API.`);
+    setSubmitMessage(`✅ Företagsregistrering skapad för kundnummer ${customerNumber}. Faktura sätts som pending_review tills manuell kreditkontroll är godkänd.`);
   }
 
   function handleOrderSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSubmitMessage(`✅ Företagsorder skapad för kundnummer ${customerNumber}. Beställning: ${selectedOrderType}, ${displayPrice}, antal ${quantity}.`);
+
+    if (paymentMethod === "Faktura" && !invoiceAllowed) {
+      setSubmitMessage("⚠️ Företaget är inte godkänt för faktura ännu. Välj Betalkort med Stripe, Klarna eller Banköverföring, eller invänta godkännande för faktura.");
+      return;
+    }
+
+    setSubmitMessage(`✅ Företagsorder skapad för kundnummer ${customerNumber}. Betalsätt: ${paymentMethod}. Beställning: ${selectedOrderType}, ${displayPrice}, antal ${quantity}. Momskvitto i PDF ska skickas direkt efter genomförd betalning.`);
   }
 
   return (
@@ -129,7 +152,7 @@ export default function CompanyRegistrationAndOrderPage() {
               För att kunna genomföra företagsbeställningar som ska betalas med faktura, fyll i formuläret nedan. Vi bekräftar beställningen inom kort. Ni kan även ringa oss till telefonnummer <strong>08-673 73 48</strong> för mer information och/eller för beställningar samt vid önskad snabbleverans.
             </p>
             <p className="mt-3 text-base leading-7 text-stone-600">
-              Fraktkostnad beräknas utifrån avståndet mellan levererande florist/blomsterbutik och leveransadressen.
+              Fraktkostnad beräknas utifrån avståndet mellan levererande florist/blomsterbutik och leveransadressen. Företag kan även betala med betalkort, banköverföring eller Klarna utan kreditkontroll. Faktura kräver att företaget först registreras och godkänns manuellt.
             </p>
           </header>
 
@@ -139,7 +162,7 @@ export default function CompanyRegistrationAndOrderPage() {
             <div className="space-y-8">
               <form onSubmit={handleRegistrationSubmit} className="space-y-6">
                 <Card>
-                  <SectionHeader icon={<Building2 size={20} />} title="Företagsregistrering" description="Alla fält med röd stjärna är obligatoriska. Datum, tid, ort och kundnummer genereras på formuläret." />
+                  <SectionHeader icon={<Building2 size={20} />} title="Företagsregistrering" description="Alla fält med röd stjärna är obligatoriska. Datum, tid, ort och kundnummer genereras på formuläret. Faktura kan väljas först efter att FloristSocial har kontrollerat och godkänt företaget." />
 
                   <div className="grid gap-4 md:grid-cols-3">
                     <ReadOnlyField label="Datum och tid" value={createdAt} icon={<CalendarDays size={18} />} />
@@ -162,6 +185,10 @@ export default function CompanyRegistrationAndOrderPage() {
                     <Field required name="contactEmail" label="E-post" placeholder="E-post kontaktperson" type="email" icon={<Mail size={18} />} />
                     <Field required name="contactPhone" label="Telefonnummer" placeholder="Till ex.: Telefonnummer kontaktperson" type="tel" icon={<Phone size={18} />} />
                     <PasswordFields generatedPassword={generatedPassword} onGenerated={setGeneratedPassword} />
+                  </div>
+
+                  <div className="mt-6 rounded-2xl bg-amber-50 p-4 text-sm leading-6 text-amber-800">
+                    <ShieldCheck size={16} className="mr-1 inline" /> Fakturaköp aktiveras först efter manuell kontroll av företaget. Företag kan alltid välja direktbetalning med Betalkort med Stripe, Klarna eller Banköverföring.
                   </div>
 
                   <div className="mt-6 flex justify-end">
@@ -211,6 +238,21 @@ export default function CompanyRegistrationAndOrderPage() {
                     <SelectField required name="cardPrice" label="Hälsningskort" options={cardOptions} value={selectedCardPrice} onChange={setSelectedCardPrice} />
                   </div>
 
+                  <div className="mt-8 grid gap-4 md:grid-cols-2">
+                    <SelectField required name="paymentMethod" label="Betalningssätt" options={paymentMethods} value={paymentMethod} onChange={setPaymentMethod} />
+                    <div className={`rounded-2xl p-4 text-sm leading-6 ${selectedPaymentNeedsReview ? "bg-amber-50 text-amber-800" : "bg-emerald-50 text-emerald-800"}`}>
+                      {paymentMethod === "Faktura" ? (
+                        invoiceAllowed ? (
+                          <><FileCheck2 size={16} className="mr-1 inline" /> Företaget är godkänt för faktura. Faktura kan genereras efter leverans.</>
+                        ) : (
+                          <><AlertTriangle size={16} className="mr-1 inline" /> Faktura kräver manuell kontroll och status approved. Välj direktbetalning om företaget inte är godkänt.</>
+                        )
+                      ) : (
+                        <><Check size={16} className="mr-1 inline" /> {paymentMethod} kräver ingen kreditkontroll. Momskvitto i PDF skickas direkt efter genomförd betalning.</>
+                      )}
+                    </div>
+                  </div>
+
                   <div className="mt-6 grid gap-4 md:grid-cols-2">
                     <Textarea name="cardText" label="Hälsningskort Text" placeholder="Till ex.: Hälsningar från Morbror Johan" />
                     <Textarea name="specialRequests" label="Special önskemål" placeholder="Till ex.: Färgglad, pollenfri ..." />
@@ -237,13 +279,6 @@ export default function CompanyRegistrationAndOrderPage() {
                     </div>
                   )}
 
-                  <div className="mt-8 grid gap-4 md:grid-cols-2">
-                    <SelectField required name="paymentMethod" label="Betalningssätt" options={paymentMethods} value={paymentMethod} onChange={setPaymentMethod} />
-                    <div className="rounded-2xl bg-stone-50 p-4 text-sm leading-6 text-stone-600">
-                      <strong>Betalkort med Stripe visas först.</strong> Faktura kräver manuell kreditkontroll innan företaget kan handla mot faktura.
-                    </div>
-                  </div>
-
                   <div className="mt-8">
                     <h3 className="mb-3 font-semibold">Extra produkter som beställaren kan klicka och köpa</h3>
                     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -251,6 +286,10 @@ export default function CompanyRegistrationAndOrderPage() {
                         <PillButton key={product} active={extraProducts.includes(product)} onClick={() => toggleExtraProduct(product)} variant="pink">{product}</PillButton>
                       ))}
                     </div>
+                  </div>
+
+                  <div className="mt-6 rounded-2xl bg-stone-50 p-4 text-sm leading-6 text-stone-600">
+                    <strong>Betalning och dokument:</strong> Om betalningssättet är faktura ska fakturan genereras efter leveransen av produkten till mottagaren. Vid Betalkort med Stripe, Klarna eller Banköverföring ska appen skapa och skicka momskvitto i PDF direkt efter genomförd betalning, så företaget kan bokföra köpet och dra av moms.
                   </div>
 
                   <div className="mt-6 flex justify-end">
@@ -266,17 +305,17 @@ export default function CompanyRegistrationAndOrderPage() {
                 <div className="mt-5 space-y-4 text-sm text-stone-700">
                   <SummaryRow label="Kundnummer" value={customerNumber} />
                   <SummaryRow label="Datum, tid och ort" value={orderCreatedText} />
+                  <SummaryRow label="Betalningssätt" value={paymentMethod} />
                   <SummaryRow label="Beställning" value={selectedOrderType} />
                   <SummaryRow label="Pris" value={displayPrice} />
                   <SummaryRow label="Antal" value={String(quantity)} />
                   <SummaryRow label="Hälsningskort" value={selectedCardPrice} />
                   <SummaryRow label="Metod" value={deliveryMethod} />
-                  <SummaryRow label="Betalningssätt" value={paymentMethod} />
                   <SummaryRow label="Dörrhängning" value={doorAllowed ? "Ja" : "Nej"} />
                   <SummaryRow label="Extra produkter" value={extraProducts.length ? extraProducts.join(", ") : "Inga valda"} />
                 </div>
                 <div className="mt-6 rounded-2xl bg-stone-50 p-4 text-sm leading-6 text-stone-600">
-                  <strong>Obs:</strong> Fakturaflödet, kundnummer i databas, orderbekräftelse och fraktberäkning kopplas i nästa steg till Supabase/API.
+                  <strong>Obs:</strong> Nästa steg är API/Supabase-tabeller för företagskunder, företagsorder, Stripe/Klarna/bankbetalning, PDF-momskvitto direkt efter betalning och faktura efter leverans för godkända fakturakunder.
                 </div>
               </div>
             </aside>
@@ -342,6 +381,10 @@ function SectionHeader({ icon, title, description }: { icon: ReactNode; title: s
 
 function Required() {
   return <span className="text-red-600">*</span>;
+}
+
+function ChecklistItem({ text }: { text: string }) {
+  return <label className="flex items-start gap-3 rounded-2xl bg-white p-4 text-sm text-stone-700 border border-stone-200"><input type="checkbox" className="mt-1 h-4 w-4 accent-stone-900" /><span>{text}</span></label>;
 }
 
 function Field({ name, label, placeholder, icon, type = "text", required = false }: { name?: string; label: string; placeholder: string; icon?: ReactNode; type?: "text" | "email" | "tel" }) {

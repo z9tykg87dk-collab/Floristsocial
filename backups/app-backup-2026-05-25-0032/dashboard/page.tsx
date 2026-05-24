@@ -1,0 +1,378 @@
+import Link from "next/link";
+import { redirect } from "next/navigation";
+
+import { ProductForm } from "@/components/dashboard/product-form";
+import { OrderStatusForm } from "@/components/dashboard/order-status-form";
+import { StripeConnectCard } from "@/components/dashboard/stripe-connect-card";
+import { getCurrentUser } from "@/lib/auth";
+import {
+  getMissingRequiredEnv,
+  getMissingStripeConnectEnv,
+  hasRequiredEnv,
+} from "@/lib/env";
+import {
+  formatSek,
+  getFloristOrders,
+  getFloristPayoutRecords,
+} from "@/lib/orders";
+import { getCurrentProfileBundle } from "@/lib/profile";
+import { getProductsForFlorist } from "@/lib/products";
+import { getStripeConnectSummary } from "@/lib/stripe-connect";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+
+export default async function DashboardPage() {
+  const supabase = await createSupabaseServerClient();
+
+  const {
+    data: { user: authUser },
+  } = await supabase.auth.getUser();
+
+  if (!authUser) {
+    redirect("/login");
+  }
+  const missingEnv = getMissingRequiredEnv();
+  const userEmail = await getUserEmail();
+  const user = await getCurrentUser();
+  const bundle = user ? await getCurrentProfileBundle(user.id) : null;
+  const floristProfile = bundle?.floristProfile ?? null;
+  const profile = bundle?.profile ?? null;
+  const products = floristProfile
+    ? await getProductsForFlorist(floristProfile.id)
+    : [];
+  const floristOrders = floristProfile
+    ? await getFloristOrders(floristProfile.id)
+    : [];
+  const floristPayouts = floristProfile
+    ? await getFloristPayoutRecords(floristProfile.id)
+    : [];
+  const stripeSummary = floristProfile?.stripe_account_id
+    ? await getStripeConnectSummary(floristProfile.stripe_account_id)
+    : null;
+  const missingStripeConnectEnv = getMissingStripeConnectEnv();
+
+  return (
+    <main className="mx-auto flex min-h-screen max-w-4xl flex-col px-6 py-16">
+      <p className="text-sm font-semibold uppercase tracking-[0.35em] text-amber-700">
+        Florist dashboard
+      </p>
+  <p className="text-sm font-semibold uppercase tracking-[0.35em] text-stone-500">
+  Florist dashboard
+  </p>
+
+  <a
+    href="/logout"
+    style={{
+      display: "inline-block",
+      marginTop: "1rem",
+      padding: "0.5rem 1rem",
+      background: "black",
+      color: "white",
+      borderRadius: "6px",
+      textDecoration: "none",
+    }}
+  >
+    Logga ut
+  </a>
+      <h1 className="mt-4 text-4xl font-semibold tracking-tight text-stone-900">
+        Orders, products and payout visibility in one place.
+      </h1>
+      <p className="mt-4 max-w-2xl text-base leading-7 text-stone-600">
+        This will become the florist operational surface for onboarding,
+        products, order status updates and payout records.
+      </p>
+      {missingEnv.length > 0 ? (
+        <div className="mt-8 rounded-3xl border border-amber-300 bg-amber-50 p-5 text-sm leading-6 text-amber-900">
+          Missing environment variables: {missingEnv.join(", ")}. Configure
+          these before testing authenticated routes.
+        </div>
+      ) : null}
+      <div className="mt-8 rounded-[2rem] border border-stone-300 bg-white/80 p-6">
+        <p className="text-sm font-semibold uppercase tracking-[0.3em] text-stone-500">
+          Session status
+        </p>
+        <h2 className="mt-3 text-2xl font-semibold text-stone-900">
+          {userEmail ? `Signed in as ${userEmail}` : "No active session yet"}
+        </h2>
+        <p className="mt-3 max-w-2xl text-sm leading-6 text-stone-600">
+          Use magic-link sign-in now, then extend this to role-based route
+          protection and florist onboarding.
+        </p>
+        {!userEmail ? (
+          <Link
+            href="/auth/sign-in?next=/dashboard"
+            className="mt-6 inline-flex rounded-full bg-stone-950 px-5 py-3 text-sm font-semibold text-stone-50 transition hover:bg-stone-800"
+          >
+            Go to sign in
+          </Link>
+        ) : null}
+      </div>
+      {userEmail ? (
+        <div className="mt-8 grid gap-4 md:grid-cols-3">
+        <div className="rounded-[2rem] border border-stone-300 bg-white/80 p-6">
+         <p className="text-sm font-semibold uppercase tracking-[0.3em] text-stone-500">
+           Role
+         </p>
+         <h2 className="mt-3 text-2xl font-semibold text-stone-900">
+           Florist
+         </h2>
+         <p className="mt-3 text-sm leading-6 text-stone-600">
+           The onboarding flow upgrades the signed-in account to `florist`
+           and stores the public shop details.
+         </p>
+       </div>
+          <div className="rounded-[2rem] border border-stone-300 bg-white/80 p-6">
+            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-stone-500">
+              Onboarding
+            </p>
+            <h2 className="mt-3 text-2xl font-semibold text-stone-900">
+              {floristProfile ? floristProfile.shop_name : "Not started"}
+            </h2>
+            <p className="mt-3 text-sm leading-6 text-stone-600">
+              {floristProfile
+                ? `Slug: ${floristProfile.slug}. City: ${floristProfile.city}.`
+                : "Create the florist profile before adding products and Stripe Connect onboarding."}
+            </p>
+            <Link
+              href="/onboarding/florist"
+              className="mt-6 inline-flex rounded-full border border-stone-900 px-5 py-3 text-sm font-semibold text-stone-900 transition hover:bg-stone-900 hover:text-stone-50"
+            >
+              {floristProfile ? "Edit florist profile" : "Start onboarding"}
+            </Link>
+          </div>
+          {floristProfile ? (
+            <StripeConnectCard
+              hasStripeAccount={Boolean(floristProfile.stripe_account_id)}
+              isOnboardingComplete={floristProfile.stripe_onboarding_complete}
+              accountId={floristProfile.stripe_account_id}
+              chargesEnabled={stripeSummary?.chargesEnabled ?? false}
+              payoutsEnabled={stripeSummary?.payoutsEnabled ?? false}
+              detailsSubmitted={stripeSummary?.detailsSubmitted ?? false}
+              hasStripeEnv={missingStripeConnectEnv.length === 0}
+            />
+          ) : (
+            <div className="rounded-[2rem] border border-stone-300 bg-white/80 p-6">
+              <p className="text-sm font-semibold uppercase tracking-[0.3em] text-stone-500">
+                Stripe Connect
+              </p>
+              <h2 className="mt-3 text-2xl font-semibold text-stone-900">
+                Waiting for florist profile
+              </h2>
+              <p className="mt-3 text-sm leading-6 text-stone-600">
+                Finish florist onboarding before creating a connected payout
+                account.
+              </p>
+            </div>
+          )}
+        </div>
+      ) : null}
+      {userEmail && floristProfile ? (
+        <section className="mt-8 grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">
+          <div className="rounded-[2rem] border border-stone-300 bg-white/80 p-6">
+            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-stone-500">
+              Add product
+            </p>
+            <h2 className="mt-3 text-2xl font-semibold text-stone-900">
+              Publish the first marketplace listings.
+            </h2>
+            <p className="mt-3 text-sm leading-6 text-stone-600">
+              Products created here will appear in the public marketplace when
+              marked active.
+            </p>
+            <div className="mt-6">
+              <ProductForm />
+            </div>
+          </div>
+          <div className="rounded-[2rem] border border-stone-300 bg-white/80 p-6">
+            <div className="flex items-end justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-[0.3em] text-stone-500">
+                  Product catalog
+                </p>
+                <h2 className="mt-3 text-2xl font-semibold text-stone-900">
+                  {products.length} product{products.length === 1 ? "" : "s"}
+                </h2>
+              </div>
+              <Link
+                href="/marketplace"
+                className="rounded-full border border-stone-900 px-4 py-2 text-sm font-semibold text-stone-900 transition hover:bg-stone-900 hover:text-stone-50"
+              >
+                View marketplace
+              </Link>
+            </div>
+            {products.length > 0 ? (
+              <div className="mt-6 space-y-3">
+                {products.map((product) => (
+                  <article
+                    key={product.id}
+                    className="rounded-3xl border border-stone-200 bg-stone-50 px-4 py-4"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <h3 className="text-lg font-semibold text-stone-900">
+                          {product.title}
+                        </h3>
+                        <p className="mt-1 text-sm text-stone-600">
+                          {product.category || "Uncategorized"} ·{" "}
+                          {product.occasion || "No occasion set"}
+                        </p>
+                      </div>
+                      <div className="rounded-full bg-stone-950 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-stone-50">
+                        {product.is_active ? "Live" : "Draft"}
+                      </div>
+                    </div>
+                    <p className="mt-3 text-sm leading-6 text-stone-600">
+                      {product.description || "No description yet."}
+                    </p>
+                    <div className="mt-4 flex items-center justify-between gap-4 text-sm">
+                      <span className="font-medium text-stone-900">
+                        {product.price_amount} SEK
+                      </span>
+                      <span className="text-stone-500">{product.slug}</span>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="mt-6 rounded-3xl border border-dashed border-stone-300 bg-stone-50 p-6">
+                <p className="text-sm leading-6 text-stone-600">
+                  No products yet. Add the first listing to validate the
+                  marketplace flow end to end.
+                </p>
+              </div>
+            )}
+          </div>
+        </section>
+      ) : null}
+      {userEmail && floristProfile ? (
+        <section className="mt-8 grid gap-4 xl:grid-cols-2">
+          <div className="rounded-[2rem] border border-stone-300 bg-white/80 p-6">
+            <div className="flex items-end justify-between gap-4">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-[0.3em] text-stone-500">
+                  Incoming orders
+                </p>
+                <h2 className="mt-3 text-2xl font-semibold text-stone-900">
+                  {floristOrders.length} order{floristOrders.length === 1 ? "" : "s"}
+                </h2>
+              </div>
+              <Link
+                href="/orders"
+                className="rounded-full border border-stone-900 px-4 py-2 text-sm font-semibold text-stone-900 transition hover:bg-stone-900 hover:text-stone-50"
+              >
+                Customer view
+              </Link>
+            </div>
+            {floristOrders.length > 0 ? (
+              <div className="mt-6 space-y-3">
+                {floristOrders.map((order) => (
+                  <article
+                    key={order.id}
+                    className="rounded-3xl border border-stone-200 bg-stone-50 px-4 py-4"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <h3 className="text-lg font-semibold text-stone-900">
+                          Order #{order.order_number}
+                        </h3>
+                        <p className="mt-1 text-sm text-stone-600">
+                          Recipient: {order.recipient_name}
+                        </p>
+                      </div>
+                      <div className="rounded-full bg-stone-950 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-stone-50">
+                        {order.status}
+                      </div>
+                    </div>
+                    <div className="mt-4 flex items-center justify-between gap-4 text-sm">
+                      <span className="text-stone-600">
+                        {order.delivery_city || "No city"}
+                      </span>
+                      <span className="font-medium text-stone-900">
+                        {formatSek(order.total_amount)}
+                      </span>
+                    </div>
+                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                      <Link
+                        href={`/orders/${order.id}`}
+                        className="text-sm font-semibold text-stone-900 underline-offset-4 hover:underline"
+                      >
+                        Open details
+                      </Link>
+                      <OrderStatusForm
+                        orderId={order.id}
+                        currentStatus={order.status}
+                      />
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="mt-6 rounded-3xl border border-dashed border-stone-300 bg-stone-50 p-6">
+                <p className="text-sm leading-6 text-stone-600">
+                  No florist orders yet. Orders appear here after successful
+                  customer checkout.
+                </p>
+              </div>
+            )}
+          </div>
+          <div className="rounded-[2rem] border border-stone-300 bg-white/80 p-6">
+            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-stone-500">
+              Payout records
+            </p>
+            <h2 className="mt-3 text-2xl font-semibold text-stone-900">
+              {floristPayouts.length} payout{floristPayouts.length === 1 ? "" : "s"}
+            </h2>
+            {floristPayouts.length > 0 ? (
+              <div className="mt-6 space-y-3">
+                {floristPayouts.map((payout) => (
+                  <article
+                    key={payout.id}
+                    className="rounded-3xl border border-stone-200 bg-stone-50 px-4 py-4"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <h3 className="text-lg font-semibold text-stone-900">
+                          {formatSek(payout.amount)}
+                        </h3>
+                        <p className="mt-1 text-sm text-stone-600">
+                          Order {payout.order_id}
+                        </p>
+                      </div>
+                      <div className="rounded-full bg-stone-950 px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-stone-50">
+                        {payout.status}
+                      </div>
+                    </div>
+                    <div className="mt-4">
+                      <Link
+                        href={`/orders/${payout.order_id}`}
+                        className="text-sm font-semibold text-stone-900 underline-offset-4 hover:underline"
+                      >
+                        Open order details
+                      </Link>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <div className="mt-6 rounded-3xl border border-dashed border-stone-300 bg-stone-50 p-6">
+                <p className="text-sm leading-6 text-stone-600">
+                  No payout records yet. Completed Stripe Checkout sessions will
+                  create them through the webhook.
+                </p>
+              </div>
+            )}
+          </div>
+        </section>
+      ) : null}
+    </main>
+  );
+}
+
+async function getUserEmail() {
+  const supabase = await createSupabaseServerClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  return user?.email ?? null;
+}
