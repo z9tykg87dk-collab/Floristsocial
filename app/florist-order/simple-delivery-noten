@@ -1,0 +1,241 @@
+import Link from "next/link";
+import { ArrowLeft, QrCode } from "lucide-react";
+
+const order = {
+  type: "Inrikes",
+  receivedAt: "2026-05-26 14:35:23",
+  orderId: "FS-FL-2026-00482",
+  deliveryDate: "2026-05-28",
+  deliveryWeekday: "Torsdag",
+  recipient: {
+    name: "Erik Andersson",
+    address: "Storgatan 18",
+    postalCity: "114 55 Stockholm",
+    country: "SVERIGE",
+    phone: "073-222 33 44",
+    portCode: "1234",
+    canHangOnDoor: "Nej",
+    floor: "3",
+    apartment: "1202",
+  },
+  cardText: "Grattis på födelsedagen!\nVarma kramar från oss.",
+  products: [
+    { name: "Blommor", description: "Bukett romantiskt · floristens val", qty: "1 st.", sum: "625 kr" },
+    { name: "Kort", description: "Hälsningskort", qty: "1 st.", sum: "50 kr" },
+    { name: "Band", description: "Bandtext", qty: "1 st.", sum: "350 kr" },
+    { name: "Choklad", description: "Tillval", qty: "1 st.", sum: "100 kr" },
+    { name: "Vas", description: "Tillval", qty: "1 st.", sum: "350 kr" },
+  ],
+  deliveryFee: "200 kr",
+  total: "1 675 kr",
+  orderingFlorist: {
+    name: "Makalösa Blommor",
+    address1: "Sveavägen 102",
+    address2: "113 50 Stockholm",
+    email: "info@makalosablommor.se",
+    phone: "08-673 73 48",
+  },
+  performingFlorist: {
+    name: "Blomsterateljén Stockholm",
+    address1: "Floragatan 12",
+    address2: "114 31 Stockholm",
+    email: "order@blomsterateljen.se",
+    phone: "08-111 22 33",
+  },
+  buyer: {
+    name: "Anna Svensson",
+    phone: "070-123 45 67",
+  },
+};
+
+export default function SimpleDeliveryNotePrintPage() {
+  return (
+    <main style={{ minWidth: 980, minHeight: "100vh", background: "#f3f0ea", color: "#111827", padding: "24px 0 60px", fontFamily: "Arial, sans-serif" }}>
+      <div className="no-print" style={{ width: 900, margin: "0 auto 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <Link href="/florist-order/delivery-note" style={{ display: "inline-flex", alignItems: "center", gap: 8, textDecoration: "none", color: "#111827", fontWeight: 700 }}>
+          <ArrowLeft size={18} /> Till modern leveranssedel
+        </Link>
+        <button onClick={() => window.print()} style={{ height: 42, borderRadius: 10, border: "1px solid #111827", background: "#111827", color: "white", padding: "0 16px", fontWeight: 700, cursor: "pointer" }}>
+          Skriv ut / PDF
+        </button>
+      </div>
+
+      <section style={{ width: 900, margin: "0 auto", background: "white", padding: 28, boxShadow: "0 10px 35px rgba(0,0,0,0.08)" }}>
+        <header style={{ textAlign: "center", borderBottom: "1px solid #d1d5db", paddingBottom: 18 }}>
+          <div style={{ fontSize: 32, fontWeight: 900, letterSpacing: "-0.04em" }}>FloristSocial</div>
+          <div style={{ marginTop: 4, fontSize: 12, fontWeight: 800, color: "#e60073", letterSpacing: "0.14em", textTransform: "uppercase" }}>En smidig förmedlingstjänst</div>
+        </header>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 20, borderBottom: "1px solid #d1d5db", padding: "18px 0" }}>
+          <StrongLine label="Typ:" value={order.type} />
+          <StrongLine label="Inkom:" value={order.receivedAt} />
+          <StrongLine label="Order ID:" value={order.orderId} alignRight />
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr 1fr", gap: 22, borderBottom: "1px solid #d1d5db", padding: "18px 0" }}>
+          <div>
+            <Title>Leveransdatum: {order.deliveryDate} {order.deliveryWeekday}</Title>
+            <Title top>Leverans till:</Title>
+            <AddressBlock />
+          </div>
+
+          <div>
+            <Title>Ev. portkod:</Title>
+            <p style={smallText}>{order.recipient.portCode || "Ej angiven"}</p>
+            <Title top>Får hängas på dörren:</Title>
+            <p style={smallText}>{order.recipient.canHangOnDoor}</p>
+            <Title top>Våning / lägenhet:</Title>
+            <p style={smallText}>Våning {order.recipient.floor}, lgh {order.recipient.apartment}</p>
+          </div>
+
+          <div>
+            <Title>Extra meddelande:</Title>
+            <p style={smallText}>Ring mottagaren om porten är låst.</p>
+          </div>
+        </div>
+
+        <div style={{ borderBottom: "1px solid #d1d5db", padding: "16px 0" }}>
+          <Title>Korttext:</Title>
+          <p style={{ ...smallText, whiteSpace: "pre-line" }}>{order.cardText}</p>
+        </div>
+
+        <table style={{ width: "100%", borderCollapse: "collapse", marginTop: 12, fontSize: 14 }}>
+          <thead>
+            <tr style={{ borderBottom: "1px solid #d1d5db" }}>
+              <th style={thLeft}>Vara</th>
+              <th style={thCenter}>Antal</th>
+              <th style={thRight}>Summa</th>
+            </tr>
+          </thead>
+          <tbody>
+            {order.products.map((item) => (
+              <tr key={`${item.name}-${item.sum}`} style={{ borderBottom: "1px solid #f3f4f6" }}>
+                <td style={tdLeft}><strong>{item.name}</strong> ({item.description})</td>
+                <td style={tdCenter}>{item.qty}</td>
+                <td style={tdRight}>{item.sum}</td>
+              </tr>
+            ))}
+            <tr>
+              <td style={tdLeft}></td>
+              <td style={{ ...tdCenter, fontWeight: 900 }}>Fraktkostnad</td>
+              <td style={tdRight}>{order.deliveryFee}</td>
+            </tr>
+            <tr>
+              <td style={tdLeft}></td>
+              <td style={{ ...tdCenter, fontWeight: 900 }}>Totalt</td>
+              <td style={{ ...tdRight, fontWeight: 900 }}>{order.total}</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, borderTop: "1px solid #d1d5db", borderBottom: "1px solid #d1d5db", padding: "18px 0", marginTop: 18 }}>
+          <ShopBlock title="Beställande butik:" shop={order.orderingFlorist} />
+          <ShopBlock title="Utförande butik:" shop={order.performingFlorist} />
+        </div>
+
+        <div style={{ padding: "16px 0", borderBottom: "1px solid #d1d5db" }}>
+          <Title>Beställarens uppgifter (frivilligt):</Title>
+          <p style={smallText}>{order.buyer.name}</p>
+          <p style={smallText}>{order.buyer.phone}</p>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0, marginTop: 18, borderBottom: "1px solid #d1d5db" }}>
+          <MiniSlip />
+          <MiniSlip />
+        </div>
+
+        <div style={{ pageBreakBefore: "always", paddingTop: 34 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
+            <QrSlip />
+            <QrSlip />
+          </div>
+          <div style={{ width: 360, margin: "26px auto 0" }}>
+            <MiniSlip noBorder />
+            <QrSlip compact />
+          </div>
+        </div>
+      </section>
+
+      <style>{`
+        @media print {
+          body { background: white !important; }
+          .no-print { display: none !important; }
+          main { background: white !important; padding: 0 !important; }
+          section { box-shadow: none !important; width: 100% !important; margin: 0 !important; }
+        }
+      `}</style>
+    </main>
+  );
+}
+
+function AddressBlock() {
+  return (
+    <div style={smallText}>
+      <div>{order.recipient.name}</div>
+      <div>{order.recipient.address}</div>
+      <div>{order.recipient.postalCity}</div>
+      <div>{order.recipient.country}</div>
+      <a href={`tel:${order.recipient.phone}`} style={{ color: "#1d4ed8" }}>{order.recipient.phone}</a>
+    </div>
+  );
+}
+
+function MiniSlip({ noBorder = false }: { noBorder?: boolean }) {
+  return (
+    <div style={{ borderRight: noBorder ? "0" : "1px solid #d1d5db", padding: "0 22px 22px" }}>
+      <Title>Leveransdatum: {order.deliveryDate}</Title>
+      <p style={smallText}>{order.deliveryWeekday}</p>
+      <Title top>Leverans till:</Title>
+      <AddressBlock />
+      <Title top>Ev. portkod:</Title>
+      <p style={smallText}>{order.recipient.portCode || "Ej angiven"}</p>
+      <Title top>Utförande butik:</Title>
+      <p style={smallText}>{order.performingFlorist.name}<br />{order.performingFlorist.address1}<br />{order.performingFlorist.address2}<br />{order.performingFlorist.email}<br />{order.performingFlorist.phone}</p>
+    </div>
+  );
+}
+
+function QrSlip({ compact = false }: { compact?: boolean }) {
+  return (
+    <div style={{ padding: compact ? "26px 0 0" : "0 26px 26px", textAlign: "center" }}>
+      <div style={{ textAlign: "left", display: "inline-block" }}>
+        <Title>Order ID</Title>
+        <div style={{ fontWeight: 800, fontSize: 16 }}>{order.orderId}</div>
+      </div>
+      <div style={{ height: 132, width: 132, margin: "18px auto 10px", display: "grid", placeItems: "center", border: "1px solid #111827" }}>
+        <QrCode size={104} />
+      </div>
+      <p style={{ margin: 0, fontSize: 14, lineHeight: 1.45 }}>Använd mobilkameran på QR-kod<br />för att leveransbekräfta.</p>
+    </div>
+  );
+}
+
+function ShopBlock({ title, shop }: { title: string; shop: { name: string; address1: string; address2: string; email: string; phone: string } }) {
+  return (
+    <div>
+      <Title>{title}</Title>
+      <p style={smallText}>{shop.name}<br />{shop.address1}<br />{shop.address2}<br />{shop.email}<br />{shop.phone}</p>
+    </div>
+  );
+}
+
+function StrongLine({ label, value, alignRight = false }: { label: string; value: string; alignRight?: boolean }) {
+  return (
+    <div style={{ textAlign: alignRight ? "right" : "left", fontSize: 14 }}>
+      <strong>{label}</strong> {value}
+    </div>
+  );
+}
+
+function Title({ children, top = false }: { children: React.ReactNode; top?: boolean }) {
+  return <div style={{ marginTop: top ? 10 : 0, fontWeight: 900, fontSize: 15 }}>{children}</div>;
+}
+
+const smallText = { margin: "3px 0 0", fontSize: 14, lineHeight: 1.35 };
+const thLeft = { textAlign: "left" as const, padding: "8px 0", fontSize: 14 };
+const thCenter = { textAlign: "center" as const, padding: "8px 0", fontSize: 14 };
+const thRight = { textAlign: "right" as const, padding: "8px 0", fontSize: 14 };
+const tdLeft = { textAlign: "left" as const, padding: "9px 0", fontSize: 14 };
+const tdCenter = { textAlign: "center" as const, padding: "9px 0", fontSize: 14 };
+const tdRight = { textAlign: "right" as const, padding: "9px 0", fontSize: 14 };
+

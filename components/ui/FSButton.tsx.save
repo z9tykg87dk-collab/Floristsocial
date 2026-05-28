@@ -1,0 +1,67 @@
+# FloristSocial Design System v2 — Fas 1 filpaket
+
+Detta paket sparar riktningen vi bestämde idag:
+
+* Premium social-commerce design
+* Rosa som standardtema
+* Förberett för Rose, Lavender, Sage, Ocean
+* Header/Footer ska kännas som plattform, inte adminpanel
+* Floristprofilen ska matcha mockupen bättre
+* Primär kontakt ska vara via FloristSocial, inte email
+* Marketplace ska kännas mer inspirerande och bilddriven
+* Mobil först: stora klickytor, tydliga CTA-knappar och bottom navigation
+
+---
+
+# 1. Spara som: `components/ui/FSButton.tsx`
+
+```tsx
+import Link from "next/link";
+import type { ReactNode } from "react";
+
+type FSButtonProps = {
+  children: ReactNode;
+  href?: string;
+  type?: "button" | "submit" | "reset";
+  variant?: "primary" | "secondary" | "dark" | "ghost" | "soft";
+  className?: string;
+  onClick?: () => void;
+};
+
+const variants = {
+  primary:
+    "bg-pink-600 !text-white shadow-lg shadow-pink-600/20 hover:bg-pink-700",
+  secondary:
+    "border border-pink-200 bg-white !text-pink-700 hover:bg-pink-50",
+  dark:
+    "bg-stone-950 !text-white hover:bg-stone-800",
+  ghost:
+    "border border-stone-200 bg-white !text-stone-900 hover:bg-stone-50",
+  soft:
+    "bg-pink-50 !text-pink-700 hover:bg-pink-100",
+};
+
+export default function FSButton({
+  children,
+  href,
+  type = "button",
+  variant = "primary",
+  className = "",
+  onClick,
+}: FSButtonProps) {
+  const classes = `inline-flex h-12 items-center justify-center gap-2 rounded-full px-5 text-sm font-bold transition ${variants[variant]} ${className}`;
+
+  if (href) {
+    return (
+      <Link href={href} className={classes}>
+        {children}
+      </Link>
+    );
+  }
+
+  return (
+    <button type={type} onClick={onClick} className={classes}>
+      {children}
+    </button>
+  );
+}
