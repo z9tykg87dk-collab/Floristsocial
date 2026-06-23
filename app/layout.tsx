@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Fraunces, Instrument_Sans } from "next/font/google";
 
 import "./globals.css";
+import GlobalHeader from "@/components/layout/GlobalHeader";
+import FloristSocialFooter from "@/components/layout/FloristSocialFooter";
 
 const display = Fraunces({
   variable: "--font-display",
@@ -25,9 +27,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="sv">
       <body className={`${display.variable} ${sans.variable} antialiased`}>
-        {children}
+        <GlobalHeader />
+
+        <main>{children}</main>
+
+        <FloristSocialFooter />
       </body>
     </html>
   );

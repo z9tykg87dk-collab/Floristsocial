@@ -22,8 +22,7 @@ const order = {
     apartment: "1202",
   },
 
-  cardText:
-    "Grattis på födelsedagen!\nVarma kramar från oss.",
+  cardText: "Grattis på födelsedagen!\nVarma kramar från oss.",
 
   products: [
     {
@@ -188,11 +187,7 @@ export default function SimpleDeliveryNotePrintPage() {
         >
           <StrongLine label="Typ:" value={order.type} />
           <StrongLine label="Inkom:" value={order.receivedAt} />
-          <StrongLine
-            label="Order ID:"
-            value={order.orderId}
-            alignRight
-          />
+          <StrongLine label="Order ID:" value={order.orderId} alignRight />
         </div>
 
         <div
@@ -206,8 +201,7 @@ export default function SimpleDeliveryNotePrintPage() {
         >
           <div>
             <Title>
-              Leveransdatum: {order.deliveryDate}{" "}
-              {order.deliveryWeekday}
+              Leveransdatum: {order.deliveryDate} {order.deliveryWeekday}
             </Title>
 
             <Title top>Leverans till:</Title>
@@ -218,30 +212,23 @@ export default function SimpleDeliveryNotePrintPage() {
           <div>
             <Title>Ev. portkod:</Title>
 
-            <p style={smallText}>
-              {order.recipient.portCode || "Ej angiven"}
-            </p>
+            <p style={smallText}>{order.recipient.portCode || "Ej angiven"}</p>
 
             <Title top>Får hängas på dörren:</Title>
 
-            <p style={smallText}>
-              {order.recipient.canHangOnDoor}
-            </p>
+            <p style={smallText}>{order.recipient.canHangOnDoor}</p>
 
             <Title top>Våning / lägenhet:</Title>
 
             <p style={smallText}>
-              Våning {order.recipient.floor}, lgh{" "}
-              {order.recipient.apartment}
+              Våning {order.recipient.floor}, lgh {order.recipient.apartment}
             </p>
           </div>
 
           <div>
             <Title>Extra meddelande:</Title>
 
-            <p style={smallText}>
-              Ring mottagaren om porten är låst.
-            </p>
+            <p style={smallText}>Ring mottagaren om porten är låst.</p>
           </div>
         </div>
 
@@ -292,8 +279,7 @@ export default function SimpleDeliveryNotePrintPage() {
                 }}
               >
                 <td style={tdLeft}>
-                  <strong>{item.name}</strong> (
-                  {item.description})
+                  <strong>{item.name}</strong> ({item.description})
                 </td>
 
                 <td style={tdCenter}>{item.qty}</td>
@@ -314,9 +300,7 @@ export default function SimpleDeliveryNotePrintPage() {
                 Fraktkostnad
               </td>
 
-              <td style={tdRight}>
-                {order.deliveryFee}
-              </td>
+              <td style={tdRight}>{order.deliveryFee}</td>
             </tr>
 
             <tr>
@@ -354,15 +338,9 @@ export default function SimpleDeliveryNotePrintPage() {
             marginTop: 10,
           }}
         >
-          <ShopBlock
-            title="Beställande butik:"
-            shop={order.orderingFlorist}
-          />
+          <ShopBlock title="Beställande butik:" shop={order.orderingFlorist} />
 
-          <ShopBlock
-            title="Utförande butik:"
-            shop={order.performingFlorist}
-          />
+          <ShopBlock title="Utförande butik:" shop={order.performingFlorist} />
         </div>
 
         <div
@@ -371,9 +349,7 @@ export default function SimpleDeliveryNotePrintPage() {
             borderBottom: "1px solid #d1d5db",
           }}
         >
-          <Title>
-            Beställarens uppgifter (frivilligt):
-          </Title>
+          <Title>Beställarens uppgifter (frivilligt):</Title>
 
           <p style={smallText}>{order.buyer.name}</p>
 
@@ -434,57 +410,41 @@ function RecipientQrSlip() {
       }}
     >
       <div>
-        <strong>Inkom:</strong>{" "}
-        {order.receivedAt}
+        <strong>Inkom:</strong> {order.receivedAt}
       </div>
 
       <div>
-        <strong>Order ID:</strong>{" "}
-        {order.orderId}
+        <strong>Order ID:</strong> {order.orderId}
       </div>
 
       <div>
-        <strong>Levereras:</strong>{" "}
-        {order.deliveryDate}{" "}
-        {order.deliveryWeekday}
+        <strong>Levereras:</strong> {order.deliveryDate} {order.deliveryWeekday}
       </div>
 
       <div style={{ marginTop: 6 }}>
-        <strong>Till:</strong>{" "}
-        {order.recipient.name},{" "}
-        {order.recipient.address}
+        <strong>Till:</strong> {order.recipient.name}, {order.recipient.address}
       </div>
 
       <div>
-        {order.recipient.postalCity}/
-        {order.recipient.country}
+        {order.recipient.postalCity}/{order.recipient.country}
       </div>
 
       <div>{order.recipient.phone}</div>
 
       <div style={{ marginTop: 6 }}>
-        <strong>Ev. portkod:</strong>{" "}
-        {order.recipient.portCode}
+        <strong>Ev. portkod:</strong> {order.recipient.portCode}
       </div>
 
       <div>
-        <strong>
-          Får hängas på dörren:
-        </strong>{" "}
-        {order.recipient.canHangOnDoor}
+        <strong>Får hängas på dörren:</strong> {order.recipient.canHangOnDoor}
       </div>
 
       <div>
-        <strong>
-          Våning / lägenhet:
-        </strong>{" "}
-        Våning {order.recipient.floor},
-        lgh {order.recipient.apartment}
+        <strong>Våning / lägenhet:</strong> Våning {order.recipient.floor}, lgh{" "}
+        {order.recipient.apartment}
       </div>
 
-      <div style={{ marginTop: 6 }}>
-        Ring mottagaren om porten är låst.
-      </div>
+      <div style={{ marginTop: 6 }}>Ring mottagaren om porten är låst.</div>
 
       <div
         style={{
@@ -520,10 +480,7 @@ function AddressBlock() {
 
       <div>{order.recipient.country}</div>
 
-      <a
-        href={`tel:${order.recipient.phone}`}
-        style={{ color: "#1d4ed8" }}
-      >
+      <a href={`tel:${order.recipient.phone}`} style={{ color: "#1d4ed8" }}>
         {order.recipient.phone}
       </a>
     </div>

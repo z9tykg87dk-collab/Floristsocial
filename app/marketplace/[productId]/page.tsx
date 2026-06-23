@@ -19,13 +19,9 @@ export default async function ProductPage({
   const { productId } = await params;
   const { seller } = await searchParams;
 
-
   const { product, floristProfile } = await getMarketplaceProduct(productId);
 
-
-  const sellerFlorist = seller
-    ? await getDirectoryFlorist(seller)
-    : null;
+  const sellerFlorist = seller ? await getDirectoryFlorist(seller) : null;
 
   if (!product || !floristProfile) {
     return (
@@ -45,13 +41,9 @@ export default async function ProductPage({
 
   return (
     <main className="mx-auto min-h-screen max-w-4xl px-6 py-16">
-      <h1 className="text-4xl font-semibold text-stone-900">
-        {product.title}
-      </h1>
+      <h1 className="text-4xl font-semibold text-stone-900">{product.title}</h1>
 
-      <p className="mt-4 text-lg text-stone-600">
-        {product.description}
-      </p>
+      <p className="mt-4 text-lg text-stone-600">{product.description}</p>
 
       <div className="mt-6 text-xl font-semibold">
         {product.price_amount} {product.currency}

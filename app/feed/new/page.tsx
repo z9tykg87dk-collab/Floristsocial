@@ -31,9 +31,8 @@ export default function NewPostPage() {
   const [loading, setLoading] = useState(false);
 
   function hashtagCount() {
-    return hashtags
-      .split(" ")
-      .filter((tag) => tag.trim().startsWith("#")).length;
+    return hashtags.split(" ").filter((tag) => tag.trim().startsWith("#"))
+      .length;
   }
 
   function handleSelectedFile(selected: File | null) {
@@ -47,8 +46,7 @@ export default function NewPostPage() {
       selected.type === "image/heic" ||
       selected.type === "image/heif";
 
-    const isImage =
-      selected.type.startsWith("image/") || isHeicOrHeif;
+    const isImage = selected.type.startsWith("image/") || isHeicOrHeif;
 
     const isVideo = selected.type.startsWith("video/");
 
@@ -65,9 +63,7 @@ export default function NewPostPage() {
     setMediaSaved(false);
   }
 
-  function handleFileChange(
-    e: React.ChangeEvent<HTMLInputElement>
-  ) {
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     handleSelectedFile(e.target.files?.[0] || null);
   }
 
@@ -104,9 +100,7 @@ export default function NewPostPage() {
       return;
     }
 
-    const safeFileName = file.name
-      .replaceAll(" ", "-")
-      .toLowerCase();
+    const safeFileName = file.name.replaceAll(" ", "-").toLowerCase();
 
     const filePath = `${user.id}/${Date.now()}-${safeFileName}`;
 
@@ -117,32 +111,24 @@ export default function NewPostPage() {
     if (uploadError) {
       console.error("Upload error:", uploadError);
 
-      alert(
-        `Kunde inte ladda upp media: ${uploadError.message}`
-      );
+      alert(`Kunde inte ladda upp media: ${uploadError.message}`);
 
       setLoading(false);
       return;
     }
 
-    const { data } = supabase.storage
-      .from("post-media")
-      .getPublicUrl(filePath);
+    const { data } = supabase.storage.from("post-media").getPublicUrl(filePath);
 
-    const { error: insertError } = await supabase
-      .from("posts")
-      .insert({
-        florist_id: user.id,
-        media_type: mediaType,
-        title,
-        caption,
-        hashtags,
-        price: price ? Number(price) : null,
-        image_url:
-          mediaType === "image" ? data.publicUrl : null,
-        video_url:
-          mediaType === "video" ? data.publicUrl : null,
-      });
+    const { error: insertError } = await supabase.from("posts").insert({
+      florist_id: user.id,
+      media_type: mediaType,
+      title,
+      caption,
+      hashtags,
+      price: price ? Number(price) : null,
+      image_url: mediaType === "image" ? data.publicUrl : null,
+      video_url: mediaType === "video" ? data.publicUrl : null,
+    });
 
     if (insertError) {
       alert("Kunde inte publicera inlägget.");
@@ -161,8 +147,7 @@ export default function NewPostPage() {
       <h1 style={titleStyle}>Skapa inlägg</h1>
 
       <p style={subtitleStyle}>
-        Lägg upp bild eller video med namn,
-        pris, beskrivning och hashtags.
+        Lägg upp bild eller video med namn, pris, beskrivning och hashtags.
       </p>
 
       <form onSubmit={handleSubmit}>
@@ -175,14 +160,8 @@ export default function NewPostPage() {
               onClick={() => setMediaType("image")}
               style={{
                 ...typeButton,
-                borderColor:
-                  mediaType === "image"
-                    ? "#16a34a"
-                    : "#e5e7eb",
-                background:
-                  mediaType === "image"
-                    ? "#ecfdf5"
-                    : "#fff",
+                borderColor: mediaType === "image" ? "#16a34a" : "#e5e7eb",
+                background: mediaType === "image" ? "#ecfdf5" : "#fff",
               }}
             >
               <ImagePlus size={20} />
@@ -194,14 +173,8 @@ export default function NewPostPage() {
               onClick={() => setMediaType("video")}
               style={{
                 ...typeButton,
-                borderColor:
-                  mediaType === "video"
-                    ? "#16a34a"
-                    : "#e5e7eb",
-                background:
-                  mediaType === "video"
-                    ? "#ecfdf5"
-                    : "#fff",
+                borderColor: mediaType === "video" ? "#16a34a" : "#e5e7eb",
+                background: mediaType === "video" ? "#ecfdf5" : "#fff",
               }}
             >
               <Video size={20} />
@@ -215,39 +188,26 @@ export default function NewPostPage() {
 
           <div
             style={uploadBox}
-            onDragOver={(event) =>
-              event.preventDefault()
-            }
+            onDragOver={(event) => event.preventDefault()}
             onDrop={(event) => {
               event.preventDefault();
 
-              handleSelectedFile(
-                event.dataTransfer.files?.[0] || null
-              );
+              handleSelectedFile(event.dataTransfer.files?.[0] || null);
             }}
           >
             <label style={uploadInner}>
               {file ? (
-                <CheckCircle2
-                  size={38}
-                  color="#16a34a"
-                />
+                <CheckCircle2 size={38} color="#16a34a" />
               ) : (
-                <UploadCloud
-                  size={40}
-                  color="#16a34a"
-                />
+                <UploadCloud size={40} color="#16a34a" />
               )}
 
               <strong>
-                {file
-                  ? file.name
-                  : "Klicka eller dra in bild/video här"}
+                {file ? file.name : "Klicka eller dra in bild/video här"}
               </strong>
 
               <span style={uploadHint}>
-                JPG, PNG, WebP, HEIC, HEIF,
-                MP4, MOV eller WebM
+                JPG, PNG, WebP, HEIC, HEIF, MP4, MOV eller WebM
               </span>
 
               <input
@@ -262,30 +222,14 @@ export default function NewPostPage() {
           {preview && (
             <div style={previewWrap}>
               {mediaType === "image" ? (
-                <img
-                  src={preview}
-                  alt=""
-                  style={previewStyle}
-                />
+                <img src={preview} alt="" style={previewStyle} />
               ) : (
-                <video
-                  src={preview}
-                  controls
-                  style={previewStyle}
-                />
+                <video src={preview} controls style={previewStyle} />
               )}
 
               <div style={mediaActions}>
-                <span
-                  style={
-                    mediaSaved
-                      ? savedBadge
-                      : unsavedBadge
-                  }
-                >
-                  {mediaSaved
-                    ? "Sparad"
-                    : "Ej sparad"}
+                <span style={mediaSaved ? savedBadge : unsavedBadge}>
+                  {mediaSaved ? "Sparad" : "Ej sparad"}
                 </span>
 
                 <button
@@ -315,9 +259,7 @@ export default function NewPostPage() {
 
           <input
             value={title}
-            onChange={(e) =>
-              setTitle(e.target.value)
-            }
+            onChange={(e) => setTitle(e.target.value)}
             maxLength={TITLE_MAX}
             style={input}
             placeholder="Ex. Sommarbukett"
@@ -341,9 +283,7 @@ export default function NewPostPage() {
             <input
               type="number"
               value={price}
-              onChange={(e) =>
-                setPrice(e.target.value)
-              }
+              onChange={(e) => setPrice(e.target.value)}
               style={{
                 ...input,
                 flex: 1,
@@ -351,22 +291,16 @@ export default function NewPostPage() {
               placeholder="Ex. 595"
             />
 
-            <span style={{ fontWeight: 700 }}>
-              kr
-            </span>
+            <span style={{ fontWeight: 700 }}>kr</span>
           </div>
         </div>
 
         <div style={card}>
-          <label style={label}>
-            Beskrivning
-          </label>
+          <label style={label}>Beskrivning</label>
 
           <textarea
             value={caption}
-            onChange={(e) =>
-              setCaption(e.target.value)
-            }
+            onChange={(e) => setCaption(e.target.value)}
             maxLength={CAPTION_MAX}
             style={{
               ...input,
@@ -385,9 +319,7 @@ export default function NewPostPage() {
 
           <input
             value={hashtags}
-            onChange={(e) =>
-              setHashtags(e.target.value)
-            }
+            onChange={(e) => setHashtags(e.target.value)}
             style={input}
             placeholder="#Bukett #Rosor #Bröllop"
           />
@@ -411,18 +343,12 @@ export default function NewPostPage() {
               color: "#4b5563",
             }}
           >
-            Du ansvarar för att du har rätt att
-            använda innehållet.
+            Du ansvarar för att du har rätt att använda innehållet.
           </p>
         </div>
 
-        <button
-          style={button}
-          disabled={loading}
-        >
-          {loading
-            ? "Publicerar..."
-            : "Publicera"}
+        <button style={button} disabled={loading}>
+          {loading ? "Publicerar..." : "Publicera"}
         </button>
       </form>
     </main>

@@ -14,7 +14,7 @@ export type FloristOnboardingState = {
 
 export async function saveFloristOnboardingAction(
   _previousState: FloristOnboardingState,
-  formData: FormData
+  formData: FormData,
 ): Promise<FloristOnboardingState> {
   if (!hasRequiredEnv()) {
     return {
@@ -79,27 +79,29 @@ export async function saveFloristOnboardingAction(
     };
   }
 
-  const { error: floristError } = await supabase.from("florist_profiles").upsert(
-    {
-      profile_id: user.id,
-      slug,
-      shop_name: shopName,
-      bio: bio || null,
-      email: user.email ?? null,
-      phone: phone || null,
-      website_url: websiteUrl || null,
-      instagram_handle: instagramHandle || null,
-      street_address: streetAddress || null,
-      postal_code: postalCode || null,
-      city,
-      delivery_radius_km: deliveryRadiusKm,
-      accepts_referrals: acceptsReferrals,
-      fulfills_orders: fulfillsOrders,
-    },
-    {
-      onConflict: "profile_id",
-    }
-  );
+  const { error: floristError } = await supabase
+    .from("florist_profiles")
+    .upsert(
+      {
+        profile_id: user.id,
+        slug,
+        shop_name: shopName,
+        bio: bio || null,
+        email: user.email ?? null,
+        phone: phone || null,
+        website_url: websiteUrl || null,
+        instagram_handle: instagramHandle || null,
+        street_address: streetAddress || null,
+        postal_code: postalCode || null,
+        city,
+        delivery_radius_km: deliveryRadiusKm,
+        accepts_referrals: acceptsReferrals,
+        fulfills_orders: fulfillsOrders,
+      },
+      {
+        onConflict: "profile_id",
+      },
+    );
 
   if (floristError) {
     return {

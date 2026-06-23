@@ -10,7 +10,7 @@ export async function POST() {
     if (error) {
       return NextResponse.json(
         { error: "Kunde inte logga ut" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -20,9 +20,6 @@ export async function POST() {
     });
   } catch (error) {
     console.error("POST /api/logout error:", error);
-    return NextResponse.json(
-      { error: "Serverfel" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Serverfel" }, { status: 500 });
   }
 }

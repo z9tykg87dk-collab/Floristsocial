@@ -10,7 +10,7 @@ export default async function OrdersPage() {
   const missingEnv = getMissingRequiredEnv().filter(
     (key) =>
       key === "NEXT_PUBLIC_SUPABASE_URL" ||
-      key === "NEXT_PUBLIC_SUPABASE_ANON_KEY"
+      key === "NEXT_PUBLIC_SUPABASE_ANON_KEY",
   );
 
   if (!user) {
@@ -46,7 +46,8 @@ export default async function OrdersPage() {
           </h1>
           <p className="mt-4 max-w-3xl text-base leading-7 text-stone-600">
             This is the first customer-side order history view. It shows the
-            order records created during checkout and updated by the Stripe webhook.
+            order records created during checkout and updated by the Stripe
+            webhook.
           </p>
         </div>
         <div className="rounded-[2rem] border border-stone-300 bg-white/80 px-6 py-5">
@@ -92,7 +93,12 @@ export default async function OrdersPage() {
               <div className="mt-6 grid gap-3 md:grid-cols-4">
                 <Stat label="Total" value={formatSek(order.total_amount)} />
                 <Stat label="Source" value={order.source} />
-                <Stat label="Payment" value={order.stripe_payment_intent_id ? "Captured" : "Pending"} />
+                <Stat
+                  label="Payment"
+                  value={
+                    order.stripe_payment_intent_id ? "Captured" : "Pending"
+                  }
+                />
                 <Stat
                   label="Delivery date"
                   value={order.delivery_date || "Not set"}

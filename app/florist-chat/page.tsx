@@ -31,9 +31,7 @@ export default async function FloristChatPage() {
             >
               <h2 className="font-semibold">{chat.title}</h2>
 
-              <p className="text-sm text-gray-500">
-                Status: {chat.outcome}
-              </p>
+              <p className="text-sm text-gray-500">Status: {chat.outcome}</p>
 
               <p className="text-sm text-gray-500">
                 Senaste aktivitet:{" "}
@@ -72,9 +70,18 @@ export default async function FloristChatPage() {
 
                   {chat.economy.can_view_all ? (
                     <>
-                      <p>Säljande florist: {chat.economy.seller_commission ?? 0} kr</p>
-                      <p>Utförande florist: {chat.economy.executor_commission ?? 0} kr</p>
-                      <p>FloristSocial: {chat.economy.platform_commission ?? 0} kr</p>
+                      <p>
+                        Säljande florist: {chat.economy.seller_commission ?? 0}{" "}
+                        kr
+                      </p>
+                      <p>
+                        Utförande florist:{" "}
+                        {chat.economy.executor_commission ?? 0} kr
+                      </p>
+                      <p>
+                        FloristSocial: {chat.economy.platform_commission ?? 0}{" "}
+                        kr
+                      </p>
                       <p>Kortavgift: {chat.economy.payment_fee ?? 0} kr</p>
                     </>
                   ) : (

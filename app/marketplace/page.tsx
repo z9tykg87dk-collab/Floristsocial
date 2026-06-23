@@ -3,7 +3,6 @@ import Link from "next/link";
 import { Search, ShoppingBag, Sparkles, Store, UserRound } from "lucide-react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import FloristSocialHeader from "@/components/layout/FloristSocialHeader";
-import FloristSocialFooter from "@/components/layout/FloristSocialFooter";
 
 type MarketplaceItem = {
   id: string;
@@ -35,11 +34,24 @@ type MarketplaceItem = {
   created_at: string;
 };
 
-const categoryChips = ["Alla", "Buketter", "Bröllop", "Begravning", "Event", "Företagsblommor", "Säsong"];
+const categoryChips = [
+  "Alla",
+  "Buketter",
+  "Bröllop",
+  "Begravning",
+  "Event",
+  "Företagsblommor",
+  "Säsong",
+];
 const priceChips = ["400+ kr", "600+ kr", "1000+ kr", "1500+ kr", "Premium"];
 
 function pickImage(item: MarketplaceItem) {
-  return item.image_thumbnail_url || item.image_medium_url || item.image_original_url || "";
+  return (
+    item.image_thumbnail_url ||
+    item.image_medium_url ||
+    item.image_original_url ||
+    ""
+  );
 }
 
 function formatPrice(value: number | null, currency: string | null) {
@@ -80,7 +92,8 @@ async function loadMarketplaceItems() {
 
   const { data: products, error: productsError } = await supabase
     .from("products")
-    .select(`
+    .select(
+      `
       id,
       post_id,
       florist_id,
@@ -101,12 +114,14 @@ async function loadMarketplaceItems() {
       allow_price_upgrade,
       seasonal_disclaimer,
       created_at
-    `)
+    `,
+    )
     .eq("is_public", true)
     .eq("is_active", true)
     .limit(80);
 
-  if (productsError) return { items: [] as MarketplaceItem[], error: productsError };
+  if (productsError)
+    return { items: [] as MarketplaceItem[], error: productsError };
 
   const mapped = (products || []).map((product: any) => ({
     id: product.post_id || product.id,
@@ -144,7 +159,8 @@ async function loadMarketplaceItems() {
 export default async function MarketplacePage() {
   const { items, error } = await loadMarketplaceItems();
   const visibleItems = items.filter((item) => pickImage(item));
-  const featured = visibleItems.find((item) => item.is_featured) || visibleItems[0];
+  const featured =
+    visibleItems.find((item) => item.is_featured) || visibleItems[0];
 
   return (
     <>
@@ -158,29 +174,61 @@ export default async function MarketplacePage() {
                 <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-bold text-pink-700 shadow-sm ring-1 ring-pink-100">
                   <ShoppingBag size={16} /> FloristSocial Marketplace
                 </div>
-                <h1 className="text-4xl font-semibold tracking-tight md:text-6xl">Köp vackra blomsterarrangemang.</h1>
+                <h1 className="text-4xl font-semibold tracking-tight md:text-6xl">
+                  Köp vackra blomsterarrangemang.
+                </h1>
                 <p className="mt-5 max-w-2xl text-lg leading-8 text-stone-600">
-                  Upptäck köpbara buketter och arrangemang från FloristSocial-feed. Floristen skapar en liknande produkt utifrån bilden, säsong och tillgängliga blommor.
+                  Upptäck köpbara buketter och arrangemang från
+                  FloristSocial-feed. Floristen skapar en liknande produkt
+                  utifrån bilden, säsong och tillgängliga blommor.
                 </p>
                 <div className="mt-6 flex flex-wrap gap-3">
-                  <Link href="/feed" className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-pink-600 px-5 text-sm font-bold !text-white shadow-lg shadow-pink-600/20 transition hover:bg-pink-700">
+                  <Link
+                    href="/feed"
+                    className="inline-flex h-12 items-center justify-center gap-2 rounded-full bg-pink-600 px-5 text-sm font-bold !text-white shadow-lg shadow-pink-600/20 transition hover:bg-pink-700"
+                  >
                     <Sparkles size={18} /> Visa feed
                   </Link>
-                  <Link href="/feed/new" className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-emerald-200 bg-emerald-600 px-5 text-sm font-bold !text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700">
+                  <Link
+                    href="/feed/new"
+                    className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-emerald-200 bg-emerald-600 px-5 text-sm font-bold !text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-700"
+                  >
                     <Store size={18} /> Skapa ny feed
                   </Link>
                 </div>
               </div>
 
               {featured && (
-                <Link href={productLink(featured)} className="group overflow-hidden rounded-[32px] bg-white p-3 shadow-sm ring-1 ring-stone-200 transition hover:-translate-y-1 hover:shadow-lg">
+                <Link
+                  href={productLink(featured)}
+                  className="group overflow-hidden rounded-[32px] bg-white p-3 shadow-sm ring-1 ring-stone-200 transition hover:-translate-y-1 hover:shadow-lg"
+                >
                   <div className="relative aspect-[4/5] overflow-hidden rounded-[24px] bg-stone-100">
-                    <Image src={pickImage(featured)} alt={featured.image_alt || featured.product_title || "Köpbar floristprodukt"} fill className="object-cover transition duration-700 group-hover:scale-105" sizes="420px" unoptimized />
+                    <Image
+                      src={pickImage(featured)}
+                      alt={
+                        featured.image_alt ||
+                        featured.product_title ||
+                        "Köpbar floristprodukt"
+                      }
+                      fill
+                      className="object-cover transition duration-700 group-hover:scale-105"
+                      sizes="420px"
+                      unoptimized
+                    />
                   </div>
                   <div className="p-3">
-                    <div className="text-xs font-bold uppercase tracking-wide text-pink-600">Utvald produkt</div>
-                    <h2 className="mt-1 text-xl font-bold text-stone-900">{featured.product_title || featured.caption || "Köp liknande arrangemang"}</h2>
-                    <div className="mt-2 font-bold text-stone-700">{formatPrice(featured.base_price, featured.currency)}</div>
+                    <div className="text-xs font-bold uppercase tracking-wide text-pink-600">
+                      Utvald produkt
+                    </div>
+                    <h2 className="mt-1 text-xl font-bold text-stone-900">
+                      {featured.product_title ||
+                        featured.caption ||
+                        "Köp liknande arrangemang"}
+                    </h2>
+                    <div className="mt-2 font-bold text-stone-700">
+                      {formatPrice(featured.base_price, featured.currency)}
+                    </div>
                   </div>
                 </Link>
               )}
@@ -191,19 +239,31 @@ export default async function MarketplacePage() {
             <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
               <div className="flex gap-2 overflow-x-auto pb-1">
                 {categoryChips.map((item) => (
-                  <span key={item} className="shrink-0 rounded-full border border-stone-200 bg-stone-50 px-4 py-2 text-sm font-bold text-stone-700">
+                  <span
+                    key={item}
+                    className="shrink-0 rounded-full border border-stone-200 bg-stone-50 px-4 py-2 text-sm font-bold text-stone-700"
+                  >
                     {item}
                   </span>
                 ))}
               </div>
               <div className="relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
-                <input placeholder="Sök produkt, florist, stil..." className="h-11 w-full rounded-full border border-stone-200 bg-white px-4 pl-11 text-sm outline-none focus:border-stone-500" />
+                <Search
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400"
+                  size={18}
+                />
+                <input
+                  placeholder="Sök produkt, florist, stil..."
+                  className="h-11 w-full rounded-full border border-stone-200 bg-white px-4 pl-11 text-sm outline-none focus:border-stone-500"
+                />
               </div>
             </div>
             <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
               {priceChips.map((item) => (
-                <span key={item} className="shrink-0 rounded-full bg-pink-50 px-4 py-2 text-xs font-bold text-pink-700">
+                <span
+                  key={item}
+                  className="shrink-0 rounded-full bg-pink-50 px-4 py-2 text-xs font-bold text-pink-700"
+                >
                   {item}
                 </span>
               ))}
@@ -219,9 +279,16 @@ export default async function MarketplacePage() {
           {!error && visibleItems.length === 0 && (
             <div className="rounded-[32px] border border-dashed border-stone-300 bg-white p-12 text-center shadow-sm">
               <ShoppingBag className="mx-auto text-stone-300" size={46} />
-              <h2 className="mt-4 text-2xl font-bold">Inga köpbara produkter ännu</h2>
-              <p className="mt-2 text-stone-600">Skapa en post med pris så visas den här automatiskt.</p>
-              <Link href="/feed/new" className="mt-6 inline-flex h-12 items-center justify-center rounded-full bg-pink-600 px-6 text-sm font-bold !text-white shadow-lg shadow-pink-600/20 transition hover:bg-pink-700">
+              <h2 className="mt-4 text-2xl font-bold">
+                Inga köpbara produkter ännu
+              </h2>
+              <p className="mt-2 text-stone-600">
+                Skapa en post med pris så visas den här automatiskt.
+              </p>
+              <Link
+                href="/feed/new"
+                className="mt-6 inline-flex h-12 items-center justify-center rounded-full bg-pink-600 px-6 text-sm font-bold !text-white shadow-lg shadow-pink-600/20 transition hover:bg-pink-700"
+              >
                 Skapa köpbar post
               </Link>
             </div>
@@ -230,14 +297,17 @@ export default async function MarketplacePage() {
           {!error && visibleItems.length > 0 && (
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {visibleItems.map((item) => (
-                <ProductCard key={`${item.product_id || item.id}`} item={item} />
+                <ProductCard
+                  key={`${item.product_id || item.id}`}
+                  item={item}
+                />
               ))}
             </div>
           )}
         </section>
       </main>
 
-      <FloristSocialFooter />
+      
     </>
   );
 }
@@ -250,13 +320,32 @@ function ProductCard({ item }: { item: MarketplaceItem }) {
     <article className="group overflow-hidden rounded-[32px] bg-white shadow-sm ring-1 ring-stone-200/70 transition hover:-translate-y-1 hover:shadow-xl">
       <Link href={productLink(item)} className="block">
         <div className="relative aspect-[4/5] overflow-hidden bg-stone-100">
-          <Image src={imageUrl} alt={item.image_alt || item.product_title || "FloristSocial produkt"} fill className="object-cover transition duration-700 group-hover:scale-105" sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw" unoptimized />
+          <Image
+            src={imageUrl}
+            alt={
+              item.image_alt || item.product_title || "FloristSocial produkt"
+            }
+            fill
+            className="object-cover transition duration-700 group-hover:scale-105"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+            unoptimized
+          />
           <div className="absolute left-3 top-3 flex flex-wrap gap-2">
-            {item.is_sponsored && <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-700">Sponsrad</span>}
-            {item.is_featured && <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700">Utvald</span>}
+            {item.is_sponsored && (
+              <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-700">
+                Sponsrad
+              </span>
+            )}
+            {item.is_featured && (
+              <span className="rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-700">
+                Utvald
+              </span>
+            )}
           </div>
           <div className="absolute bottom-3 left-3 right-3 rounded-2xl bg-white/95 px-4 py-3 shadow-lg backdrop-blur">
-            <div className="text-xs font-bold uppercase tracking-wide text-pink-600">Köp liknande</div>
+            <div className="text-xs font-bold uppercase tracking-wide text-pink-600">
+              Köp liknande
+            </div>
             <div className="text-lg font-bold text-stone-900">{price}</div>
           </div>
         </div>
@@ -265,17 +354,34 @@ function ProductCard({ item }: { item: MarketplaceItem }) {
       <div className="p-4">
         <div className="mb-3 flex items-center gap-2 text-xs font-semibold text-stone-500">
           <UserRound size={14} />
-          <Link href={floristLink(item)} className="truncate hover:text-stone-900">
+          <Link
+            href={floristLink(item)}
+            className="truncate hover:text-stone-900"
+          >
             {item.florist_name || "FloristSocial florist"}
           </Link>
         </div>
 
-        <h2 className="line-clamp-2 text-lg font-bold text-stone-900">{item.product_title || item.caption || "Köp liknande arrangemang"}</h2>
-        {item.description && <p className="mt-2 line-clamp-2 text-sm leading-6 text-stone-500">{item.description}</p>}
+        <h2 className="line-clamp-2 text-lg font-bold text-stone-900">
+          {item.product_title || item.caption || "Köp liknande arrangemang"}
+        </h2>
+        {item.description && (
+          <p className="mt-2 line-clamp-2 text-sm leading-6 text-stone-500">
+            {item.description}
+          </p>
+        )}
 
         <div className="mt-3 flex flex-wrap gap-2">
-          {item.category && <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-bold text-stone-600">{item.category}</span>}
-          {item.style && <span className="rounded-full bg-pink-50 px-3 py-1 text-xs font-bold text-pink-700">{item.style}</span>}
+          {item.category && (
+            <span className="rounded-full bg-stone-100 px-3 py-1 text-xs font-bold text-stone-600">
+              {item.category}
+            </span>
+          )}
+          {item.style && (
+            <span className="rounded-full bg-pink-50 px-3 py-1 text-xs font-bold text-pink-700">
+              {item.style}
+            </span>
+          )}
         </div>
 
         {item.seasonal_disclaimer && (
@@ -284,11 +390,13 @@ function ProductCard({ item }: { item: MarketplaceItem }) {
           </div>
         )}
 
-        <Link href={productLink(item)} className="mt-4 flex h-12 items-center justify-center gap-2 rounded-2xl bg-pink-600 px-5 text-sm font-bold !text-white transition hover:bg-pink-700">
+        <Link
+          href={productLink(item)}
+          className="mt-4 flex h-12 items-center justify-center gap-2 rounded-2xl bg-pink-600 px-5 text-sm font-bold !text-white transition hover:bg-pink-700"
+        >
           <ShoppingBag size={16} /> Beställ / köp liknande
         </Link>
       </div>
     </article>
   );
 }
-

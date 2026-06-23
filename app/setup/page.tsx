@@ -78,8 +78,14 @@ export default async function SetupPage() {
         <div className="mt-4 grid gap-3 text-sm leading-6 text-stone-700">
           <p>1. Apply both Supabase migrations.</p>
           <p>2. Fill `.env.local` and mirror the same values in Vercel.</p>
-          <p>3. Point Stripe webhooks to `/api/stripe/webhook` in test mode first.</p>
-          <p>4. Run one florist onboarding, one direct order and one referral order end to end.</p>
+          <p>
+            3. Point Stripe webhooks to `/api/stripe/webhook` in test mode
+            first.
+          </p>
+          <p>
+            4. Run one florist onboarding, one direct order and one referral
+            order end to end.
+          </p>
         </div>
         <div className="mt-6 flex flex-wrap gap-3">
           <Link

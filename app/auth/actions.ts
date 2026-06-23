@@ -10,7 +10,7 @@ export type SignInState = {
 
 export async function signInWithOtpAction(
   _previousState: SignInState,
-  formData: FormData
+  formData: FormData,
 ): Promise<SignInState> {
   if (!hasRequiredEnv()) {
     return {
@@ -20,7 +20,9 @@ export async function signInWithOtpAction(
     };
   }
 
-  const email = String(formData.get("email") ?? "").trim().toLowerCase();
+  const email = String(formData.get("email") ?? "")
+    .trim()
+    .toLowerCase();
   const next = String(formData.get("next") ?? "/dashboard");
 
   if (!email || !email.includes("@")) {

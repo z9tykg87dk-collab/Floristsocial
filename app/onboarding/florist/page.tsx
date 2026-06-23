@@ -39,8 +39,9 @@ export default async function FloristOnboardingPage() {
         Create the public florist profile for your shop.
       </h1>
       <p className="mt-4 max-w-3xl text-base leading-7 text-stone-600">
-        This is the first operational step for Phase 1. It converts the signed-in
-        user into a florist account and stores the marketplace-facing shop data.
+        This is the first operational step for Phase 1. It converts the
+        signed-in user into a florist account and stores the marketplace-facing
+        shop data.
       </p>
 
       {missingEnv.length > 0 ? (

@@ -5,7 +5,7 @@ export default function SignInPage() {
   const missingEnv = getMissingRequiredEnv().filter(
     (key) =>
       key === "NEXT_PUBLIC_SUPABASE_URL" ||
-      key === "NEXT_PUBLIC_SUPABASE_ANON_KEY"
+      key === "NEXT_PUBLIC_SUPABASE_ANON_KEY",
   );
 
   return (

@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     if (!email || !password) {
       return NextResponse.json(
         { error: "E-post och lösenord krävs" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -27,16 +27,13 @@ export async function POST(req: Request) {
     console.log("user:", data.user);
 
     if (error) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: error.message }, { status: 401 });
     }
 
     if (!data.user) {
       return NextResponse.json(
         { error: "Inloggning misslyckades" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -51,14 +48,14 @@ export async function POST(req: Request) {
       console.error("Florist lookup error:", floristError);
       return NextResponse.json(
         { error: "Kunde inte hämta användare" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
     if (!florist) {
       return NextResponse.json(
         { error: "Endast florister kan logga in här" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -73,12 +70,11 @@ export async function POST(req: Request) {
         lastName: florist.last_name,
       },
     });
-
   } catch (error) {
     console.error("Login error:", error);
     return NextResponse.json(
       { error: "Serverfel vid inloggning" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

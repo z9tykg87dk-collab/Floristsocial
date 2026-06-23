@@ -22,7 +22,7 @@ const allowedPayoutStatuses = new Set([
 
 export async function updatePayoutStatusAction(
   _previousState: AdminPayoutState,
-  formData: FormData
+  formData: FormData,
 ): Promise<AdminPayoutState> {
   if (!hasRequiredEnv()) {
     return {
@@ -61,15 +61,15 @@ export async function updatePayoutStatusAction(
 
   const supabase = createSupabaseAdminClient();
 
-const updatePayload: Record<string, string | null> = {
-  status: nextStatus,
-  paid_at: nextStatus === "paid" ? new Date().toISOString() : null,
-};
+  const updatePayload: Record<string, string | null> = {
+    status: nextStatus,
+    paid_at: nextStatus === "paid" ? new Date().toISOString() : null,
+  };
 
-const { error } = await supabase
-  .from("payout_records")
-  .update(updatePayload as never)
-  .eq("id", payoutId);
+  const { error } = await supabase
+    .from("payout_records")
+    .update(updatePayload as never)
+    .eq("id", payoutId);
 
   if (error) {
     return {

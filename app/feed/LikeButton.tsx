@@ -78,7 +78,9 @@ export default function LikeButton({ postId }: { postId: string }) {
   }
 
   const likerNames = likes
-    .map((like) => (like.user_id === currentUserId ? "Du" : shortUserId(like.user_id)))
+    .map((like) =>
+      like.user_id === currentUserId ? "Du" : shortUserId(like.user_id),
+    )
     .join(", ");
 
   return (

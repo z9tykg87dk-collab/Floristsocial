@@ -32,7 +32,8 @@ export default function EditPostPage() {
   const [saving, setSaving] = useState(false);
 
   function hashtagCount() {
-    return hashtags.split(" ").filter((tag) => tag.trim().startsWith("#")).length;
+    return hashtags.split(" ").filter((tag) => tag.trim().startsWith("#"))
+      .length;
   }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -97,7 +98,9 @@ export default function EditPostPage() {
   async function loadPost() {
     const { data, error } = await supabase
       .from("posts")
-      .select("id, media_type, title, caption, hashtags, price, image_url, video_url, florist_id")
+      .select(
+        "id, media_type, title, caption, hashtags, price, image_url, video_url, florist_id",
+      )
       .eq("id", postId)
       .single();
 
@@ -242,9 +245,7 @@ export default function EditPostPage() {
             onChange={handleFileChange}
           />
 
-          <p style={helpText}>
-            Lämna tomt om du vill behålla nuvarande media.
-          </p>
+          <p style={helpText}>Lämna tomt om du vill behålla nuvarande media.</p>
         </div>
 
         <div style={card}>
@@ -257,7 +258,11 @@ export default function EditPostPage() {
               <video src={preview} controls style={previewStyle} />
             )
           ) : mediaType === "image" && currentImageUrl ? (
-            <img src={currentImageUrl} alt="Nuvarande bild" style={previewStyle} />
+            <img
+              src={currentImageUrl}
+              alt="Nuvarande bild"
+              style={previewStyle}
+            />
           ) : mediaType === "video" && currentVideoUrl ? (
             <video src={currentVideoUrl} controls style={previewStyle} />
           ) : (
@@ -274,7 +279,9 @@ export default function EditPostPage() {
             onChange={(e) => setTitle(e.target.value)}
             style={input}
           />
-          <small>{title.length}/{TITLE_MAX} tecken</small>
+          <small>
+            {title.length}/{TITLE_MAX} tecken
+          </small>
         </div>
 
         <div style={card}>
@@ -285,7 +292,9 @@ export default function EditPostPage() {
             onChange={(e) => setCaption(e.target.value)}
             style={{ ...input, minHeight: "120px" }}
           />
-          <small>{caption.length}/{CAPTION_MAX} tecken. Rekommenderat max 7 rader.</small>
+          <small>
+            {caption.length}/{CAPTION_MAX} tecken. Rekommenderat max 7 rader.
+          </small>
         </div>
 
         <div style={card}>
@@ -296,7 +305,9 @@ export default function EditPostPage() {
             onChange={(e) => setHashtags(e.target.value)}
             style={input}
           />
-          <small>{hashtagCount()}/{HASHTAG_MAX} hashtags</small>
+          <small>
+            {hashtagCount()}/{HASHTAG_MAX} hashtags
+          </small>
         </div>
 
         <div style={card}>
@@ -321,8 +332,8 @@ export default function EditPostPage() {
         <div style={{ ...card, background: "#f9fafb" }}>
           <strong>Rättigheter och ansvar</strong>
           <p style={{ marginBottom: 0 }}>
-            Du ansvarar för att du har rätt att använda bild, video, musik,
-            text och produktinformation.
+            Du ansvarar för att du har rätt att använda bild, video, musik, text
+            och produktinformation.
           </p>
         </div>
 

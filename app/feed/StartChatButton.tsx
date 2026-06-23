@@ -27,7 +27,7 @@ export default function StartChatButton({ floristId }: { floristId: string }) {
       .from("conversations")
       .select("*")
       .or(
-        `and(florist_1.eq.${user.id},florist_2.eq.${floristId}),and(florist_1.eq.${floristId},florist_2.eq.${user.id})`
+        `and(florist_1.eq.${user.id},florist_2.eq.${floristId}),and(florist_1.eq.${floristId},florist_2.eq.${user.id})`,
       )
       .maybeSingle();
 

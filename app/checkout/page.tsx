@@ -23,7 +23,7 @@ export default async function CheckoutPage({
   const missingEnv = getMissingRequiredEnv().filter(
     (key) =>
       key === "NEXT_PUBLIC_SUPABASE_URL" ||
-      key === "NEXT_PUBLIC_SUPABASE_ANON_KEY"
+      key === "NEXT_PUBLIC_SUPABASE_ANON_KEY",
   );
   const missingStripeEnv = getMissingStripeConnectEnv();
   const { product, floristProfile } = productId
@@ -87,9 +87,10 @@ export default async function CheckoutPage({
       </p>
       {sellerFlorist ? (
         <div className="mt-8 rounded-[2rem] border border-amber-300 bg-amber-50 p-6 text-sm leading-6 text-stone-800">
-          Referral order via <span className="font-semibold">{sellerFlorist.shop_name}</span>.
-          Net payment will split 80% executor, 10% seller florist, 10%
-          FloristSocial after Stripe fees.
+          Referral order via{" "}
+          <span className="font-semibold">{sellerFlorist.shop_name}</span>. Net
+          payment will split 80% executor, 10% seller florist, 10% FloristSocial
+          after Stripe fees.
         </div>
       ) : null}
 

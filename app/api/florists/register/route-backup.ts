@@ -73,7 +73,11 @@ function flattenValues(input: any): string[] {
   function walk(value: any) {
     if (value === null || value === undefined) return;
 
-    if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+    if (
+      typeof value === "string" ||
+      typeof value === "number" ||
+      typeof value === "boolean"
+    ) {
       values.push(String(value));
       return;
     }
@@ -124,7 +128,9 @@ function findEmail(payload: JsonRecord, formData: FormData) {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const formValues = Array.from(formData.values()).map(asString);
   const payloadValues = flattenValues(payload);
-  const found = [...formValues, ...payloadValues].find((value) => emailRegex.test(value.trim()));
+  const found = [...formValues, ...payloadValues].find((value) =>
+    emailRegex.test(value.trim()),
+  );
 
   return found?.trim() || "";
 }
@@ -156,7 +162,9 @@ function findPassword(payload: JsonRecord, formData: FormData) {
 
       if (
         text.length >= 6 &&
-        (lowerKey.includes("password") || lowerKey.includes("losenord") || lowerKey.includes("lösenord"))
+        (lowerKey.includes("password") ||
+          lowerKey.includes("losenord") ||
+          lowerKey.includes("lösenord"))
       ) {
         return text;
       }
@@ -179,7 +187,9 @@ function findPassword(payload: JsonRecord, formData: FormData) {
 
     if (
       text.length >= 6 &&
-      (lowerKey.includes("password") || lowerKey.includes("losenord") || lowerKey.includes("lösenord"))
+      (lowerKey.includes("password") ||
+        lowerKey.includes("losenord") ||
+        lowerKey.includes("lösenord"))
     ) {
       return text;
     }
@@ -188,7 +198,12 @@ function findPassword(payload: JsonRecord, formData: FormData) {
   return "";
 }
 
-function getJsonValue(payload: JsonRecord, formData: FormData, names: string[], fallback: any) {
+function getJsonValue(
+  payload: JsonRecord,
+  formData: FormData,
+  names: string[],
+  fallback: any,
+) {
   for (const name of names) {
     const formValue = formData.get(name);
 
@@ -201,7 +216,8 @@ function getJsonValue(payload: JsonRecord, formData: FormData, names: string[], 
     }
 
     const payloadValue = payload[name] ?? getNestedValue(payload, name);
-    if (payloadValue !== undefined && payloadValue !== null) return payloadValue;
+    if (payloadValue !== undefined && payloadValue !== null)
+      return payloadValue;
   }
 
   return fallback;
@@ -239,12 +255,15 @@ async function uploadFile(bucket: string, folder: string, file: File | null) {
   const path = `${folder}/${Date.now()}-${crypto.randomUUID()}-${safeName}.${ext}`;
   const buffer = Buffer.from(await file.arrayBuffer());
 
-  const { error } = await supabaseAdmin.storage.from(bucket).upload(path, buffer, {
-    contentType: file.type || "application/octet-stream",
-    upsert: false,
-  });
+  const { error } = await supabaseAdmin.storage
+    .from(bucket)
+    .upload(path, buffer, {
+      contentType: file.type || "application/octet-stream",
+      upsert: false,
+    });
 
-  if (error) throw new Error(`Storage upload failed for ${file.name}: ${error.message}`);
+  if (error)
+    throw new Error(`Storage upload failed for ${file.name}: ${error.message}`);
 
   const { data } = supabaseAdmin.storage.from(bucket).getPublicUrl(path);
 
@@ -301,7 +320,9 @@ export async function POST(request: NextRequest) {
         "display_name",
         "store.name",
         "business.name",
-      ]) || `${firstName} ${lastName}`.trim() || email.split("@")[0];
+      ]) ||
+      `${firstName} ${lastName}`.trim() ||
+      email.split("@")[0];
 
     if (!email) {
       return NextResponse.json(
@@ -311,7 +332,7 @@ export async function POST(request: NextRequest) {
           receivedPayloadKeys: Object.keys(payload),
           receivedPayload: payload,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -322,15 +343,24 @@ export async function POST(request: NextRequest) {
           receivedFormKeys: Array.from(formData.keys()),
           receivedPayloadKeys: Object.keys(payload),
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const slug = makeSlug(shopName);
     const bucket = "florist-portfolio";
-    const logoFile = formData.get("logo") instanceof File ? (formData.get("logo") as File) : null;
-    const coverFile = formData.get("coverImage") instanceof File ? (formData.get("coverImage") as File) : null;
-    const profileFile = formData.get("profileImage") instanceof File ? (formData.get("profileImage") as File) : null;
+    const logoFile =
+      formData.get("logo") instanceof File
+        ? (formData.get("logo") as File)
+        : null;
+    const coverFile =
+      formData.get("coverImage") instanceof File
+        ? (formData.get("coverImage") as File)
+        : null;
+    const profileFile =
+      formData.get("profileImage") instanceof File
+        ? (formData.get("profileImage") as File)
+        : null;
 
     const portfolioFiles = [
       ...formData.getAll("portfolio"),
@@ -347,24 +377,27 @@ export async function POST(request: NextRequest) {
     ]);
 
     const portfolioUploads = await Promise.all(
-      portfolioFiles.map((file) => uploadFile(bucket, `${slug}/portfolio`, file))
+      portfolioFiles.map((file) =>
+        uploadFile(bucket, `${slug}/portfolio`, file),
+      ),
     );
 
-    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password,
-      email_confirm: true,
-      user_metadata: {
-        role: "florist",
-        shop_name: shopName,
-        slug,
-      },
-    });
+    const { data: authUser, error: authError } =
+      await supabaseAdmin.auth.admin.createUser({
+        email,
+        password,
+        email_confirm: true,
+        user_metadata: {
+          role: "florist",
+          shop_name: shopName,
+          slug,
+        },
+      });
 
     if (authError || !authUser.user) {
       return NextResponse.json(
         { error: authError?.message || "Kunde inte skapa användare." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -377,14 +410,27 @@ export async function POST(request: NextRequest) {
       role: "florist",
       profile_name: slug,
       bio:
-        getValue(payload, formData, ["bio", "description", "about", "presentation"]) ||
-        "Florist på FloristSocial 🌸",
+        getValue(payload, formData, [
+          "bio",
+          "description",
+          "about",
+          "presentation",
+        ]) || "Florist på FloristSocial 🌸",
       is_active: true,
       slug,
       florist_name: shopName,
-      phone: getValue(payload, formData, ["phone", "phoneNumber", "phone_number", "telephone"]),
+      phone: getValue(payload, formData, [
+        "phone",
+        "phoneNumber",
+        "phone_number",
+        "telephone",
+      ]),
       website: getValue(payload, formData, ["website", "webUrl", "web_url"]),
-      instagram: getValue(payload, formData, ["instagram", "personalInstagram", "personal_instagram"]),
+      instagram: getValue(payload, formData, [
+        "instagram",
+        "personalInstagram",
+        "personal_instagram",
+      ]),
       business_instagram: getValue(payload, formData, [
         "businessInstagram",
         "business_instagram",
@@ -398,20 +444,61 @@ export async function POST(request: NextRequest) {
         "streetAddress",
         "street_address",
       ]),
-      address_line_2: getValue(payload, formData, ["addressLine2", "address_line_2"]),
-      postal_code: getValue(payload, formData, ["postalCode", "postal_code", "zip", "zipCode", "zip_code"]),
+      address_line_2: getValue(payload, formData, [
+        "addressLine2",
+        "address_line_2",
+      ]),
+      postal_code: getValue(payload, formData, [
+        "postalCode",
+        "postal_code",
+        "zip",
+        "zipCode",
+        "zip_code",
+      ]),
       city: getValue(payload, formData, ["city", "stad"]),
       area: getValue(payload, formData, ["area", "omrade", "område"]),
       municipality: getValue(payload, formData, ["municipality", "kommun"]),
       county: getValue(payload, formData, ["county", "lan", "län"]),
-      description: getValue(payload, formData, ["description", "about", "bio", "presentation"]),
-      delivery_model: getValue(payload, formData, ["deliveryModel", "delivery_model"]),
-      delivery_areas: getJsonValue(payload, formData, ["deliveryAreas", "delivery_areas"], []),
-      services: getJsonValue(payload, formData, ["services", "serviceTypes", "service_types"], []),
-      opening_hours: getJsonValue(payload, formData, ["openingHours", "opening_hours"], null),
-      closed_dates: getJsonValue(payload, formData, ["closedDates", "closed_dates"], []),
-      stripe_account_id: getValue(payload, formData, ["stripeAccountId", "stripe_account_id"]),
-      profile_image_url: profileUpload?.url || logoUpload?.url || "https://placehold.co/100x100",
+      description: getValue(payload, formData, [
+        "description",
+        "about",
+        "bio",
+        "presentation",
+      ]),
+      delivery_model: getValue(payload, formData, [
+        "deliveryModel",
+        "delivery_model",
+      ]),
+      delivery_areas: getJsonValue(
+        payload,
+        formData,
+        ["deliveryAreas", "delivery_areas"],
+        [],
+      ),
+      services: getJsonValue(
+        payload,
+        formData,
+        ["services", "serviceTypes", "service_types"],
+        [],
+      ),
+      opening_hours: getJsonValue(
+        payload,
+        formData,
+        ["openingHours", "opening_hours"],
+        null,
+      ),
+      closed_dates: getJsonValue(
+        payload,
+        formData,
+        ["closedDates", "closed_dates"],
+        [],
+      ),
+      stripe_account_id: getValue(payload, formData, [
+        "stripeAccountId",
+        "stripe_account_id",
+      ]),
+      profile_image_url:
+        profileUpload?.url || logoUpload?.url || "https://placehold.co/100x100",
       logo_url: logoUpload?.url || null,
       logo_path: logoUpload?.path || null,
       cover_image_url: coverUpload?.url || null,
@@ -435,7 +522,7 @@ export async function POST(request: NextRequest) {
           details: floristError.message,
           hint: "Kontrollera att kolumnerna i florists-tabellen finns i Supabase.",
         },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -446,7 +533,7 @@ export async function POST(request: NextRequest) {
         floristId: florist.id,
         profileUrl: `/florist/${florist.id}`,
       },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     console.error("Florist registration error:", error);
@@ -456,8 +543,7 @@ export async function POST(request: NextRequest) {
         error: "Registreringen misslyckades.",
         details: error instanceof Error ? error.message : String(error),
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
-

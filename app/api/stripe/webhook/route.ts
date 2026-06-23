@@ -17,7 +17,7 @@ export async function POST(request: Request) {
   if (!signature || !process.env.STRIPE_WEBHOOK_SECRET) {
     return NextResponse.json(
       { error: "Missing Stripe webhook configuration." },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -31,12 +31,15 @@ export async function POST(request: Request) {
     event = stripe.webhooks.constructEvent(
       payload,
       signature,
-      process.env.STRIPE_WEBHOOK_SECRET
+      process.env.STRIPE_WEBHOOK_SECRET,
     );
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Invalid webhook signature." },
-      { status: 400 }
+      {
+        error:
+          error instanceof Error ? error.message : "Invalid webhook signature.",
+      },
+      { status: 400 },
     );
   }
 
@@ -62,7 +65,7 @@ export async function POST(request: Request) {
     if (event.type === "checkout.session.completed") {
       await handleCheckoutSessionCompleted(
         stripe,
-        event.data.object as Stripe.Checkout.Session
+        event.data.object as Stripe.Checkout.Session,
       );
     }
 
@@ -86,19 +89,26 @@ export async function POST(request: Request) {
       id: event.id,
       type: event.type,
       processing_error:
-        error instanceof Error ? error.message : "Stripe webhook processing failed.",
+        error instanceof Error
+          ? error.message
+          : "Stripe webhook processing failed.",
     });
 
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Stripe webhook processing failed." },
-      { status: 500 }
+      {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Stripe webhook processing failed.",
+      },
+      { status: 500 },
     );
   }
 }
 
 async function handleCheckoutSessionCompleted(
   stripe: Stripe,
-  session: Stripe.Checkout.Session
+  session: Stripe.Checkout.Session,
 ) {
   const admin = createSupabaseAdminClient() as AnyAdmin;
   const orderId = session.metadata?.order_id;
@@ -127,9 +137,12 @@ async function handleCheckoutSessionCompleted(
   let stripeFeeAmount = typedOrder.stripe_fee_amount ?? 0;
 
   if (paymentIntentId) {
-    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId, {
-      expand: ["latest_charge.balance_transaction"],
-    });
+    const paymentIntent = await stripe.paymentIntents.retrieve(
+      paymentIntentId,
+      {
+        expand: ["latest_charge.balance_transaction"],
+      },
+    );
 
     const charge = paymentIntent.latest_charge;
 
@@ -150,7 +163,8 @@ async function handleCheckoutSessionCompleted(
     .from("orders")
     .update({
       status: "paid",
-      stripe_payment_intent_id: paymentIntentId ?? typedOrder.stripe_payment_intent_id,
+      stripe_payment_intent_id:
+        paymentIntentId ?? typedOrder.stripe_payment_intent_id,
       stripe_fee_amount: stripeFeeAmount,
       executor_amount: split.executorAmount,
       seller_amount: split.sellerAmount,

@@ -63,7 +63,11 @@ const interestOptions: Array<{
   icon: React.ReactNode;
 }> = [
   { key: "bouquets", label: "Buketter", icon: <Flower2 size={18} /> },
-  { key: "arrangements", label: "Blomsterarrangemang", icon: <Sparkles size={18} /> },
+  {
+    key: "arrangements",
+    label: "Blomsterarrangemang",
+    icon: <Sparkles size={18} />,
+  },
   { key: "plants", label: "Krukväxter", icon: <Leaf size={18} /> },
   { key: "subscription", label: "Prenumeration", icon: <Heart size={18} /> },
   { key: "giftcards", label: "Presentkort", icon: <Gift size={18} /> },
@@ -102,13 +106,13 @@ export default function PrivateCustomerRegisterPage() {
 
     window.localStorage.setItem(
       "floristsocial_private_customer_profile_draft",
-      JSON.stringify(profileData)
+      JSON.stringify(profileData),
     );
 
     setSavedMessage(
       status === "created"
         ? "Privatkund konto sparat lokalt. Nästa steg är att koppla detta till Supabase."
-        : "Utkast sparat lokalt i webbläsaren."
+        : "Utkast sparat lokalt i webbläsaren.",
     );
   }
 
@@ -117,14 +121,14 @@ export default function PrivateCustomerRegisterPage() {
       interestOptions
         .filter((item) => selectedInterests.includes(item.key))
         .map((item) => item.label),
-    [selectedInterests]
+    [selectedInterests],
   );
 
   function toggleInterest(key: InterestKey) {
     setSelectedInterests((current) =>
       current.includes(key)
         ? current.filter((item) => item !== key)
-        : [...current, key]
+        : [...current, key],
     );
   }
 
@@ -314,7 +318,9 @@ export default function PrivateCustomerRegisterPage() {
                     <div className="relative">
                       <select
                         value={favoriteFlower}
-                        onChange={(event) => setFavoriteFlower(event.target.value)}
+                        onChange={(event) =>
+                          setFavoriteFlower(event.target.value)
+                        }
                         className="w-full appearance-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold outline-none transition focus:border-pink-400 focus:bg-white"
                       >
                         {cutFlowers.map((flower) => (
@@ -361,8 +367,14 @@ export default function PrivateCustomerRegisterPage() {
                 <div className="grid gap-3 sm:grid-cols-2">
                   <CheckboxField label="Jag har pollenallergi" />
                   <CheckboxField label="Jag har allergi till doftande blommor" />
-                  <CheckboxField label="Jag vill spara mina uppgifter för snabbare checkout" defaultChecked />
-                  <CheckboxField label="Jag vill kunna se orderhistorik" defaultChecked />
+                  <CheckboxField
+                    label="Jag vill spara mina uppgifter för snabbare checkout"
+                    defaultChecked
+                  />
+                  <CheckboxField
+                    label="Jag vill kunna se orderhistorik"
+                    defaultChecked
+                  />
                   <CheckboxField label="Jag vill spara födelsedagar, årsdagar och högtider i kalender" />
                   <CheckboxField label="Jag godkänner villkor och integritetspolicy *" />
                   <CheckboxField label="Jag vill få erbjudanden via e-post" />
@@ -422,7 +434,11 @@ export default function PrivateCustomerRegisterPage() {
                 <div className="h-28 bg-gradient-to-br from-pink-200 via-rose-100 to-emerald-100" />
                 <div className="px-5 pb-5">
                   <div className="-mt-10 grid h-20 w-20 place-items-center rounded-3xl border-4 border-white bg-pink-100 text-pink-700 shadow-sm">
-                    {profileImageName ? <Camera size={30} /> : <User size={30} />}
+                    {profileImageName ? (
+                      <Camera size={30} />
+                    ) : (
+                      <User size={30} />
+                    )}
                   </div>
 
                   <h2 className="mt-4 text-xl font-black tracking-tight">
@@ -583,4 +599,3 @@ function PreviewRow({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
-

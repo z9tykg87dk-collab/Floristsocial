@@ -7,7 +7,7 @@ export default async function DirectoryPage() {
   const missingEnv = getMissingRequiredEnv().filter(
     (key) =>
       key === "NEXT_PUBLIC_SUPABASE_URL" ||
-      key === "NEXT_PUBLIC_SUPABASE_ANON_KEY"
+      key === "NEXT_PUBLIC_SUPABASE_ANON_KEY",
   );
   const florists = await getDirectoryFlorists();
 
@@ -66,7 +66,8 @@ export default async function DirectoryPage() {
               </div>
 
               <p className="mt-4 line-clamp-4 min-h-24 text-sm leading-6 text-stone-600">
-                {florist.bio || "No bio yet. This florist profile is live and ready for enrichment."}
+                {florist.bio ||
+                  "No bio yet. This florist profile is live and ready for enrichment."}
               </p>
 
               <dl className="mt-6 grid gap-3 text-sm text-stone-600">
@@ -124,7 +125,8 @@ export default async function DirectoryPage() {
             No florist profiles yet
           </p>
           <h2 className="mt-4 text-3xl font-semibold text-stone-900">
-            The directory will populate after the first florist finishes onboarding.
+            The directory will populate after the first florist finishes
+            onboarding.
           </h2>
           <p className="mt-4 max-w-2xl text-base leading-7 text-stone-600">
             Sign in, complete the florist onboarding flow, then return here to

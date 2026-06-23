@@ -4,7 +4,11 @@ import { redirect } from "next/navigation";
 
 import { getCurrentUser } from "@/lib/auth";
 import { getDirectoryFlorist } from "@/lib/directory";
-import { getAppUrl, getMissingStripeConnectEnv, hasRequiredEnv } from "@/lib/env";
+import {
+  getAppUrl,
+  getMissingStripeConnectEnv,
+  hasRequiredEnv,
+} from "@/lib/env";
 import { getMarketplaceProduct } from "@/lib/products";
 import { getStripeServerClient } from "@/lib/stripe";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -16,7 +20,7 @@ export type CheckoutState = {
 
 export async function startDirectCheckoutAction(
   _previousState: CheckoutState,
-  formData: FormData
+  formData: FormData,
 ): Promise<CheckoutState> {
   if (!hasRequiredEnv()) {
     return {

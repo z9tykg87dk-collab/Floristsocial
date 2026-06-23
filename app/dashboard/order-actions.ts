@@ -22,12 +22,13 @@ const allowedStatuses = new Set([
 
 export async function updateFloristOrderStatusAction(
   _previousState: OrderStatusState,
-  formData: FormData
+  formData: FormData,
 ): Promise<OrderStatusState> {
   if (!hasRequiredEnv()) {
     return {
       status: "error",
-      message: "Configure Supabase environment variables before updating orders.",
+      message:
+        "Configure Supabase environment variables before updating orders.",
     };
   }
 

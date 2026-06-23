@@ -54,7 +54,7 @@ export default function CommentSection({ postId }: { postId: string }) {
         },
         () => {
           loadComments();
-        }
+        },
       )
       .subscribe();
 
@@ -134,7 +134,9 @@ export default function CommentSection({ postId }: { postId: string }) {
           }}
         >
           {comments.length === 0 ? (
-            <p style={{ color: "#666", marginTop: 0 }}>Inga kommentarer ännu.</p>
+            <p style={{ color: "#666", marginTop: 0 }}>
+              Inga kommentarer ännu.
+            </p>
           ) : (
             comments.map((comment) => {
               const name =

@@ -17,7 +17,9 @@ export default async function FeedPostPage({ params }: PageProps) {
 
   const { data: post, error } = await supabase
     .from("posts")
-    .select("id, title, caption, hashtags, price, image_url, created_at, florist_id, is_sponsored")
+    .select(
+      "id, title, caption, hashtags, price, image_url, created_at, florist_id, is_sponsored",
+    )
     .eq("id", id)
     .single();
 

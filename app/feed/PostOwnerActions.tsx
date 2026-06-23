@@ -3,11 +3,7 @@
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
-export default function PostOwnerActions({
-  postId,
-}: {
-  postId: string;
-}) {
+export default function PostOwnerActions({ postId }: { postId: string }) {
   const router = useRouter();
   const supabase = createSupabaseBrowserClient();
 
@@ -16,10 +12,7 @@ export default function PostOwnerActions({
 
     if (!confirmed) return;
 
-    const { error } = await supabase
-      .from("posts")
-      .delete()
-      .eq("id", postId);
+    const { error } = await supabase.from("posts").delete().eq("id", postId);
 
     if (error) {
       alert("Kunde inte ta bort inlägget: " + error.message);

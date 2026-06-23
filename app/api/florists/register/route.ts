@@ -61,7 +61,8 @@ function parsePayload(formData: FormData): JsonRecord {
 
   try {
     const parsed = JSON.parse(rawPayload);
-    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) return parsed;
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed))
+      return parsed;
     return {};
   } catch (error) {
     console.error("Could not parse register payload:", error);
@@ -125,7 +126,11 @@ function buildClosedDates(payload: JsonRecord) {
   ];
 }
 
-async function uploadFile(bucket: string, folder: string, file: File | null): Promise<UploadedFileInfo | null> {
+async function uploadFile(
+  bucket: string,
+  folder: string,
+  file: File | null,
+): Promise<UploadedFileInfo | null> {
   if (!file || file.size === 0) return null;
 
   const ext = file.name.split(".").pop() || "bin";
@@ -139,12 +144,15 @@ async function uploadFile(bucket: string, folder: string, file: File | null): Pr
   const path = `${folder}/${Date.now()}-${crypto.randomUUID()}-${safeName}.${ext}`;
   const buffer = Buffer.from(await file.arrayBuffer());
 
-  const { error } = await supabaseAdmin.storage.from(bucket).upload(path, buffer, {
-    contentType: file.type || "application/octet-stream",
-    upsert: false,
-  });
+  const { error } = await supabaseAdmin.storage
+    .from(bucket)
+    .upload(path, buffer, {
+      contentType: file.type || "application/octet-stream",
+      upsert: false,
+    });
 
-  if (error) throw new Error(`Storage upload failed for ${file.name}: ${error.message}`);
+  if (error)
+    throw new Error(`Storage upload failed for ${file.name}: ${error.message}`);
 
   const { data } = supabaseAdmin.storage.from(bucket).getPublicUrl(path);
 
@@ -159,7 +167,7 @@ async function uploadFile(bucket: string, folder: string, file: File | null): Pr
 
 function mapServicePortfolioWithUploads(
   servicePortfolioItems: Record<string, any[]>,
-  uploadByFileKey: Record<string, UploadedFileInfo | null>
+  uploadByFileKey: Record<string, UploadedFileInfo | null>,
 ) {
   const result: Record<string, any[]> = {};
 
@@ -182,7 +190,10 @@ function mapServicePortfolioWithUploads(
   return result;
 }
 
-function mapGeneralPortfolioWithUploads(items: any[], uploadByFileKey: Record<string, UploadedFileInfo | null>) {
+function mapGeneralPortfolioWithUploads(
+  items: any[],
+  uploadByFileKey: Record<string, UploadedFileInfo | null>,
+) {
   return asArray(items)
     .filter((item) => item?.isSaved)
     .map((item) => ({
@@ -198,12 +209,17 @@ function mapGeneralPortfolioWithUploads(items: any[], uploadByFileKey: Record<st
     }));
 }
 
-function flattenPortfolioImages(servicePortfolioItems: Record<string, any[]>, generalPortfolioItems: any[]) {
+function flattenPortfolioImages(
+  servicePortfolioItems: Record<string, any[]>,
+  generalPortfolioItems: any[],
+) {
   const serviceImages = Object.values(servicePortfolioItems)
     .flat()
     .filter((item) => item?.url || item?.image?.url);
 
-  const generalImages = asArray(generalPortfolioItems).filter((item) => item?.url || item?.image?.url);
+  const generalImages = asArray(generalPortfolioItems).filter(
+    (item) => item?.url || item?.image?.url,
+  );
 
   return [...serviceImages, ...generalImages];
 }
@@ -220,23 +236,35 @@ export async function POST(request: NextRequest) {
     console.log("REGISTER PAYLOAD:", payload);
 
     const ownerEmail = getPayloadString(payload, ["ownerEmail", "email"]);
-    const publicEmail = getPayloadString(payload, ["publicEmail", "shopEmail"], ownerEmail);
+    const publicEmail = getPayloadString(
+      payload,
+      ["publicEmail", "shopEmail"],
+      ownerEmail,
+    );
     const password = getPayloadString(payload, ["password"]);
-    const shopName = getPayloadString(payload, ["shopName"], ownerEmail.split("@")[0] || "Florist");
+    const shopName = getPayloadString(
+      payload,
+      ["shopName"],
+      ownerEmail.split("@")[0] || "Florist",
+    );
     const firstName = getPayloadString(payload, ["firstName"]);
     const lastName = getPayloadString(payload, ["lastName"]);
 
     if (!ownerEmail) {
       return NextResponse.json(
-        { error: "E-post saknas.", receivedPayloadKeys: Object.keys(payload), receivedPayload: payload },
-        { status: 400 }
+        {
+          error: "E-post saknas.",
+          receivedPayloadKeys: Object.keys(payload),
+          receivedPayload: payload,
+        },
+        { status: 400 },
       );
     }
 
     if (!password || password.length < 8) {
       return NextResponse.json(
         { error: "Lösenord saknas eller är för kort. Minst 8 tecken krävs." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -245,65 +273,88 @@ export async function POST(request: NextRequest) {
 
     const uploadByFileKey: Record<string, UploadedFileInfo | null> = {};
     const portfolioFileEntries = Array.from(formData.entries()).filter(
-      ([key, value]) => key.startsWith("portfolioFile_") && value instanceof File && value.size > 0
+      ([key, value]) =>
+        key.startsWith("portfolioFile_") &&
+        value instanceof File &&
+        value.size > 0,
     ) as [string, File][];
 
     for (const [fileKey, file] of portfolioFileEntries) {
-      uploadByFileKey[fileKey] = await uploadFile(bucket, `${slug}/portfolio`, file);
+      uploadByFileKey[fileKey] = await uploadFile(
+        bucket,
+        `${slug}/portfolio`,
+        file,
+      );
     }
 
     const profileUpload = await uploadFile(
       bucket,
       `${slug}/profile`,
-      formData.get("profileImage") instanceof File ? (formData.get("profileImage") as File) : null
+      formData.get("profileImage") instanceof File
+        ? (formData.get("profileImage") as File)
+        : null,
     );
 
     const logoUpload = await uploadFile(
       bucket,
       `${slug}/logo`,
-      formData.get("logo") instanceof File ? (formData.get("logo") as File) : null
+      formData.get("logo") instanceof File
+        ? (formData.get("logo") as File)
+        : null,
     );
 
     const coverUpload = await uploadFile(
       bucket,
       `${slug}/cover`,
-      formData.get("coverImage") instanceof File ? (formData.get("coverImage") as File) : null
+      formData.get("coverImage") instanceof File
+        ? (formData.get("coverImage") as File)
+        : null,
     );
 
     const servicePortfolioItems = mapServicePortfolioWithUploads(
       asObject(payload.servicePortfolioItems),
-      uploadByFileKey
+      uploadByFileKey,
     );
 
     const generalPortfolioItems = mapGeneralPortfolioWithUploads(
       asArray(payload.generalPortfolioItems),
-      uploadByFileKey
+      uploadByFileKey,
     );
 
-    const portfolioImages = flattenPortfolioImages(servicePortfolioItems, generalPortfolioItems);
+    const portfolioImages = flattenPortfolioImages(
+      servicePortfolioItems,
+      generalPortfolioItems,
+    );
 
-    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email: ownerEmail,
-      password,
-      email_confirm: true,
-      user_metadata: {
-        role: "florist",
-        shop_name: shopName,
-        public_email: publicEmail,
-        slug,
-      },
-    });
+    const { data: authUser, error: authError } =
+      await supabaseAdmin.auth.admin.createUser({
+        email: ownerEmail,
+        password,
+        email_confirm: true,
+        user_metadata: {
+          role: "florist",
+          shop_name: shopName,
+          public_email: publicEmail,
+          slug,
+        },
+      });
 
     if (authError || !authUser.user) {
       return NextResponse.json(
-        { error: authError?.message || "Kunde inte skapa användare i Authentication." },
-        { status: 400 }
+        {
+          error:
+            authError?.message ||
+            "Kunde inte skapa användare i Authentication.",
+        },
+        { status: 400 },
       );
     }
 
     authUserId = authUser.user.id;
 
-    const organizationNumber = getPayloadString(payload, ["organizationNumber"]);
+    const organizationNumber = getPayloadString(payload, [
+      "organizationNumber",
+    ]);
     const closedDates = buildClosedDates(payload);
     const holidayOverrides = asArray(payload.holidayOverrides);
     const calendarEvents = asArray(payload.calendarEvents);
@@ -319,7 +370,11 @@ export async function POST(request: NextRequest) {
       shop_name: shopName,
       legal_business_name: getPayloadString(payload, ["legalBusinessName"]),
       organization_number: organizationNumber,
-      masked_organization_number: getPayloadString(payload, ["maskedOrganizationNumber"], maskOrgNumber(organizationNumber)),
+      masked_organization_number: getPayloadString(
+        payload,
+        ["maskedOrganizationNumber"],
+        maskOrgNumber(organizationNumber),
+      ),
       role: "florist",
       profile_name: slug,
       slug,
@@ -344,7 +399,10 @@ export async function POST(request: NextRequest) {
       services: asArray(payload.selectedServices),
       styles: asArray(payload.selectedStyles),
       price_level: getPayloadString(payload, ["priceLevel"]),
-      minimum_booking_value: getPayloadString(payload, ["minimumOrderValue", "minimumBookingValue"]),
+      minimum_booking_value: getPayloadString(payload, [
+        "minimumOrderValue",
+        "minimumBookingValue",
+      ]),
       years_in_business: getPayloadString(payload, ["yearsInBusiness"]),
       team_size: getPayloadString(payload, ["teamSize"]),
       opening_hours: asArray(payload.openingHours),
@@ -387,7 +445,7 @@ export async function POST(request: NextRequest) {
           hint: "Kontrollera att nya kolumner finns i florists-tabellen: holiday_overrides, calendar_events och seasonal_closures.",
           attemptedPayloadKeys: Object.keys(floristPayload),
         },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -399,7 +457,7 @@ export async function POST(request: NextRequest) {
         slug: florist.slug,
         profileUrl: `/florist/${florist.id}`,
       },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     console.error("Florist registration error:", error);
@@ -413,8 +471,7 @@ export async function POST(request: NextRequest) {
         error: "Registreringen misslyckades.",
         details: error instanceof Error ? error.message : String(error),
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
-

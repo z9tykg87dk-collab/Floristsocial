@@ -1,22 +1,23 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { useParams } from "next/navigation"
-import { supabase } from "@/lib/supabase"
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import { supabase } from "@/lib/supabase";
 
 export default function ChatPage() {
-  const params = useParams()
-  const conversationId = params.id as string
+  const params = useParams();
+  const conversationId = params.id as string;
 
-  const [messages, setMessages] = useState<any[]>([])
-  const [input, setInput] = useState("")
+  const [messages, setMessages] = useState<any[]>([]);
+  const [input, setInput] = useState("");
 
-  const myFloristId = "0d4fbbd0-c02e-46c0-a27a-6fd2a8bb52f3"
+  const myFloristId = "0d4fbbd0-c02e-46c0-a27a-6fd2a8bb52f3";
 
   const loadMessages = async () => {
     const { data, error } = await supabase
       .from("messages")
-      .select(`
+      .select(
+        `
         *,
         florists (
           id,
@@ -25,41 +26,45 @@ export default function ChatPage() {
           shop_name,
           profile_image_url
         )
-      `)
+      `,
+      )
       .eq("conversation_id", conversationId)
-      .order("created_at", { ascending: true })
+      .order("created_at", { ascending: true });
 
     if (error) {
-      console.error("Load messages FULL error:", JSON.stringify(error, null, 2))
-      return
+      console.error(
+        "Load messages FULL error:",
+        JSON.stringify(error, null, 2),
+      );
+      return;
     }
 
-    setMessages(data || [])
-  }
+    setMessages(data || []);
+  };
 
   const sendMessage = async () => {
-    if (!input.trim()) return
+    if (!input.trim()) return;
 
     const { error } = await supabase.from("messages").insert({
       conversation_id: conversationId,
       sender_id: myFloristId,
       content: input.trim(),
-    })
+    });
 
     if (error) {
-      console.error("Send message FULL error:", JSON.stringify(error, null, 2))
-      alert("Kunde inte skicka meddelandet")
-      return
+      console.error("Send message FULL error:", JSON.stringify(error, null, 2));
+      alert("Kunde inte skicka meddelandet");
+      return;
     }
 
-    setInput("")
-    await loadMessages()
-  }
+    setInput("");
+    await loadMessages();
+  };
 
   useEffect(() => {
-    if (!conversationId || conversationId === "<din-id>") return
+    if (!conversationId || conversationId === "<din-id>") return;
 
-    loadMessages()
+    loadMessages();
 
     const channel = supabase
       .channel(`chat-${conversationId}`)
@@ -72,15 +77,15 @@ export default function ChatPage() {
           filter: `conversation_id=eq.${conversationId}`,
         },
         () => {
-          loadMessages()
-        }
+          loadMessages();
+        },
       )
-      .subscribe()
+      .subscribe();
 
     return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [conversationId])
+      supabase.removeChannel(channel);
+    };
+  }, [conversationId]);
 
   if (!conversationId || conversationId === "<din-id>") {
     return (
@@ -88,7 +93,7 @@ export default function ChatPage() {
         <h1>Florist-chat</h1>
         <p>Ogiltigt chat-id.</p>
       </div>
-    )
+    );
   }
 
   return (
@@ -102,14 +107,14 @@ export default function ChatPage() {
           const name =
             msg.florists?.shop_name ||
             `${msg.florists?.first_name || ""} ${msg.florists?.last_name || ""}`.trim() ||
-            "Florist"
+            "Florist";
 
           return (
             <div key={msg.id} style={{ marginBottom: 12 }}>
               <strong>{name}</strong>
               <p>{msg.content}</p>
             </div>
-          )
+          );
         })}
       </div>
 
@@ -124,5 +129,5 @@ export default function ChatPage() {
         <button onClick={sendMessage}>Skicka</button>
       </div>
     </div>
-  )
+  );
 }

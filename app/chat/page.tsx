@@ -13,13 +13,15 @@ export default async function ChatPage() {
 
   const { data: conversations } = await supabase
     .from("conversation_participants")
-    .select(`
+    .select(
+      `
       conversation_id,
       conversations (
         id,
         created_at
       )
-    `)
+    `,
+    )
     .eq("profile_id", user.id);
 
   return (

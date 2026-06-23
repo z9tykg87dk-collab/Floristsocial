@@ -46,9 +46,18 @@ type SavedCalendarNote = {
 };
 
 const detectedCountryLanguage = "Svenska";
-const languages = [detectedCountryLanguage, "English"]; 
+const languages = [detectedCountryLanguage, "English"];
 
-const colors = ["Rosa", "Vit", "Beige", "Lila", "Röd", "Grön", "Blå", "Aprikos"];
+const colors = [
+  "Rosa",
+  "Vit",
+  "Beige",
+  "Lila",
+  "Röd",
+  "Grön",
+  "Blå",
+  "Aprikos",
+];
 
 const holidays = [
   "Alla hjärtans dag",
@@ -255,10 +264,16 @@ function getEventIcon(type: CalendarEventType) {
 
 export default function PrivateCustomerProfilePage() {
   const calendarDays = getCalendarDays();
-  const upcomingEvents = calendarEvents.filter((event) => event.date >= toDateKey(today));
+  const upcomingEvents = calendarEvents.filter(
+    (event) => event.date >= toDateKey(today),
+  );
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [selectedDayEvents, setSelectedDayEvents] = useState<typeof calendarEvents>([]);
-  const [activeAction, setActiveAction] = useState<CalendarActionType | null>(null);
+  const [selectedDayEvents, setSelectedDayEvents] = useState<
+    typeof calendarEvents
+  >([]);
+  const [activeAction, setActiveAction] = useState<CalendarActionType | null>(
+    null,
+  );
   const [noteText, setNoteText] = useState("");
   const [savedNotes, setSavedNotes] = useState<SavedCalendarNote[]>([]);
 
@@ -292,7 +307,9 @@ export default function PrivateCustomerProfilePage() {
     setNoteText("");
   }
 
-  const selectedDateNotes = savedNotes.filter((note) => note.date === selectedDate);
+  const selectedDateNotes = savedNotes.filter(
+    (note) => note.date === selectedDate,
+  );
 
   return (
     <main className="min-h-screen bg-[#f7f2ea] px-4 py-6 text-slate-950 sm:px-6 lg:px-8">
@@ -306,8 +323,8 @@ export default function PrivateCustomerProfilePage() {
               Privatkund profil
             </h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-              Kalendern är navet för order, leveranser, presentkort, bekräftelser,
-              högtider och personliga påminnelser.
+              Kalendern är navet för order, leveranser, presentkort,
+              bekräftelser, högtider och personliga påminnelser.
             </p>
           </div>
 
@@ -339,9 +356,21 @@ export default function PrivateCustomerProfilePage() {
             </div>
 
             <div className="grid grid-cols-3 gap-2">
-              <HeaderAction icon={<MessageCircle size={17} />} label="Meddelanden" count="2" />
-              <HeaderAction icon={<Bell size={17} />} label="Notiser" count="5" />
-              <HeaderAction icon={<Heart size={17} />} label="Favoriter" count="3" />
+              <HeaderAction
+                icon={<MessageCircle size={17} />}
+                label="Meddelanden"
+                count="2"
+              />
+              <HeaderAction
+                icon={<Bell size={17} />}
+                label="Notiser"
+                count="5"
+              />
+              <HeaderAction
+                icon={<Heart size={17} />}
+                label="Favoriter"
+                count="3"
+              />
             </div>
           </div>
         </div>
@@ -367,7 +396,7 @@ export default function PrivateCustomerProfilePage() {
         </div>
 
         <section className="overflow-hidden rounded-[2rem] bg-white shadow-xl shadow-slate-200/80">
-          <div className="relative h-64 bg-gradient-to-br from-pink-200 via-rose-100 to-emerald-100 sm:h-72">
+          <div className="relative h-40 bg-gradient-to-br from-pink-200 via-rose-100 to-emerald-100 sm:h-72">
             <div className="absolute inset-0 opacity-40">
               <div className="absolute left-10 top-10 h-24 w-24 rounded-full bg-white/70 blur-xl" />
               <div className="absolute right-16 top-20 h-32 w-32 rounded-full bg-pink-300/40 blur-2xl" />
@@ -379,7 +408,7 @@ export default function PrivateCustomerProfilePage() {
           </div>
 
           <div className="relative px-6 pb-8 sm:px-10">
-            <div className="-mt-16 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+            <div className="-mt-12 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
                 <div className="grid h-32 w-32 place-items-center rounded-[2rem] border-4 border-white bg-pink-100 text-pink-700 shadow-lg">
                   <User size={58} />
@@ -403,9 +432,24 @@ export default function PrivateCustomerProfilePage() {
               </div>
 
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                <StatusBadge label="E-post" active={customer.emailVerified} activeText="Verifierad" inactiveText="Ej verifierad" />
-                <StatusBadge label="SMS" active={customer.phoneVerified} activeText="Verifierad" inactiveText="Verifiera" />
-                <StatusBadge label="Checkout" active={customer.fastCheckout} activeText="Aktiv" inactiveText="Av" />
+                <StatusBadge
+                  label="E-post"
+                  active={customer.emailVerified}
+                  activeText="Verifierad"
+                  inactiveText="Ej verifierad"
+                />
+                <StatusBadge
+                  label="SMS"
+                  active={customer.phoneVerified}
+                  activeText="Verifierad"
+                  inactiveText="Verifiera"
+                />
+                <StatusBadge
+                  label="Checkout"
+                  active={customer.fastCheckout}
+                  activeText="Aktiv"
+                  inactiveText="Av"
+                />
               </div>
             </div>
           </div>
@@ -444,7 +488,9 @@ export default function PrivateCustomerProfilePage() {
               <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">
                 Visar period
               </p>
-              <p className="font-black text-slate-900">14 maj 2026 - 9 juli 2026</p>
+              <p className="font-black text-slate-900">
+                14 maj 2026 - 9 juli 2026
+              </p>
             </div>
             <button className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-black text-slate-700 shadow-sm hover:text-pink-700">
               Nästa period
@@ -456,7 +502,9 @@ export default function PrivateCustomerProfilePage() {
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-7">
               {calendarDays.map((day) => {
                 const key = toDateKey(day);
-                const events = calendarEvents.filter((event) => event.date === key);
+                const events = calendarEvents.filter(
+                  (event) => event.date === key,
+                );
                 const isToday = key === toDateKey(today);
                 const isPast = day < today && !isToday;
 
@@ -489,7 +537,9 @@ export default function PrivateCustomerProfilePage() {
 
                     <div className="space-y-2">
                       {events.length === 0 ? (
-                        <p className="text-xs font-bold text-slate-300">Inga händelser</p>
+                        <p className="text-xs font-bold text-slate-300">
+                          Inga händelser
+                        </p>
                       ) : (
                         events.map((event) => (
                           <div
@@ -497,8 +547,12 @@ export default function PrivateCustomerProfilePage() {
                             className={`rounded-2xl border px-3 py-2 text-xs font-bold whitespace-normal break-words [overflow-wrap:anywhere] ${getEventStyle(event.type)}`}
                           >
                             <div className="mb-1 flex min-w-0 items-start gap-1 font-black leading-tight [overflow-wrap:anywhere]">
-                              <span className="mt-0.5 shrink-0">{getEventIcon(event.type)}</span>
-                              <span className="min-w-0 break-words [overflow-wrap:anywhere]">{event.title}</span>
+                              <span className="mt-0.5 shrink-0">
+                                {getEventIcon(event.type)}
+                              </span>
+                              <span className="min-w-0 break-words [overflow-wrap:anywhere]">
+                                {event.title}
+                              </span>
                             </div>
                             <p className="flex items-center gap-1 break-words opacity-80 [overflow-wrap:anywhere]">
                               <Clock size={12} className="shrink-0" />
@@ -523,10 +577,15 @@ export default function PrivateCustomerProfilePage() {
 
               <div className="mt-5 space-y-3">
                 {upcomingEvents.slice(0, 6).map((event) => (
-                  <div key={`${event.date}-${event.title}`} className="rounded-3xl bg-white p-4 shadow-sm">
+                  <div
+                    key={`${event.date}-${event.title}`}
+                    className="rounded-3xl bg-white p-4 shadow-sm"
+                  >
                     <div className="mb-2 flex items-center justify-between gap-3">
                       <p className="font-black text-slate-950">{event.title}</p>
-                      <span className={`rounded-full border px-2 py-1 text-xs font-black ${getEventStyle(event.type)}`}>
+                      <span
+                        className={`rounded-full border px-2 py-1 text-xs font-black ${getEventStyle(event.type)}`}
+                      >
                         {event.date.slice(5)}
                       </span>
                     </div>
@@ -543,36 +602,73 @@ export default function PrivateCustomerProfilePage() {
         <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_360px]">
           <div className="space-y-6">
             <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              <QuickCard icon={<ShoppingBag />} title="Mina ordrar" value="3 ordrar" />
-              <QuickCard icon={<Heart />} title="Sparade florister" value="3 favoriter" />
+              <QuickCard
+                icon={<ShoppingBag />}
+                title="Mina ordrar"
+                value="3 ordrar"
+              />
+              <QuickCard
+                icon={<Heart />}
+                title="Sparade florister"
+                value="3 favoriter"
+              />
               <QuickCard icon={<Gift />} title="Presentkort" value="0 aktiva" />
-              <QuickCard icon={<CalendarDays />} title="Kalender" value="57 dagar" />
+              <QuickCard
+                icon={<CalendarDays />}
+                title="Kalender"
+                value="57 dagar"
+              />
             </section>
 
-            <ProfileCard title="Min blomsterprofil" icon={<Sparkles size={22} />}>
+            <ProfileCard
+              title="Min blomsterprofil"
+              icon={<Sparkles size={22} />}
+            >
               <div className="grid gap-4 sm:grid-cols-3">
-                <InfoTile label="Favoritblomma" value={customer.favoriteFlower} />
+                <InfoTile
+                  label="Favoritblomma"
+                  value={customer.favoriteFlower}
+                />
                 <InfoTile label="Favoritfärg" value={customer.favoriteColor} />
                 <InfoTile label="Språk" value={customer.language} />
-                <InfoTile label="Jag föredrar" value={customer.preferredStyle} />
-                <InfoTile label="Nyhetsbrev" value={customer.newsletter ? "Prenumererar" : "Inte aktiv"} />
-                <InfoTile label="Kalender" value={customer.calendarEnabled ? "Aktiv" : "Av"} />
+                <InfoTile
+                  label="Jag föredrar"
+                  value={customer.preferredStyle}
+                />
+                <InfoTile
+                  label="Nyhetsbrev"
+                  value={customer.newsletter ? "Prenumererar" : "Inte aktiv"}
+                />
+                <InfoTile
+                  label="Kalender"
+                  value={customer.calendarEnabled ? "Aktiv" : "Av"}
+                />
               </div>
 
               <div className="mt-5">
-                <p className="mb-3 text-sm font-black text-slate-800">Valda färger</p>
+                <p className="mb-3 text-sm font-black text-slate-800">
+                  Valda färger
+                </p>
                 <div className="mb-5 flex flex-wrap gap-2">
                   {colors.map((color) => (
-                    <span key={color} className="rounded-full bg-rose-100 px-4 py-2 text-sm font-black text-rose-700">
+                    <span
+                      key={color}
+                      className="rounded-full bg-rose-100 px-4 py-2 text-sm font-black text-rose-700"
+                    >
                       {color}
                     </span>
                   ))}
                 </div>
 
-                <p className="mb-3 text-sm font-black text-slate-800">Jag är intresserad av</p>
+                <p className="mb-3 text-sm font-black text-slate-800">
+                  Jag är intresserad av
+                </p>
                 <div className="flex flex-wrap gap-2">
                   {customer.interests.map((interest) => (
-                    <span key={interest} className="rounded-full bg-pink-50 px-4 py-2 text-sm font-black text-pink-700">
+                    <span
+                      key={interest}
+                      className="rounded-full bg-pink-50 px-4 py-2 text-sm font-black text-pink-700"
+                    >
                       {interest}
                     </span>
                   ))}
@@ -580,10 +676,19 @@ export default function PrivateCustomerProfilePage() {
               </div>
             </ProfileCard>
 
-            <ProfileCard title="Allergier & önskemål" icon={<ShieldCheck size={22} />}>
+            <ProfileCard
+              title="Allergier & önskemål"
+              icon={<ShieldCheck size={22} />}
+            >
               <div className="grid gap-3 sm:grid-cols-2">
-                <CheckRow label="Pollenallergi" active={customer.pollenAllergy} />
-                <CheckRow label="Allergi till doftande blommor" active={customer.fragranceAllergy} />
+                <CheckRow
+                  label="Pollenallergi"
+                  active={customer.pollenAllergy}
+                />
+                <CheckRow
+                  label="Allergi till doftande blommor"
+                  active={customer.fragranceAllergy}
+                />
               </div>
 
               <div className="mt-5 rounded-3xl bg-slate-50 p-5">
@@ -596,10 +701,16 @@ export default function PrivateCustomerProfilePage() {
               </div>
             </ProfileCard>
 
-            <ProfileCard title="Orderhistorik" icon={<PackageCheck size={22} />}>
+            <ProfileCard
+              title="Orderhistorik"
+              icon={<PackageCheck size={22} />}
+            >
               <div className="space-y-3">
                 {orders.map((order) => (
-                  <div key={order.id} className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div
+                    key={order.id}
+                    className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between"
+                  >
                     <div>
                       <p className="font-black text-slate-950">{order.id}</p>
                       <p className="mt-1 text-sm font-semibold text-slate-500">
@@ -625,26 +736,41 @@ export default function PrivateCustomerProfilePage() {
               <div className="space-y-3 text-sm">
                 <ContactRow icon={<Mail size={17} />} value={customer.email} />
                 <ContactRow icon={<Phone size={17} />} value={customer.phone} />
-                <ContactRow icon={<MapPin size={17} />} value={`${customer.address}, ${customer.postalCode} ${customer.city}, ${customer.country}`} />
+                <ContactRow
+                  icon={<MapPin size={17} />}
+                  value={`${customer.address}, ${customer.postalCode} ${customer.city}, ${customer.country}`}
+                />
               </div>
 
               <div className="mt-5 rounded-3xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
                 <p className="font-black">Verifiering vid ändringar</p>
-                <p className="mt-1">Ny e-post verifieras via länk. Nytt telefonnummer verifieras via SMS-kod.</p>
+                <p className="mt-1">
+                  Ny e-post verifieras via länk. Nytt telefonnummer verifieras
+                  via SMS-kod.
+                </p>
               </div>
             </ProfileCard>
 
-            <ProfileCard title="Högtidskalender" icon={<CalendarDays size={22} />}>
+            <ProfileCard
+              title="Högtidskalender"
+              icon={<CalendarDays size={22} />}
+            >
               <div className="mb-5 flex flex-wrap gap-2">
                 {customer.selectedHolidays.map((holiday) => (
-                  <span key={holiday} className="rounded-full bg-pink-50 px-4 py-2 text-sm font-black text-pink-700">
+                  <span
+                    key={holiday}
+                    className="rounded-full bg-pink-50 px-4 py-2 text-sm font-black text-pink-700"
+                  >
                     {holiday}
                   </span>
                 ))}
               </div>
               <div className="grid grid-cols-2 gap-2">
                 {holidays.map((holiday) => (
-                  <div key={holiday} className="rounded-2xl bg-slate-50 px-3 py-2 text-xs font-black text-slate-700">
+                  <div
+                    key={holiday}
+                    className="rounded-2xl bg-slate-50 px-3 py-2 text-xs font-black text-slate-700"
+                  >
                     {holiday}
                   </div>
                 ))}
@@ -654,7 +780,10 @@ export default function PrivateCustomerProfilePage() {
             <ProfileCard title="Sparade florister" icon={<Star size={22} />}>
               <div className="space-y-2">
                 {favoriteFlorists.map((florist) => (
-                  <button key={florist} className="flex w-full items-center justify-between rounded-2xl bg-slate-50 px-4 py-3 text-left text-sm font-black text-slate-800 hover:bg-pink-50 hover:text-pink-700">
+                  <button
+                    key={florist}
+                    className="flex w-full items-center justify-between rounded-2xl bg-slate-50 px-4 py-3 text-left text-sm font-black text-slate-800 hover:bg-pink-50 hover:text-pink-700"
+                  >
                     {florist}
                     <ChevronRight size={16} />
                   </button>
@@ -664,16 +793,31 @@ export default function PrivateCustomerProfilePage() {
 
             <ProfileCard title="Kommunikation" icon={<Bell size={22} />}>
               <div className="mb-5 rounded-3xl border border-pink-100 bg-pink-50 p-5">
-                <p className="text-sm font-black text-pink-800">Prenumerera på vårt nyhetsbrev</p>
+                <p className="text-sm font-black text-pink-800">
+                  Prenumerera på vårt nyhetsbrev
+                </p>
                 <p className="mt-2 text-sm leading-6 text-pink-700">
-                  Få inspiration, erbjudanden, säsongsbuketter och exklusiva floristkampanjer direkt från FloristSocial.
+                  Få inspiration, erbjudanden, säsongsbuketter och exklusiva
+                  floristkampanjer direkt från FloristSocial.
                 </p>
               </div>
               <div className="space-y-3">
-                <CheckRow label="Erbjudanden via e-post" active={customer.emailMarketing} />
-                <CheckRow label="Erbjudanden via SMS" active={customer.smsMarketing} />
-                <CheckRow label="Orderhistorik aktiverad" active={customer.orderHistory} />
-                <CheckRow label="Snabb checkout aktiverad" active={customer.fastCheckout} />
+                <CheckRow
+                  label="Erbjudanden via e-post"
+                  active={customer.emailMarketing}
+                />
+                <CheckRow
+                  label="Erbjudanden via SMS"
+                  active={customer.smsMarketing}
+                />
+                <CheckRow
+                  label="Orderhistorik aktiverad"
+                  active={customer.orderHistory}
+                />
+                <CheckRow
+                  label="Snabb checkout aktiverad"
+                  active={customer.fastCheckout}
+                />
               </div>
             </ProfileCard>
           </aside>
@@ -716,7 +860,9 @@ export default function PrivateCustomerProfilePage() {
                         className={`rounded-2xl border px-4 py-3 text-sm font-bold [overflow-wrap:anywhere] ${getEventStyle(event.type)}`}
                       >
                         <div className="flex items-start gap-2 font-black">
-                          <span className="mt-0.5 shrink-0">{getEventIcon(event.type)}</span>
+                          <span className="mt-0.5 shrink-0">
+                            {getEventIcon(event.type)}
+                          </span>
                           <span className="min-w-0 break-words [overflow-wrap:anywhere]">
                             {event.title}
                           </span>
@@ -738,18 +884,28 @@ export default function PrivateCustomerProfilePage() {
                   </p>
                   <div className="space-y-3">
                     {selectedDateNotes.map((note, index) => (
-                      <div key={`${note.date}-${note.type}-${index}`} className="rounded-2xl bg-white p-4 shadow-sm">
+                      <div
+                        key={`${note.date}-${note.type}-${index}`}
+                        className="rounded-2xl bg-white p-4 shadow-sm"
+                      >
                         <p className="text-sm font-black text-slate-950">
                           {note.type}: {note.text}
                         </p>
                         <p className="mt-1 text-xs font-semibold text-slate-500">
-                          Nästa steg: beställ blommor eller starta prenumeration kopplat till denna händelse.
+                          Nästa steg: beställ blommor eller starta prenumeration
+                          kopplat till denna händelse.
                         </p>
                         <div className="mt-3 flex flex-wrap gap-2">
-                          <Link href="/private/register" className="rounded-full bg-pink-600 px-4 py-2 text-xs font-black text-white hover:bg-pink-700">
+                          <Link
+                            href="/private/register"
+                            className="rounded-full bg-pink-600 px-4 py-2 text-xs font-black text-white hover:bg-pink-700"
+                          >
                             Beställa
                           </Link>
-                          <Link href="/private/subscription" className="rounded-full bg-emerald-600 px-4 py-2 text-xs font-black text-white hover:bg-emerald-700">
+                          <Link
+                            href="/private/subscription"
+                            className="rounded-full bg-emerald-600 px-4 py-2 text-xs font-black text-white hover:bg-emerald-700"
+                          >
                             Prenumerera
                           </Link>
                         </div>
@@ -760,21 +916,34 @@ export default function PrivateCustomerProfilePage() {
               )}
 
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                <Link href="/private/register" className="rounded-3xl bg-pink-600 p-4 text-sm font-black text-white shadow-lg shadow-pink-100 hover:bg-pink-700">
+                <Link
+                  href="/private/register"
+                  className="rounded-3xl bg-pink-600 p-4 text-sm font-black text-white shadow-lg shadow-pink-100 hover:bg-pink-700"
+                >
                   Beställa
                   <span className="mt-1 block text-xs font-semibold text-pink-100">
                     Gå till privat order-sida
                   </span>
                 </Link>
 
-                <Link href="/private/subscription" className="rounded-3xl bg-emerald-600 p-4 text-sm font-black text-white shadow-lg shadow-emerald-100 hover:bg-emerald-700">
+                <Link
+                  href="/private/subscription"
+                  className="rounded-3xl bg-emerald-600 p-4 text-sm font-black text-white shadow-lg shadow-emerald-100 hover:bg-emerald-700"
+                >
                   Prenumerera
                   <span className="mt-1 block text-xs font-semibold text-emerald-100">
                     Gå till blomsterprenumeration
                   </span>
                 </Link>
 
-                {(["Händelse", "Födelsedag", "Årsdag", "Påminna"] as CalendarActionType[]).map((action) => (
+                {(
+                  [
+                    "Händelse",
+                    "Födelsedag",
+                    "Årsdag",
+                    "Påminna",
+                  ] as CalendarActionType[]
+                ).map((action) => (
                   <button
                     key={action}
                     type="button"
@@ -833,14 +1002,19 @@ export default function PrivateCustomerProfilePage() {
         <footer className="mt-10 overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
           <div className="grid gap-8 px-6 py-8 md:grid-cols-4">
             <div>
-              <h3 className="text-lg font-black text-slate-950">FloristSocial</h3>
+              <h3 className="text-lg font-black text-slate-950">
+                FloristSocial
+              </h3>
               <p className="mt-3 text-sm leading-6 text-slate-600">
-                En modern blomsterplattform för privata kunder, florister och premium blomsterupplevelser.
+                En modern blomsterplattform för privata kunder, florister och
+                premium blomsterupplevelser.
               </p>
             </div>
 
             <div>
-              <p className="text-sm font-black uppercase tracking-[0.14em] text-slate-400">Konto</p>
+              <p className="text-sm font-black uppercase tracking-[0.14em] text-slate-400">
+                Konto
+              </p>
               <div className="mt-3 space-y-2 text-sm font-bold text-slate-700">
                 <p>Min profil</p>
                 <p>Orderhistorik</p>
@@ -850,7 +1024,9 @@ export default function PrivateCustomerProfilePage() {
             </div>
 
             <div>
-              <p className="text-sm font-black uppercase tracking-[0.14em] text-slate-400">Högtider</p>
+              <p className="text-sm font-black uppercase tracking-[0.14em] text-slate-400">
+                Högtider
+              </p>
               <div className="mt-3 space-y-2 text-sm font-bold text-slate-700">
                 {holidays.slice(0, 4).map((holiday) => (
                   <p key={holiday}>{holiday}</p>
@@ -859,7 +1035,9 @@ export default function PrivateCustomerProfilePage() {
             </div>
 
             <div>
-              <p className="text-sm font-black uppercase tracking-[0.14em] text-slate-400">Support</p>
+              <p className="text-sm font-black uppercase tracking-[0.14em] text-slate-400">
+                Support
+              </p>
               <div className="mt-3 space-y-2 text-sm font-bold text-slate-700">
                 <p>Hjälpcenter</p>
                 <p>Kontakta support</p>
@@ -874,19 +1052,37 @@ export default function PrivateCustomerProfilePage() {
   );
 }
 
-function HeaderAction({ icon, label, count }: { icon: React.ReactNode; label: string; count: string }) {
+function HeaderAction({
+  icon,
+  label,
+  count,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  count: string;
+}) {
   return (
     <button className="flex items-center justify-center gap-2 rounded-2xl bg-white px-3 py-3 text-xs font-black text-slate-800 shadow-sm transition hover:bg-pink-600 hover:text-white">
       {icon}
       <span className="hidden sm:inline">{label}</span>
-      <span className="rounded-full bg-pink-100 px-2 py-0.5 text-[10px] text-pink-700">{count}</span>
+      <span className="rounded-full bg-pink-100 px-2 py-0.5 text-[10px] text-pink-700">
+        {count}
+      </span>
     </button>
   );
 }
 
-function CalendarLegend({ label, type }: { label: string; type: CalendarEventType }) {
+function CalendarLegend({
+  label,
+  type,
+}: {
+  label: string;
+  type: CalendarEventType;
+}) {
   return (
-    <span className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-black ${getEventStyle(type)}`}>
+    <span
+      className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-xs font-black ${getEventStyle(type)}`}
+    >
       {getEventIcon(type)}
       {label}
     </span>
@@ -906,18 +1102,32 @@ function StatusBadge({
 }) {
   return (
     <div className="rounded-2xl bg-white px-4 py-3 text-center shadow-sm">
-      <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">{label}</p>
-      <p className={`mt-1 text-sm font-black ${active ? "text-emerald-700" : "text-amber-700"}`}>
+      <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">
+        {label}
+      </p>
+      <p
+        className={`mt-1 text-sm font-black ${active ? "text-emerald-700" : "text-amber-700"}`}
+      >
         {active ? activeText : inactiveText}
       </p>
     </div>
   );
 }
 
-function QuickCard({ icon, title, value }: { icon: React.ReactNode; title: string; value: string }) {
+function QuickCard({
+  icon,
+  title,
+  value,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  value: string;
+}) {
   return (
     <button className="flex items-center gap-4 rounded-[1.5rem] bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg">
-      <div className="grid h-12 w-12 place-items-center rounded-2xl bg-pink-50 text-pink-700">{icon}</div>
+      <div className="grid h-12 w-12 place-items-center rounded-2xl bg-pink-50 text-pink-700">
+        {icon}
+      </div>
       <div>
         <p className="text-sm font-black text-slate-900">{title}</p>
         <p className="mt-1 text-xs font-bold text-slate-500">{value}</p>
@@ -926,12 +1136,24 @@ function QuickCard({ icon, title, value }: { icon: React.ReactNode; title: strin
   );
 }
 
-function ProfileCard({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
+function ProfileCard({
+  title,
+  icon,
+  children,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
   return (
     <section className="rounded-[1.75rem] bg-white p-5 shadow-sm sm:p-6">
       <div className="mb-5 flex items-center gap-3">
-        <div className="grid h-11 w-11 place-items-center rounded-2xl bg-pink-50 text-pink-700">{icon}</div>
-        <h2 className="text-xl font-black tracking-tight text-slate-950">{title}</h2>
+        <div className="grid h-11 w-11 place-items-center rounded-2xl bg-pink-50 text-pink-700">
+          {icon}
+        </div>
+        <h2 className="text-xl font-black tracking-tight text-slate-950">
+          {title}
+        </h2>
       </div>
       {children}
     </section>
@@ -941,7 +1163,9 @@ function ProfileCard({ title, icon, children }: { title: string; icon: React.Rea
 function InfoTile({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-3xl bg-slate-50 p-5">
-      <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">{label}</p>
+      <p className="text-xs font-black uppercase tracking-[0.14em] text-slate-400">
+        {label}
+      </p>
       <p className="mt-2 text-lg font-black text-slate-950">{value}</p>
     </div>
   );
@@ -956,7 +1180,9 @@ function CheckRow({ label, active }: { label: string; active: boolean }) {
           <CheckCircle2 size={14} /> Ja
         </span>
       ) : (
-        <span className="rounded-full bg-slate-200 px-2 py-1 text-xs font-black text-slate-600">Nej</span>
+        <span className="rounded-full bg-slate-200 px-2 py-1 text-xs font-black text-slate-600">
+          Nej
+        </span>
       )}
     </div>
   );
@@ -970,4 +1196,3 @@ function ContactRow({ icon, value }: { icon: React.ReactNode; value: string }) {
     </div>
   );
 }
-

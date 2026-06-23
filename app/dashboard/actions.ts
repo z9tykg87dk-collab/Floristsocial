@@ -4,7 +4,11 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { getCurrentUser } from "@/lib/auth";
-import { getAppUrl, getMissingStripeConnectEnv, hasRequiredEnv } from "@/lib/env";
+import {
+  getAppUrl,
+  getMissingStripeConnectEnv,
+  hasRequiredEnv,
+} from "@/lib/env";
 import { getCurrentProfileBundle } from "@/lib/profile";
 import { getStripeServerClient } from "@/lib/stripe";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -21,12 +25,13 @@ export type StripeConnectState = {
 
 export async function createProductAction(
   _previousState: ProductFormState,
-  formData: FormData
+  formData: FormData,
 ): Promise<ProductFormState> {
   if (!hasRequiredEnv()) {
     return {
       status: "error",
-      message: "Configure Supabase environment variables before creating products.",
+      message:
+        "Configure Supabase environment variables before creating products.",
     };
   }
 
@@ -103,7 +108,7 @@ export async function createProductAction(
 }
 
 export async function createStripeConnectOnboardingAction(
-  _previousState: StripeConnectState
+  _previousState: StripeConnectState,
 ): Promise<StripeConnectState> {
   void _previousState;
 

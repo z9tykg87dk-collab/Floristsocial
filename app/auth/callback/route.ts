@@ -22,6 +22,6 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.redirect(
-    new URL("/auth/sign-in?error=auth_callback", requestUrl.origin)
+    new URL("/auth/sign-in?error=auth_callback", requestUrl.origin),
   );
 }

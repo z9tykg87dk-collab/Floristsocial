@@ -37,7 +37,9 @@ function asString(value: unknown) {
 }
 
 function asNumber(value: unknown, fallback = 0) {
-  const text = asString(value).replace(/[^0-9.,]/g, "").replace(",", ".");
+  const text = asString(value)
+    .replace(/[^0-9.,]/g, "")
+    .replace(",", ".");
   if (!text) return fallback;
   const number = Number(text);
   return Number.isFinite(number) ? number : fallback;
@@ -60,7 +62,8 @@ function parsePayload(formData: FormData): JsonRecord {
 
   try {
     const parsed = JSON.parse(rawPayload);
-    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) return parsed;
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed))
+      return parsed;
     return {};
   } catch (error) {
     console.error("Could not parse post payload:", error);
@@ -73,14 +76,14 @@ function normalizeHashtags(value: unknown) {
     return value
       .map((item) => asString(item))
       .filter(Boolean)
-      .map((item) => item.startsWith("#") ? item : `#${item}`);
+      .map((item) => (item.startsWith("#") ? item : `#${item}`));
   }
 
   return asString(value)
     .split(/[\s,]+/)
     .map((item) => item.trim())
     .filter(Boolean)
-    .map((item) => item.startsWith("#") ? item : `#${item}`);
+    .map((item) => (item.startsWith("#") ? item : `#${item}`));
 }
 
 function getPayloadString(payload: JsonRecord, names: string[], fallback = "") {
@@ -92,7 +95,11 @@ function getPayloadString(payload: JsonRecord, names: string[], fallback = "") {
   return fallback;
 }
 
-async function uploadImage(bucket: string, folder: string, file: File | null): Promise<UploadedImageInfo | null> {
+async function uploadImage(
+  bucket: string,
+  folder: string,
+  file: File | null,
+): Promise<UploadedImageInfo | null> {
   if (!file || file.size === 0) return null;
 
   const ext = file.name.split(".").pop() || "bin";
@@ -106,12 +113,15 @@ async function uploadImage(bucket: string, folder: string, file: File | null): P
   const path = `${folder}/${Date.now()}-${crypto.randomUUID()}-${safeName}.${ext}`;
   const buffer = Buffer.from(await file.arrayBuffer());
 
-  const { error } = await supabaseAdmin.storage.from(bucket).upload(path, buffer, {
-    contentType: file.type || "application/octet-stream",
-    upsert: false,
-  });
+  const { error } = await supabaseAdmin.storage
+    .from(bucket)
+    .upload(path, buffer, {
+      contentType: file.type || "application/octet-stream",
+      upsert: false,
+    });
 
-  if (error) throw new Error(`Storage upload failed for ${file.name}: ${error.message}`);
+  if (error)
+    throw new Error(`Storage upload failed for ${file.name}: ${error.message}`);
 
   const { data } = supabaseAdmin.storage.from(bucket).getPublicUrl(path);
 
@@ -129,7 +139,9 @@ async function findFlorist(floristId: string) {
 
   const { data, error } = await supabaseAdmin
     .from("florists")
-    .select("id, shop_name, florist_name, slug, city, country, logo_url, email, phone")
+    .select(
+      "id, shop_name, florist_name, slug, city, country, logo_url, email, phone",
+    )
     .eq("id", floristId)
     .maybeSingle();
 
@@ -162,7 +174,7 @@ export async function GET(request: NextRequest) {
     if (error) {
       return NextResponse.json(
         { error: "Kunde inte hämta feed.", details: error.message },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -170,8 +182,11 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("Posts GET error:", error);
     return NextResponse.json(
-      { error: "Kunde inte hämta posts.", details: error instanceof Error ? error.message : String(error) },
-      { status: 500 }
+      {
+        error: "Kunde inte hämta posts.",
+        details: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 },
     );
   }
 }
@@ -187,43 +202,64 @@ export async function POST(request: NextRequest) {
     if (!florist) {
       return NextResponse.json(
         { error: "Florist saknas eller hittades inte." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
-    const imageFile = formData.get("image") instanceof File ? (formData.get("image") as File) : null;
-    const videoFile = formData.get("video") instanceof File ? (formData.get("video") as File) : null;
+    const imageFile =
+      formData.get("image") instanceof File
+        ? (formData.get("image") as File)
+        : null;
+    const videoFile =
+      formData.get("video") instanceof File
+        ? (formData.get("video") as File)
+        : null;
 
     if (!imageFile && !videoFile) {
       return NextResponse.json(
         { error: "Ladda upp minst en bild eller video." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const bucket = "florist-portfolio";
     const baseFolder = `${florist.slug || florist.id}/posts`;
 
-    const imageUpload = await uploadImage(bucket, `${baseFolder}/images`, imageFile);
-    const videoUpload = await uploadImage(bucket, `${baseFolder}/videos`, videoFile);
+    const imageUpload = await uploadImage(
+      bucket,
+      `${baseFolder}/images`,
+      imageFile,
+    );
+    const videoUpload = await uploadImage(
+      bucket,
+      `${baseFolder}/videos`,
+      videoFile,
+    );
 
     const isShoppable = asBoolean(payload.isShoppable ?? payload.is_shoppable);
     const basePrice = asNumber(payload.basePrice ?? payload.price, 0);
     const minPrice = Math.max(asNumber(payload.minPrice, 400), 400);
-    const title = getPayloadString(payload, ["title", "productTitle"], "Köp liknande arrangemang");
+    const title = getPayloadString(
+      payload,
+      ["title", "productTitle"],
+      "Köp liknande arrangemang",
+    );
     const caption = getPayloadString(payload, ["caption"]);
     const description = getPayloadString(payload, ["description"]);
     const category = getPayloadString(payload, ["category"]);
     const style = getPayloadString(payload, ["style"]);
     const occasion = getPayloadString(payload, ["occasion"]);
-    const serviceName = getPayloadString(payload, ["serviceName", "service_name"]);
+    const serviceName = getPayloadString(payload, [
+      "serviceName",
+      "service_name",
+    ]);
     const hashtags = normalizeHashtags(payload.hashtags || caption);
     const mediaType = videoUpload ? "video" : "image";
 
     if (isShoppable && basePrice < 400) {
       return NextResponse.json(
         { error: "Köpbara produkter måste ha minst 400 kr i produktpris." },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -238,13 +274,22 @@ export async function POST(request: NextRequest) {
       image_medium_url: imageUpload?.url || null,
       image_thumbnail_url: imageUpload?.url || null,
       video_url: videoUpload?.url || null,
-      image_alt: getPayloadString(payload, ["imageAlt", "image_alt"], title || caption || "FloristSocial bild"),
-      is_public: payload.isPublic === undefined ? true : asBoolean(payload.isPublic),
+      image_alt: getPayloadString(
+        payload,
+        ["imageAlt", "image_alt"],
+        title || caption || "FloristSocial bild",
+      ),
+      is_public:
+        payload.isPublic === undefined ? true : asBoolean(payload.isPublic),
       is_featured: asBoolean(payload.isFeatured),
       is_sponsored: asBoolean(payload.isSponsored),
       is_shoppable: isShoppable,
       city: getPayloadString(payload, ["city"], florist.city || ""),
-      country: getPayloadString(payload, ["country"], florist.country || "Sverige"),
+      country: getPayloadString(
+        payload,
+        ["country"],
+        florist.country || "Sverige",
+      ),
       category,
       style,
       occasion,
@@ -259,8 +304,12 @@ export async function POST(request: NextRequest) {
 
     if (postError) {
       return NextResponse.json(
-        { error: "Posten kunde inte sparas.", details: postError.message, attemptedPayload: postPayload },
-        { status: 500 }
+        {
+          error: "Posten kunde inte sparas.",
+          details: postError.message,
+          attemptedPayload: postPayload,
+        },
+        { status: 500 },
       );
     }
 
@@ -290,14 +339,26 @@ export async function POST(request: NextRequest) {
         is_public: true,
         is_featured: asBoolean(payload.isFeatured),
         is_sponsored: asBoolean(payload.isSponsored),
-        allow_price_upgrade: payload.allowPriceUpgrade === undefined ? true : asBoolean(payload.allowPriceUpgrade),
+        allow_price_upgrade:
+          payload.allowPriceUpgrade === undefined
+            ? true
+            : asBoolean(payload.allowPriceUpgrade),
         allow_custom_message: true,
         allow_inspiration_upload: false,
         seasonal_disclaimer:
-          getPayloadString(payload, ["seasonalDisclaimer", "seasonal_disclaimer"]) ||
+          getPayloadString(payload, [
+            "seasonalDisclaimer",
+            "seasonal_disclaimer",
+          ]) ||
           "Vi försöker producera en liknande bukett eller arrangemang som på bilden. Utseendet kan variera något beroende på säsong, blommornas tillgänglighet och floristens aktuella sortiment.",
-        delivery_available: payload.deliveryAvailable === undefined ? true : asBoolean(payload.deliveryAvailable),
-        pickup_available: payload.pickupAvailable === undefined ? true : asBoolean(payload.pickupAvailable),
+        delivery_available:
+          payload.deliveryAvailable === undefined
+            ? true
+            : asBoolean(payload.deliveryAvailable),
+        pickup_available:
+          payload.pickupAvailable === undefined
+            ? true
+            : asBoolean(payload.pickupAvailable),
       };
 
       const { data: productData, error: productError } = await supabaseAdmin
@@ -309,17 +370,39 @@ export async function POST(request: NextRequest) {
       if (productError) {
         await supabaseAdmin.from("posts").delete().eq("id", post.id);
         return NextResponse.json(
-          { error: "Produkten kunde inte sparas.", details: productError.message, attemptedPayload: productPayload },
-          { status: 500 }
+          {
+            error: "Produkten kunde inte sparas.",
+            details: productError.message,
+            attemptedPayload: productPayload,
+          },
+          { status: 500 },
         );
       }
 
       product = productData;
 
       const variants = [
-        { label: "Standard", description: "Som bilden eller liknande uttryck.", price: basePrice, sort_order: 1, is_default: true },
-        { label: "Pampigare", description: "Större och fylligare arrangemang.", price: Math.round(basePrice * 1.35), sort_order: 2, is_default: false },
-        { label: "Extra pampig", description: "Premiumvariant med mer volym och exklusivare känsla.", price: Math.round(basePrice * 1.7), sort_order: 3, is_default: false },
+        {
+          label: "Standard",
+          description: "Som bilden eller liknande uttryck.",
+          price: basePrice,
+          sort_order: 1,
+          is_default: true,
+        },
+        {
+          label: "Pampigare",
+          description: "Större och fylligare arrangemang.",
+          price: Math.round(basePrice * 1.35),
+          sort_order: 2,
+          is_default: false,
+        },
+        {
+          label: "Extra pampig",
+          description: "Premiumvariant med mer volym och exklusivare känsla.",
+          price: Math.round(basePrice * 1.7),
+          sort_order: 3,
+          is_default: false,
+        },
       ].filter((variant) => variant.price >= 400);
 
       await supabaseAdmin.from("product_variants").insert(
@@ -332,7 +415,7 @@ export async function POST(request: NextRequest) {
           sort_order: variant.sort_order,
           is_default: variant.is_default,
           is_active: true,
-        }))
+        })),
       );
     }
 
@@ -341,16 +424,20 @@ export async function POST(request: NextRequest) {
         success: true,
         post,
         product,
-        message: isShoppable ? "Post och köpbar produkt skapades." : "Post skapades.",
+        message: isShoppable
+          ? "Post och köpbar produkt skapades."
+          : "Post skapades.",
       },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     console.error("Posts POST error:", error);
     return NextResponse.json(
-      { error: "Posten kunde inte skapas.", details: error instanceof Error ? error.message : String(error) },
-      { status: 500 }
+      {
+        error: "Posten kunde inte skapas.",
+        details: error instanceof Error ? error.message : String(error),
+      },
+      { status: 500 },
     );
   }
 }
-

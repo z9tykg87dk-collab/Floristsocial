@@ -47,8 +47,9 @@ export default async function OrderDetailsPage({
             Order #{order.order_number}
           </h1>
           <p className="mt-4 max-w-3xl text-base leading-7 text-stone-600">
-            Recipient: {order.recipient_name}. This page is shared between customer
-            and florist views so both sides can inspect the same order record.
+            Recipient: {order.recipient_name}. This page is shared between
+            customer and florist views so both sides can inspect the same order
+            record.
           </p>
         </div>
         <div className="rounded-full bg-stone-950 px-5 py-3 text-sm font-semibold text-stone-50">
@@ -59,10 +60,7 @@ export default async function OrderDetailsPage({
       <section className="mt-8 grid gap-4 md:grid-cols-4">
         <Metric label="Total" value={formatSek(order.total_amount)} />
         <Metric label="Source" value={order.source} />
-        <Metric
-          label="Stripe fee"
-          value={formatSek(order.stripe_fee_amount)}
-        />
+        <Metric label="Stripe fee" value={formatSek(order.stripe_fee_amount)} />
         <Metric
           label="Delivery date"
           value={order.delivery_date || "Not set"}
@@ -100,9 +98,15 @@ export default async function OrderDetailsPage({
             Revenue split
           </p>
           <div className="mt-6 grid gap-3">
-            <MetricRow label="Executor" value={formatSek(order.executor_amount)} />
+            <MetricRow
+              label="Executor"
+              value={formatSek(order.executor_amount)}
+            />
             <MetricRow label="Seller" value={formatSek(order.seller_amount)} />
-            <MetricRow label="Platform" value={formatSek(order.platform_amount)} />
+            <MetricRow
+              label="Platform"
+              value={formatSek(order.platform_amount)}
+            />
           </div>
         </div>
       </section>

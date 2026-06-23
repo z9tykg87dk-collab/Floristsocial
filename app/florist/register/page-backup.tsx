@@ -36,7 +36,8 @@ import {
 function normalizeUrl(value: string) {
   const trimmed = value.trim();
   if (!trimmed) return "";
-  if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed;
+  if (trimmed.startsWith("http://") || trimmed.startsWith("https://"))
+    return trimmed;
   return "https://" + trimmed;
 }
 
@@ -57,42 +58,182 @@ function generatePassword() {
 }
 
 const swedishCities = [
-  "Stockholm", "Göteborg", "Malmö", "Uppsala", "Västerås", "Örebro",
-  "Linköping", "Helsingborg", "Jönköping", "Norrköping", "Lund",
-  "Umeå", "Gävle", "Borås", "Eskilstuna", "Södertälje", "Karlstad",
-  "Täby", "Växjö", "Halmstad", "Sundsvall", "Luleå", "Annan stad",
+  "Stockholm",
+  "Göteborg",
+  "Malmö",
+  "Uppsala",
+  "Västerås",
+  "Örebro",
+  "Linköping",
+  "Helsingborg",
+  "Jönköping",
+  "Norrköping",
+  "Lund",
+  "Umeå",
+  "Gävle",
+  "Borås",
+  "Eskilstuna",
+  "Södertälje",
+  "Karlstad",
+  "Täby",
+  "Växjö",
+  "Halmstad",
+  "Sundsvall",
+  "Luleå",
+  "Annan stad",
 ];
 
 const cityAreas: Record<string, string[]> = {
-  Stockholm: ["Annat område", "Södermalm", "Östermalm", "Vasastan", "Kungsholmen", "Norrmalm", "Gamla stan", "Liljeholmen", "Hammarby Sjöstad", "Årsta", "Enskede", "Bromma", "Solna", "Sundbyberg", "Nacka", "Lidingö", "Täby", "Danderyd", "Sollentuna", "Huddinge", "Farsta"],
-  Göteborg: ["Annat område", "Centrum", "Linné", "Majorna", "Hisingen", "Mölndal", "Partille"],
-  Malmö: ["Annat område", "Centrum", "Limhamn", "Västra Hamnen", "Triangeln", "Hyllie"],
+  Stockholm: [
+    "Annat område",
+    "Södermalm",
+    "Östermalm",
+    "Vasastan",
+    "Kungsholmen",
+    "Norrmalm",
+    "Gamla stan",
+    "Liljeholmen",
+    "Hammarby Sjöstad",
+    "Årsta",
+    "Enskede",
+    "Bromma",
+    "Solna",
+    "Sundbyberg",
+    "Nacka",
+    "Lidingö",
+    "Täby",
+    "Danderyd",
+    "Sollentuna",
+    "Huddinge",
+    "Farsta",
+  ],
+  Göteborg: [
+    "Annat område",
+    "Centrum",
+    "Linné",
+    "Majorna",
+    "Hisingen",
+    "Mölndal",
+    "Partille",
+  ],
+  Malmö: [
+    "Annat område",
+    "Centrum",
+    "Limhamn",
+    "Västra Hamnen",
+    "Triangeln",
+    "Hyllie",
+  ],
 };
 
 const serviceOptions = [
-  "Bröllop", "Begravning", "Event", "Företagsblommor", "Buketter", "Blombud",
-  "Prenumerationer", "Workshops", "Hemleverans", "Samma dag-leverans",
-  "Hotell & restaurang", "Skyltfönster & installationer",
+  "Bröllop",
+  "Begravning",
+  "Event",
+  "Företagsblommor",
+  "Buketter",
+  "Blombud",
+  "Prenumerationer",
+  "Workshops",
+  "Hemleverans",
+  "Samma dag-leverans",
+  "Hotell & restaurang",
+  "Skyltfönster & installationer",
 ];
 
 const styleOptions = [
-  "Romantiskt", "Modernt", "Vilt & organiskt", "Klassiskt", "Nordiskt",
-  "Lyxigt", "Färgstarkt", "Minimalistiskt", "Säsongsbaserat", "Exklusivt",
+  "Romantiskt",
+  "Modernt",
+  "Vilt & organiskt",
+  "Klassiskt",
+  "Nordiskt",
+  "Lyxigt",
+  "Färgstarkt",
+  "Minimalistiskt",
+  "Säsongsbaserat",
+  "Exklusivt",
 ];
 
-const priceLevels = ["Budget", "Mellan", "Premium", "Lyx", "Varierar per uppdrag"];
-const deliveryTypes = ["Lokal leverans", "Regional leverans", "Nationella uppdrag", "Endast upphämtning", "Ingen leverans"];
-const statusOptions = ["Ny ansökan", "Under granskning", "Godkänd", "Behöver kompletteras", "Pausad"];
+const priceLevels = [
+  "Budget",
+  "Mellan",
+  "Premium",
+  "Lyx",
+  "Varierar per uppdrag",
+];
+const deliveryTypes = [
+  "Lokal leverans",
+  "Regional leverans",
+  "Nationella uppdrag",
+  "Endast upphämtning",
+  "Ingen leverans",
+];
+const statusOptions = [
+  "Ny ansökan",
+  "Under granskning",
+  "Godkänd",
+  "Behöver kompletteras",
+  "Pausad",
+];
 const planOptions = ["Free", "Starter", "Pro", "Premium", "Partner"];
 
 const defaultOpeningHours = [
-  { id: 1, dayLabel: "Måndag", openTime: "10:00", closeTime: "18:00", isClosed: false, note: "" },
-  { id: 2, dayLabel: "Tisdag", openTime: "10:00", closeTime: "18:00", isClosed: false, note: "" },
-  { id: 3, dayLabel: "Onsdag", openTime: "10:00", closeTime: "18:00", isClosed: false, note: "" },
-  { id: 4, dayLabel: "Torsdag", openTime: "10:00", closeTime: "18:00", isClosed: false, note: "" },
-  { id: 5, dayLabel: "Fredag", openTime: "10:00", closeTime: "18:00", isClosed: false, note: "" },
-  { id: 6, dayLabel: "Lördag", openTime: "10:00", closeTime: "16:00", isClosed: false, note: "" },
-  { id: 7, dayLabel: "Söndag", openTime: "11:00", closeTime: "15:00", isClosed: false, note: "" },
+  {
+    id: 1,
+    dayLabel: "Måndag",
+    openTime: "10:00",
+    closeTime: "18:00",
+    isClosed: false,
+    note: "",
+  },
+  {
+    id: 2,
+    dayLabel: "Tisdag",
+    openTime: "10:00",
+    closeTime: "18:00",
+    isClosed: false,
+    note: "",
+  },
+  {
+    id: 3,
+    dayLabel: "Onsdag",
+    openTime: "10:00",
+    closeTime: "18:00",
+    isClosed: false,
+    note: "",
+  },
+  {
+    id: 4,
+    dayLabel: "Torsdag",
+    openTime: "10:00",
+    closeTime: "18:00",
+    isClosed: false,
+    note: "",
+  },
+  {
+    id: 5,
+    dayLabel: "Fredag",
+    openTime: "10:00",
+    closeTime: "18:00",
+    isClosed: false,
+    note: "",
+  },
+  {
+    id: 6,
+    dayLabel: "Lördag",
+    openTime: "10:00",
+    closeTime: "16:00",
+    isClosed: false,
+    note: "",
+  },
+  {
+    id: 7,
+    dayLabel: "Söndag",
+    openTime: "11:00",
+    closeTime: "15:00",
+    isClosed: false,
+    note: "",
+  },
 ];
 
 type CoverageArea = {
@@ -131,10 +272,17 @@ export default function FloristSocialRegistrationPage() {
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [selectedStyles, setSelectedStyles] = useState<string[]>([]);
   const [deliveryRadius, setDeliveryRadius] = useState(15);
-  const [openingHours, setOpeningHours] = useState<OpeningHour[]>(defaultOpeningHours);
-  const [serviceUploadPrompt, setServiceUploadPrompt] = useState<string | null>(null);
-  const [servicePortfolioItems, setServicePortfolioItems] = useState<Record<string, PortfolioDraftItem[]>>({});
-  const [generalPortfolioItems, setGeneralPortfolioItems] = useState<PortfolioDraftItem[]>([]);
+  const [openingHours, setOpeningHours] =
+    useState<OpeningHour[]>(defaultOpeningHours);
+  const [serviceUploadPrompt, setServiceUploadPrompt] = useState<string | null>(
+    null,
+  );
+  const [servicePortfolioItems, setServicePortfolioItems] = useState<
+    Record<string, PortfolioDraftItem[]>
+  >({});
+  const [generalPortfolioItems, setGeneralPortfolioItems] = useState<
+    PortfolioDraftItem[]
+  >([]);
   const [profileImage, setProfileImage] = useState<UploadedImage | null>(null);
   const [logoImage, setLogoImage] = useState<UploadedImage | null>(null);
   const [coverImage, setCoverImage] = useState<UploadedImage | null>(null);
@@ -144,15 +292,24 @@ export default function FloristSocialRegistrationPage() {
   const [generatedPassword, setGeneratedPassword] = useState("");
   const [showInterestForm, setShowInterestForm] = useState(false);
   const [coverageAreas, setCoverageAreas] = useState<CoverageArea[]>([
-    { id: 1, city: "Stockholm", area: "Annat område", postalCode: "", radius: 15, price: "" },
+    {
+      id: 1,
+      city: "Stockholm",
+      area: "Annat område",
+      postalCode: "",
+      radius: 15,
+      price: "",
+    },
   ]);
 
   const servicePortfolioCount = Object.values(servicePortfolioItems).reduce(
     (total, items) => total + items.filter((item) => item.isSaved).length,
-    0
+    0,
   );
 
-  const generalPortfolioCount = generalPortfolioItems.filter((item) => item.isSaved).length;
+  const generalPortfolioCount = generalPortfolioItems.filter(
+    (item) => item.isSaved,
+  ).length;
   const portfolioCount = servicePortfolioCount + generalPortfolioCount;
 
   const completionScore = useMemo(() => {
@@ -165,30 +322,53 @@ export default function FloristSocialRegistrationPage() {
     return Math.min(score, 100);
   }, [selectedServices, selectedStyles, deliveryRadius, coverageAreas]);
 
-  function toggleItem(value: string, list: string[], setter: Dispatch<SetStateAction<string[]>>) {
+  function toggleItem(
+    value: string,
+    list: string[],
+    setter: Dispatch<SetStateAction<string[]>>,
+  ) {
     const exists = list.includes(value);
     setter(exists ? list.filter((item) => item !== value) : [...list, value]);
-    if (!exists && setter === setSelectedServices) setServiceUploadPrompt(value);
+    if (!exists && setter === setSelectedServices)
+      setServiceUploadPrompt(value);
   }
 
-  function updateOpeningHour(id: number, field: keyof OpeningHour, value: string | boolean) {
-    setOpeningHours((rows) => rows.map((row) => (row.id === id ? { ...row, [field]: value } : row)));
+  function updateOpeningHour(
+    id: number,
+    field: keyof OpeningHour,
+    value: string | boolean,
+  ) {
+    setOpeningHours((rows) =>
+      rows.map((row) => (row.id === id ? { ...row, [field]: value } : row)),
+    );
   }
 
-  function updateCoverageArea(id: number, field: keyof CoverageArea, value: string | number) {
+  function updateCoverageArea(
+    id: number,
+    field: keyof CoverageArea,
+    value: string | number,
+  ) {
     setCoverageAreas((areas) =>
       areas.map((area) => {
         if (area.id !== id) return area;
-        if (field === "city") return { ...area, city: String(value), area: "Annat område" };
+        if (field === "city")
+          return { ...area, city: String(value), area: "Annat område" };
         return { ...area, [field]: value };
-      })
+      }),
     );
   }
 
   function addCoverageArea() {
     setCoverageAreas((areas) => [
       ...areas,
-      { id: Date.now(), city: "Stockholm", area: "Annat område", postalCode: "", radius: deliveryRadius, price: "" },
+      {
+        id: Date.now(),
+        city: "Stockholm",
+        area: "Annat område",
+        postalCode: "",
+        radius: deliveryRadius,
+        price: "",
+      },
     ]);
   }
 
@@ -254,17 +434,26 @@ export default function FloristSocialRegistrationPage() {
     try {
       const formData = new FormData(event.currentTarget);
       const requestFormData = new FormData();
-      const { servicePortfolioPayload, generalPortfolioPayload } = addPortfolioFilesToForm(requestFormData);
+      const { servicePortfolioPayload, generalPortfolioPayload } =
+        addPortfolioFilesToForm(requestFormData);
 
-      const ownerPhone = normalizeSwedishPhone(String(formData.get("ownerPhone") || ""));
-      const shopPhone = normalizeSwedishPhone(String(formData.get("shopPhone") || formData.get("phone") || ""));
+      const ownerPhone = normalizeSwedishPhone(
+        String(formData.get("ownerPhone") || ""),
+      );
+      const shopPhone = normalizeSwedishPhone(
+        String(formData.get("shopPhone") || formData.get("phone") || ""),
+      );
       const ownerEmail = String(formData.get("ownerEmail") || "").trim();
       const shopEmail = String(formData.get("shopEmail") || "").trim();
-      const password = String(formData.get("password") || generatedPassword || "");
+      const password = String(
+        formData.get("password") || generatedPassword || "",
+      );
       const confirmPassword = String(formData.get("confirmPassword") || "");
 
       if (!password || password.length < 8) {
-        setSubmitError("Lösenordet måste vara minst 8 tecken. Generera gärna ett starkt lösenord.");
+        setSubmitError(
+          "Lösenordet måste vara minst 8 tecken. Generera gärna ett starkt lösenord.",
+        );
         setSubmitting(false);
         return;
       }
@@ -285,7 +474,9 @@ export default function FloristSocialRegistrationPage() {
         shopName: String(formData.get("shopName") || ""),
         legalBusinessName: String(formData.get("legalBusinessName") || ""),
         organizationNumber: String(formData.get("organizationNumber") || ""),
-        maskedOrganizationNumber: maskOrgNumber(String(formData.get("organizationNumber") || "")),
+        maskedOrganizationNumber: maskOrgNumber(
+          String(formData.get("organizationNumber") || ""),
+        ),
         shopEmail,
         publicEmail: shopEmail,
         ownerPhone,
@@ -298,7 +489,9 @@ export default function FloristSocialRegistrationPage() {
         websiteUrl: normalizeUrl(String(formData.get("websiteUrl") || "")),
         instagramHandle: String(formData.get("instagramHandle") || ""),
         bio: String(formData.get("bio") || ""),
-        deliveryModel: String(formData.get("deliveryModel") || "Lokal leverans"),
+        deliveryModel: String(
+          formData.get("deliveryModel") || "Lokal leverans",
+        ),
         deliveryRadiusKm: deliveryRadius,
         priceLevel: String(formData.get("priceLevel") || ""),
         minimumBookingValue: String(formData.get("minimumBookingValue") || ""),
@@ -316,8 +509,26 @@ export default function FloristSocialRegistrationPage() {
         adminOwner: String(formData.get("adminOwner") || ""),
         adminNote: String(formData.get("adminNote") || ""),
         editPolicy: {
-          floristCanEdit: ["open_closed", "prices", "images", "delivery_areas", "style", "services", "opening_hours", "bio"],
-          requiresAdminRequest: ["address", "phone", "email", "business_name", "organization_number", "website", "contact_person", "stripe_account_id"],
+          floristCanEdit: [
+            "open_closed",
+            "prices",
+            "images",
+            "delivery_areas",
+            "style",
+            "services",
+            "opening_hours",
+            "bio",
+          ],
+          requiresAdminRequest: [
+            "address",
+            "phone",
+            "email",
+            "business_name",
+            "organization_number",
+            "website",
+            "contact_person",
+            "stripe_account_id",
+          ],
         },
       };
 
@@ -331,12 +542,18 @@ export default function FloristSocialRegistrationPage() {
       const result = await response.json();
 
       if (!response.ok) {
-        setSubmitError(result.error || result.details || "Något gick fel vid registreringen.");
+        setSubmitError(
+          result.error ||
+            result.details ||
+            "Något gick fel vid registreringen.",
+        );
         setSubmitting(false);
         return;
       }
 
-      setSubmitSuccess(`✅ Registreringen skickades och floristkontot skapades. Profil: ${result.profileUrl || "skapad"}`);
+      setSubmitSuccess(
+        `✅ Registreringen skickades och floristkontot skapades. Profil: ${result.profileUrl || "skapad"}`,
+      );
     } catch (error) {
       console.error(error);
       setSubmitError("Serverfel vid registrering.");
@@ -357,24 +574,66 @@ export default function FloristSocialRegistrationPage() {
       createdAt: new Date().toISOString(),
     };
     console.log("FloristSocial intresseanmälan:", interest);
-    setSubmitSuccess("✅ Tack! Intresseanmälan är mottagen lokalt. Nästa steg är att koppla den till API/databas.");
+    setSubmitSuccess(
+      "✅ Tack! Intresseanmälan är mottagen lokalt. Nästa steg är att koppla den till API/databas.",
+    );
   }
 
   if (showInterestForm) {
     return (
       <main className="min-h-screen bg-[#fbf7f2] px-5 py-10 text-stone-900 md:px-10 lg:px-16">
         <div className="mx-auto max-w-3xl rounded-3xl bg-white p-6 shadow-xl md:p-10">
-          <button type="button" onClick={() => setShowInterestForm(false)} className="mb-6 text-sm font-medium text-stone-500 hover:text-stone-900">
+          <button
+            type="button"
+            onClick={() => setShowInterestForm(false)}
+            className="mb-6 text-sm font-medium text-stone-500 hover:text-stone-900"
+          >
             ← Tillbaka till full registrering
           </button>
-          <SectionHeader icon={<Send size={20} />} title="Intresseanmälan till FloristSocial" description="För florister som vill visa intresse först och bli kontaktade av vårt team." />
+          <SectionHeader
+            icon={<Send size={20} />}
+            title="Intresseanmälan till FloristSocial"
+            description="För florister som vill visa intresse först och bli kontaktade av vårt team."
+          />
           <form className="space-y-5" onSubmit={handleInterestSubmit}>
-            <Field required name="interestName" label="Namn" placeholder="Ditt namn" icon={<User size={18} />} />
-            <Field required name="interestCompany" label="Företagsnamn" placeholder="Ex. Makalösa Blommor" icon={<Store size={18} />} />
-            <Field required name="interestPhone" label="Telefon / mobil" placeholder="070 000 00 00" icon={<Phone size={18} />} />
-            <Field required name="interestEmail" label="E-post" placeholder="namn@foretag.se" type="email" icon={<Mail size={18} />} />
-            <Textarea required name="interestMessage" label="Meddelande" placeholder="Berätta kort om verksamheten, stad, tjänster och varför ni vill vara med." />
-            <Button type="submit"><Send size={16} /> Skicka intresseanmälan</Button>
+            <Field
+              required
+              name="interestName"
+              label="Namn"
+              placeholder="Ditt namn"
+              icon={<User size={18} />}
+            />
+            <Field
+              required
+              name="interestCompany"
+              label="Företagsnamn"
+              placeholder="Ex. Makalösa Blommor"
+              icon={<Store size={18} />}
+            />
+            <Field
+              required
+              name="interestPhone"
+              label="Telefon / mobil"
+              placeholder="070 000 00 00"
+              icon={<Phone size={18} />}
+            />
+            <Field
+              required
+              name="interestEmail"
+              label="E-post"
+              placeholder="namn@foretag.se"
+              type="email"
+              icon={<Mail size={18} />}
+            />
+            <Textarea
+              required
+              name="interestMessage"
+              label="Meddelande"
+              placeholder="Berätta kort om verksamheten, stad, tjänster och varför ni vill vara med."
+            />
+            <Button type="submit">
+              <Send size={16} /> Skicka intresseanmälan
+            </Button>
           </form>
         </div>
       </main>
@@ -389,7 +648,10 @@ export default function FloristSocialRegistrationPage() {
           initialItems={servicePortfolioItems[serviceUploadPrompt] || []}
           onClose={() => setServiceUploadPrompt(null)}
           onSave={(items) => {
-            setServicePortfolioItems((current) => ({ ...current, [serviceUploadPrompt]: items }));
+            setServicePortfolioItems((current) => ({
+              ...current,
+              [serviceUploadPrompt]: items,
+            }));
             setServiceUploadPrompt(null);
           }}
         />
@@ -405,108 +667,363 @@ export default function FloristSocialRegistrationPage() {
               <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-medium shadow-sm">
                 <Flower2 size={16} /> FloristSocial floristregistrering
               </div>
-              <h1 className="text-4xl font-semibold tracking-tight md:text-6xl">Registrera florist till FloristSocial.</h1>
+              <h1 className="text-4xl font-semibold tracking-tight md:text-6xl">
+                Registrera florist till FloristSocial.
+              </h1>
               <p className="mt-5 text-lg leading-8 text-stone-600">
-                Komplett profil för butik, leverans, tjänster, bilder, öppettider och admin-granskning.
+                Komplett profil för butik, leverans, tjänster, bilder,
+                öppettider och admin-granskning.
               </p>
-              <button type="button" onClick={() => setShowInterestForm(true)} className="mt-5 rounded-2xl border border-stone-300 bg-white px-5 py-3 text-sm font-semibold hover:bg-stone-50">
+              <button
+                type="button"
+                onClick={() => setShowInterestForm(true)}
+                className="mt-5 rounded-2xl border border-stone-300 bg-white px-5 py-3 text-sm font-semibold hover:bg-stone-50"
+              >
                 Vill du bara visa intresse? Öppna intresseanmälan
               </button>
             </header>
 
             <form className="space-y-6" onSubmit={handleSubmit}>
               <Card>
-                <SectionHeader icon={<User size={20} />} title="1. Kontaktperson & inloggning" description="Ägarens/kontaktpersonens e-post används för inloggning. Butikens e-post visas publikt på profilen." />
+                <SectionHeader
+                  icon={<User size={20} />}
+                  title="1. Kontaktperson & inloggning"
+                  description="Ägarens/kontaktpersonens e-post används för inloggning. Butikens e-post visas publikt på profilen."
+                />
                 <div className="grid gap-4 md:grid-cols-2">
-                  <Field required name="firstName" label="Förnamn" placeholder="Ex. Nick" />
-                  <Field required name="lastName" label="Efternamn" placeholder="Ex. Hojjati" />
-                  <Field required name="ownerEmail" label="Ägarens e-post / login" placeholder="login@foretag.se" type="email" icon={<Mail size={18} />} />
-                  <Field required name="ownerPhone" label="Kontaktpersonens mobil" placeholder="070 000 00 00" type="tel" icon={<Phone size={18} />} />
-                  <PasswordFields generatedPassword={generatedPassword} onGenerate={() => setGeneratedPassword(generatePassword())} />
-                  <Field required name="contactRole" label="Roll i företaget" placeholder="Ex. Ägare, huvudflorist, butikschef" />
+                  <Field
+                    required
+                    name="firstName"
+                    label="Förnamn"
+                    placeholder="Ex. Nick"
+                  />
+                  <Field
+                    required
+                    name="lastName"
+                    label="Efternamn"
+                    placeholder="Ex. Hojjati"
+                  />
+                  <Field
+                    required
+                    name="ownerEmail"
+                    label="Ägarens e-post / login"
+                    placeholder="login@foretag.se"
+                    type="email"
+                    icon={<Mail size={18} />}
+                  />
+                  <Field
+                    required
+                    name="ownerPhone"
+                    label="Kontaktpersonens mobil"
+                    placeholder="070 000 00 00"
+                    type="tel"
+                    icon={<Phone size={18} />}
+                  />
+                  <PasswordFields
+                    generatedPassword={generatedPassword}
+                    onGenerate={() => setGeneratedPassword(generatePassword())}
+                  />
+                  <Field
+                    required
+                    name="contactRole"
+                    label="Roll i företaget"
+                    placeholder="Ex. Ägare, huvudflorist, butikschef"
+                  />
                 </div>
               </Card>
 
               <Card>
-                <SectionHeader icon={<Building2 size={20} />} title="2. Företagsinformation" description="Dessa uppgifter visas på floristprofilen. Organisationsnummer visas maskerat publikt." />
+                <SectionHeader
+                  icon={<Building2 size={20} />}
+                  title="2. Företagsinformation"
+                  description="Dessa uppgifter visas på floristprofilen. Organisationsnummer visas maskerat publikt."
+                />
                 <div className="grid gap-4 md:grid-cols-2">
-                  <Field required name="shopName" label="Florist namn / Butiksnamn" placeholder="Ex. Makalösa Blommor" icon={<Store size={18} />} />
-                  <Field required name="legalBusinessName" label="Juridiskt företagsnamn" placeholder="Ex. Makalösa Blommor AB" />
-                  <Field required name="organizationNumber" label="Organisationsnummer" placeholder="XXXXXX-XXXX" />
-                  <SelectField required name="vatRegistered" label="Momsregistrerad" options={["Ja", "Nej", "Ej angivet"]} />
-                  <Field required name="shopEmail" label="Butikens publika e-post" placeholder="info@dinbutik.se" type="email" icon={<Mail size={18} />} />
-                  <Field required name="shopPhone" label="Butikens publika telefon" placeholder="08 000 00 00" type="tel" icon={<Phone size={18} />} />
-                  <UrlField name="websiteUrl" label="Webbplats" placeholder="makalosablommor.se" icon={<Globe size={18} />} />
-                  <Field name="instagramHandle" label="Instagram företag" placeholder="@dinblomsterbutik" icon={<Camera size={18} />} />
+                  <Field
+                    required
+                    name="shopName"
+                    label="Florist namn / Butiksnamn"
+                    placeholder="Ex. Makalösa Blommor"
+                    icon={<Store size={18} />}
+                  />
+                  <Field
+                    required
+                    name="legalBusinessName"
+                    label="Juridiskt företagsnamn"
+                    placeholder="Ex. Makalösa Blommor AB"
+                  />
+                  <Field
+                    required
+                    name="organizationNumber"
+                    label="Organisationsnummer"
+                    placeholder="XXXXXX-XXXX"
+                  />
+                  <SelectField
+                    required
+                    name="vatRegistered"
+                    label="Momsregistrerad"
+                    options={["Ja", "Nej", "Ej angivet"]}
+                  />
+                  <Field
+                    required
+                    name="shopEmail"
+                    label="Butikens publika e-post"
+                    placeholder="info@dinbutik.se"
+                    type="email"
+                    icon={<Mail size={18} />}
+                  />
+                  <Field
+                    required
+                    name="shopPhone"
+                    label="Butikens publika telefon"
+                    placeholder="08 000 00 00"
+                    type="tel"
+                    icon={<Phone size={18} />}
+                  />
+                  <UrlField
+                    name="websiteUrl"
+                    label="Webbplats"
+                    placeholder="makalosablommor.se"
+                    icon={<Globe size={18} />}
+                  />
+                  <Field
+                    name="instagramHandle"
+                    label="Instagram företag"
+                    placeholder="@dinblomsterbutik"
+                    icon={<Camera size={18} />}
+                  />
                 </div>
               </Card>
 
               <Card>
-                <SectionHeader icon={<MapPin size={20} />} title="3. Butiksadress" description="Sverige sätts automatiskt. Leveransradie räknas senare från butikens adress." />
+                <SectionHeader
+                  icon={<MapPin size={20} />}
+                  title="3. Butiksadress"
+                  description="Sverige sätts automatiskt. Leveransradie räknas senare från butikens adress."
+                />
                 <div className="grid gap-4 md:grid-cols-2">
-                  <Field required name="streetAddress" label="Gatuadress" placeholder="Ex. Sveavägen 102" icon={<MapPin size={18} />} />
-                  <Field name="addressLine2" label="Adressrad 2" placeholder="Lokal, våning, c/o" />
-                  <Field required name="postalCode" label="Postnummer" placeholder="113 50" inputMode="numeric" />
-                  <SelectField required name="city" label="Stad" options={swedishCities} />
-                  <Field name="municipality" label="Kommun" placeholder="Ex. Stockholms kommun" />
-                  <Field name="county" label="Län" placeholder="Ex. Stockholms län" />
-                  <Field name="country" label="Land" placeholder="Sverige" value="Sverige" readOnly />
+                  <Field
+                    required
+                    name="streetAddress"
+                    label="Gatuadress"
+                    placeholder="Ex. Sveavägen 102"
+                    icon={<MapPin size={18} />}
+                  />
+                  <Field
+                    name="addressLine2"
+                    label="Adressrad 2"
+                    placeholder="Lokal, våning, c/o"
+                  />
+                  <Field
+                    required
+                    name="postalCode"
+                    label="Postnummer"
+                    placeholder="113 50"
+                    inputMode="numeric"
+                  />
+                  <SelectField
+                    required
+                    name="city"
+                    label="Stad"
+                    options={swedishCities}
+                  />
+                  <Field
+                    name="municipality"
+                    label="Kommun"
+                    placeholder="Ex. Stockholms kommun"
+                  />
+                  <Field
+                    name="county"
+                    label="Län"
+                    placeholder="Ex. Stockholms län"
+                  />
+                  <Field
+                    name="country"
+                    label="Land"
+                    placeholder="Sverige"
+                    value="Sverige"
+                    readOnly
+                  />
                 </div>
               </Card>
 
               <Card>
-                <SectionHeader icon={<Clock size={20} />} title="4. Öppettider" description="Kalender för stängda dagar flyttas senare till floristens profil/adminvy. Här registreras grundschema." />
-                <OpeningHoursEditor openingHours={openingHours} onChange={updateOpeningHour} />
+                <SectionHeader
+                  icon={<Clock size={20} />}
+                  title="4. Öppettider"
+                  description="Kalender för stängda dagar flyttas senare till floristens profil/adminvy. Här registreras grundschema."
+                />
+                <OpeningHoursEditor
+                  openingHours={openingHours}
+                  onChange={updateOpeningHour}
+                />
               </Card>
 
               <Card>
-                <SectionHeader icon={<Truck size={20} />} title="5. Leveransradie & täckningsområden" description="Det viktigaste är stad, pris och radie. Område är valfritt och står som Annat område som standard." />
+                <SectionHeader
+                  icon={<Truck size={20} />}
+                  title="5. Leveransradie & täckningsområden"
+                  description="Det viktigaste är stad, pris och radie. Område är valfritt och står som Annat område som standard."
+                />
                 <div className="grid gap-4 md:grid-cols-2">
-                  <SelectField required name="deliveryModel" label="Leveransmodell" options={deliveryTypes} />
-                  <Field required name="primaryDeliveryArea" label="Primärt leveransområde" placeholder="Ex. Stockholm med omnejd" />
-                  <Field required name="sameDayCutoff" label="Samma dag-leverans senast kl." placeholder="Ex. 13:00" />
-                  <Field required name="deliveryDays" label="Dagar för leverans" placeholder="Ex. Mån-lör" />
-                  <Field required name="minimumOrderValue" label="Minsta ordervärde" placeholder="Ex. 450 kr" inputMode="numeric" />
-                  <Field required name="deliveryFeeFrom" label="Leveransavgift från" placeholder="Ex. 99 kr" inputMode="numeric" />
+                  <SelectField
+                    required
+                    name="deliveryModel"
+                    label="Leveransmodell"
+                    options={deliveryTypes}
+                  />
+                  <Field
+                    required
+                    name="primaryDeliveryArea"
+                    label="Primärt leveransområde"
+                    placeholder="Ex. Stockholm med omnejd"
+                  />
+                  <Field
+                    required
+                    name="sameDayCutoff"
+                    label="Samma dag-leverans senast kl."
+                    placeholder="Ex. 13:00"
+                  />
+                  <Field
+                    required
+                    name="deliveryDays"
+                    label="Dagar för leverans"
+                    placeholder="Ex. Mån-lör"
+                  />
+                  <Field
+                    required
+                    name="minimumOrderValue"
+                    label="Minsta ordervärde"
+                    placeholder="Ex. 450 kr"
+                    inputMode="numeric"
+                  />
+                  <Field
+                    required
+                    name="deliveryFeeFrom"
+                    label="Leveransavgift från"
+                    placeholder="Ex. 99 kr"
+                    inputMode="numeric"
+                  />
                 </div>
 
                 <div className="mt-8 rounded-3xl bg-stone-50 p-5">
                   <div className="mb-3 flex items-center justify-between gap-4">
-                    <label htmlFor="delivery-radius" className="text-sm font-semibold">Standardradie för leverans</label>
-                    <span className="rounded-full bg-white px-3 py-1 text-sm font-medium shadow-sm">{deliveryRadius} km</span>
+                    <label
+                      htmlFor="delivery-radius"
+                      className="text-sm font-semibold"
+                    >
+                      Standardradie för leverans
+                    </label>
+                    <span className="rounded-full bg-white px-3 py-1 text-sm font-medium shadow-sm">
+                      {deliveryRadius} km
+                    </span>
                   </div>
-                  <input id="delivery-radius" type="range" min="1" max="150" value={deliveryRadius} onChange={(event) => setDeliveryRadius(Number(event.target.value))} className="w-full accent-stone-900" />
+                  <input
+                    id="delivery-radius"
+                    type="range"
+                    min="1"
+                    max="150"
+                    value={deliveryRadius}
+                    onChange={(event) =>
+                      setDeliveryRadius(Number(event.target.value))
+                    }
+                    className="w-full accent-stone-900"
+                  />
                 </div>
 
                 <div className="mt-8 space-y-4">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                       <h3 className="font-semibold">Stad, pris och radie</h3>
-                      <p className="mt-1 text-sm text-stone-600">Område är valfritt. Annat område visas alltid som standard.</p>
+                      <p className="mt-1 text-sm text-stone-600">
+                        Område är valfritt. Annat område visas alltid som
+                        standard.
+                      </p>
                     </div>
-                    <Button type="button" onClick={addCoverageArea}><Plus size={16} /> Lägg till område</Button>
+                    <Button type="button" onClick={addCoverageArea}>
+                      <Plus size={16} /> Lägg till område
+                    </Button>
                   </div>
 
                   {coverageAreas.map((coverage, index) => {
-                    const areas = cityAreas[coverage.city] || ["Annat område", "Centrum"];
+                    const areas = cityAreas[coverage.city] || [
+                      "Annat område",
+                      "Centrum",
+                    ];
                     return (
-                      <div key={coverage.id} className="rounded-3xl border border-stone-200 bg-white p-4">
+                      <div
+                        key={coverage.id}
+                        className="rounded-3xl border border-stone-200 bg-white p-4"
+                      >
                         <div className="mb-4 flex items-center justify-between gap-3">
-                          <h4 className="font-semibold">Leveransområde {index + 1}</h4>
+                          <h4 className="font-semibold">
+                            Leveransområde {index + 1}
+                          </h4>
                           {coverageAreas.length > 1 && (
-                            <button type="button" onClick={() => removeCoverageArea(coverage.id)} className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-red-600 hover:bg-red-50">
+                            <button
+                              type="button"
+                              onClick={() => removeCoverageArea(coverage.id)}
+                              className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+                            >
                               <Trash2 size={16} /> Ta bort
                             </button>
                           )}
                         </div>
                         <div className="grid gap-4 md:grid-cols-5">
-                          <ControlledSelect label="Stad" value={coverage.city} options={swedishCities} onChange={(value) => updateCoverageArea(coverage.id, "city", value)} />
-                          <ControlledSelect label="Område" value={coverage.area || "Annat område"} options={areas} onChange={(value) => updateCoverageArea(coverage.id, "area", value)} />
-                          <ControlledInput label="Postnummer/gräns" value={coverage.postalCode} onChange={(value) => updateCoverageArea(coverage.id, "postalCode", value)} placeholder="Valfritt" />
-                          <ControlledInput label="Pris kr" value={coverage.price} onChange={(value) => updateCoverageArea(coverage.id, "price", value)} placeholder="Ex. 99" />
+                          <ControlledSelect
+                            label="Stad"
+                            value={coverage.city}
+                            options={swedishCities}
+                            onChange={(value) =>
+                              updateCoverageArea(coverage.id, "city", value)
+                            }
+                          />
+                          <ControlledSelect
+                            label="Område"
+                            value={coverage.area || "Annat område"}
+                            options={areas}
+                            onChange={(value) =>
+                              updateCoverageArea(coverage.id, "area", value)
+                            }
+                          />
+                          <ControlledInput
+                            label="Postnummer/gräns"
+                            value={coverage.postalCode}
+                            onChange={(value) =>
+                              updateCoverageArea(
+                                coverage.id,
+                                "postalCode",
+                                value,
+                              )
+                            }
+                            placeholder="Valfritt"
+                          />
+                          <ControlledInput
+                            label="Pris kr"
+                            value={coverage.price}
+                            onChange={(value) =>
+                              updateCoverageArea(coverage.id, "price", value)
+                            }
+                            placeholder="Ex. 99"
+                          />
                           <label className="block">
-                            <span className="mb-2 block text-sm font-semibold">Radie: {coverage.radius} km</span>
-                            <input type="range" min="1" max="150" value={coverage.radius} onChange={(event) => updateCoverageArea(coverage.id, "radius", Number(event.target.value))} className="mt-4 w-full accent-stone-900" />
+                            <span className="mb-2 block text-sm font-semibold">
+                              Radie: {coverage.radius} km
+                            </span>
+                            <input
+                              type="range"
+                              min="1"
+                              max="150"
+                              value={coverage.radius}
+                              onChange={(event) =>
+                                updateCoverageArea(
+                                  coverage.id,
+                                  "radius",
+                                  Number(event.target.value),
+                                )
+                              }
+                              className="mt-4 w-full accent-stone-900"
+                            />
                           </label>
                         </div>
                       </div>
@@ -516,16 +1033,40 @@ export default function FloristSocialRegistrationPage() {
               </Card>
 
               <Card>
-                <SectionHeader icon={<Flower2 size={20} />} title="6. Tjänster & specialiteter" description="Välj tjänster och lägg till bilder med titel, pris, beskrivning och hashtags per tjänst." />
+                <SectionHeader
+                  icon={<Flower2 size={20} />}
+                  title="6. Tjänster & specialiteter"
+                  description="Välj tjänster och lägg till bilder med titel, pris, beskrivning och hashtags per tjänst."
+                />
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {serviceOptions.map((service) => {
-                    const savedCount = servicePortfolioItems[service]?.filter((item) => item.isSaved).length || 0;
+                    const savedCount =
+                      servicePortfolioItems[service]?.filter(
+                        (item) => item.isSaved,
+                      ).length || 0;
                     return (
                       <div key={service} className="space-y-2">
-                        <PillButton active={selectedServices.includes(service)} onClick={() => toggleItem(service, selectedServices, setSelectedServices)}>{service}</PillButton>
+                        <PillButton
+                          active={selectedServices.includes(service)}
+                          onClick={() =>
+                            toggleItem(
+                              service,
+                              selectedServices,
+                              setSelectedServices,
+                            )
+                          }
+                        >
+                          {service}
+                        </PillButton>
                         {selectedServices.includes(service) && (
-                          <button type="button" onClick={() => setServiceUploadPrompt(service)} className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3 text-left text-xs font-medium text-stone-600 transition hover:border-stone-400 hover:bg-stone-50">
-                            {savedCount > 0 ? `✅ ${savedCount} portfolio-bild(er) sparade` : "Lägg till portfolio, pris och hashtags"}
+                          <button
+                            type="button"
+                            onClick={() => setServiceUploadPrompt(service)}
+                            className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3 text-left text-xs font-medium text-stone-600 transition hover:border-stone-400 hover:bg-stone-50"
+                          >
+                            {savedCount > 0
+                              ? `✅ ${savedCount} portfolio-bild(er) sparade`
+                              : "Lägg till portfolio, pris och hashtags"}
                           </button>
                         )}
                       </div>
@@ -534,73 +1075,215 @@ export default function FloristSocialRegistrationPage() {
                 </div>
 
                 <div className="mt-8 grid gap-4 md:grid-cols-2">
-                  <SelectField required name="priceLevel" label="Prisnivå" options={priceLevels} />
-                  <Field required name="minimumBookingValue" label="Minsta bokningsvärde för event/bröllop" placeholder="Ex. 8 000 kr" inputMode="numeric" />
-                  <Field required name="yearsInBusiness" label="Antal år i branschen" placeholder="Ex. 8 år" inputMode="numeric" />
-                  <Field required name="teamSize" label="Antal florister i teamet" placeholder="Ex. 3" inputMode="numeric" />
+                  <SelectField
+                    required
+                    name="priceLevel"
+                    label="Prisnivå"
+                    options={priceLevels}
+                  />
+                  <Field
+                    required
+                    name="minimumBookingValue"
+                    label="Minsta bokningsvärde för event/bröllop"
+                    placeholder="Ex. 8 000 kr"
+                    inputMode="numeric"
+                  />
+                  <Field
+                    required
+                    name="yearsInBusiness"
+                    label="Antal år i branschen"
+                    placeholder="Ex. 8 år"
+                    inputMode="numeric"
+                  />
+                  <Field
+                    required
+                    name="teamSize"
+                    label="Antal florister i teamet"
+                    placeholder="Ex. 3"
+                    inputMode="numeric"
+                  />
                 </div>
-                <Textarea required name="bio" label="Beskriv floristen" placeholder="Berätta om stil, erfarenhet, typiska kunder, sortiment och vad som gör floristen unik." />
+                <Textarea
+                  required
+                  name="bio"
+                  label="Beskriv floristen"
+                  placeholder="Berätta om stil, erfarenhet, typiska kunder, sortiment och vad som gör floristen unik."
+                />
               </Card>
 
               <Card>
-                <SectionHeader icon={<ImagePlus size={20} />} title="7. Bilder, logotyp & portfolio" description="Profilbild, logotyp och omslagsbild är valfria. Portfolio kan få titel, beskrivning, pris och hashtags." />
+                <SectionHeader
+                  icon={<ImagePlus size={20} />}
+                  title="7. Bilder, logotyp & portfolio"
+                  description="Profilbild, logotyp och omslagsbild är valfria. Portfolio kan få titel, beskrivning, pris och hashtags."
+                />
                 <div className="grid gap-4 md:grid-cols-2">
-                  <SingleImagePicker label="Profilbild" description="Visas på floristprofilen." value={profileImage} onChange={setProfileImage} />
-                  <SingleImagePicker label="Logotyp" description="Visas som varumärke på profilen." value={logoImage} onChange={setLogoImage} />
-                  <SingleImagePicker label="Omslagsbild" description="Stor bild överst på profilen." value={coverImage} onChange={setCoverImage} />
-                  <GeneralPortfolioEditor items={generalPortfolioItems} onChange={setGeneralPortfolioItems} />
+                  <SingleImagePicker
+                    label="Profilbild"
+                    description="Visas på floristprofilen."
+                    value={profileImage}
+                    onChange={setProfileImage}
+                  />
+                  <SingleImagePicker
+                    label="Logotyp"
+                    description="Visas som varumärke på profilen."
+                    value={logoImage}
+                    onChange={setLogoImage}
+                  />
+                  <SingleImagePicker
+                    label="Omslagsbild"
+                    description="Stor bild överst på profilen."
+                    value={coverImage}
+                    onChange={setCoverImage}
+                  />
+                  <GeneralPortfolioEditor
+                    items={generalPortfolioItems}
+                    onChange={setGeneralPortfolioItems}
+                  />
                 </div>
                 <div className="mt-6 grid gap-4 md:grid-cols-2">
-                  <UrlField name="portfolioUrl" label="Portfolio URL" placeholder="portfolio.dinbutik.se" />
-                  <UrlField name="googleBusinessProfile" label="Google Business Profile" placeholder="g.page/dinbutik" />
+                  <UrlField
+                    name="portfolioUrl"
+                    label="Portfolio URL"
+                    placeholder="portfolio.dinbutik.se"
+                  />
+                  <UrlField
+                    name="googleBusinessProfile"
+                    label="Google Business Profile"
+                    placeholder="g.page/dinbutik"
+                  />
                 </div>
               </Card>
 
               <Card>
-                <SectionHeader icon={<Eye size={20} />} title="8. Stil, profil & synlighet" description="Dessa stilar visas senare på floristprofilen och hjälper kunder att välja rätt florist." />
+                <SectionHeader
+                  icon={<Eye size={20} />}
+                  title="8. Stil, profil & synlighet"
+                  description="Dessa stilar visas senare på floristprofilen och hjälper kunder att välja rätt florist."
+                />
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                   {styleOptions.map((style) => (
-                    <PillButton key={style} active={selectedStyles.includes(style)} variant="pink" onClick={() => toggleItem(style, selectedStyles, setSelectedStyles)}>{style}</PillButton>
+                    <PillButton
+                      key={style}
+                      active={selectedStyles.includes(style)}
+                      variant="pink"
+                      onClick={() =>
+                        toggleItem(style, selectedStyles, setSelectedStyles)
+                      }
+                    >
+                      {style}
+                    </PillButton>
                   ))}
                 </div>
               </Card>
 
               <Card>
-                <SectionHeader icon={<CreditCard size={20} />} title="9. Stripe & utbetalningar" description="Stripe-kontonummer sparas men ändring senare kräver adminbegäran." />
+                <SectionHeader
+                  icon={<CreditCard size={20} />}
+                  title="9. Stripe & utbetalningar"
+                  description="Stripe-kontonummer sparas men ändring senare kräver adminbegäran."
+                />
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="rounded-3xl border border-stone-200 bg-stone-50 p-5">
-                    <label className="flex items-center gap-3"><input type="radio" name="stripe_option" defaultChecked /> <strong>Har redan Stripe-konto</strong></label>
-                    <div className="mt-4"><Field name="stripeAccountId" label="Stripe kontonummer" placeholder="Ex. acct_..." /></div>
+                    <label className="flex items-center gap-3">
+                      <input type="radio" name="stripe_option" defaultChecked />{" "}
+                      <strong>Har redan Stripe-konto</strong>
+                    </label>
+                    <div className="mt-4">
+                      <Field
+                        name="stripeAccountId"
+                        label="Stripe kontonummer"
+                        placeholder="Ex. acct_..."
+                      />
+                    </div>
                   </div>
                   <div className="rounded-3xl border border-stone-200 bg-stone-50 p-5">
-                    <label className="flex items-center gap-3"><input type="radio" name="stripe_option" /> <strong>Starta Stripe-registrering</strong></label>
-                    <p className="mt-3 text-sm leading-6 text-stone-600">Den här knappen kopplas till Stripe onboarding senare.</p>
-                    <div className="mt-4"><Button type="button">Starta Stripe-registrering</Button></div>
+                    <label className="flex items-center gap-3">
+                      <input type="radio" name="stripe_option" />{" "}
+                      <strong>Starta Stripe-registrering</strong>
+                    </label>
+                    <p className="mt-3 text-sm leading-6 text-stone-600">
+                      Den här knappen kopplas till Stripe onboarding senare.
+                    </p>
+                    <div className="mt-4">
+                      <Button type="button">Starta Stripe-registrering</Button>
+                    </div>
                   </div>
                 </div>
               </Card>
 
               <Card>
-                <SectionHeader icon={<ShieldCheck size={20} />} title="10. Admin & godkännande" description="Intern information för granskning innan publicering." />
+                <SectionHeader
+                  icon={<ShieldCheck size={20} />}
+                  title="10. Admin & godkännande"
+                  description="Intern information för granskning innan publicering."
+                />
                 <div className="grid gap-4 md:grid-cols-2">
-                  <SelectField required name="status" label="Status" options={statusOptions} />
-                  <SelectField required name="plan" label="Plan" options={planOptions} />
-                  <Field required name="adminOwner" label="Ansvarig admin" placeholder="Ex. Nick" />
-                  <SelectField required name="priority" label="Prioritet" options={["Låg", "Normal", "Hög"]} />
-                  <div className="md:col-span-2"><Textarea required name="adminNote" label="Intern anteckning" placeholder="Anteckningar för FloristSocial-teamet." /></div>
+                  <SelectField
+                    required
+                    name="status"
+                    label="Status"
+                    options={statusOptions}
+                  />
+                  <SelectField
+                    required
+                    name="plan"
+                    label="Plan"
+                    options={planOptions}
+                  />
+                  <Field
+                    required
+                    name="adminOwner"
+                    label="Ansvarig admin"
+                    placeholder="Ex. Nick"
+                  />
+                  <SelectField
+                    required
+                    name="priority"
+                    label="Prioritet"
+                    options={["Låg", "Normal", "Hög"]}
+                  />
+                  <div className="md:col-span-2">
+                    <Textarea
+                      required
+                      name="adminNote"
+                      label="Intern anteckning"
+                      placeholder="Anteckningar för FloristSocial-teamet."
+                    />
+                  </div>
                 </div>
                 <label className="mt-6 flex items-start gap-3 rounded-2xl bg-stone-50 p-4 text-sm text-stone-700">
-                  <input required type="checkbox" className="mt-1 h-4 w-4 accent-stone-900" />
-                  <span>Floristen godkänner att FloristSocial lagrar uppgifterna och kontaktar företaget för verifiering innan profilen publiceras.</span>
+                  <input
+                    required
+                    type="checkbox"
+                    className="mt-1 h-4 w-4 accent-stone-900"
+                  />
+                  <span>
+                    Floristen godkänner att FloristSocial lagrar uppgifterna och
+                    kontaktar företaget för verifiering innan profilen
+                    publiceras.
+                  </span>
                 </label>
               </Card>
 
-              {submitError && <div className="rounded-2xl bg-red-50 p-4 text-sm font-medium text-red-700">{submitError}</div>}
-              {submitSuccess && <div className="rounded-2xl bg-emerald-50 p-4 text-sm font-medium text-emerald-700">{submitSuccess}</div>}
+              {submitError && (
+                <div className="rounded-2xl bg-red-50 p-4 text-sm font-medium text-red-700">
+                  {submitError}
+                </div>
+              )}
+              {submitSuccess && (
+                <div className="rounded-2xl bg-emerald-50 p-4 text-sm font-medium text-emerald-700">
+                  {submitSuccess}
+                </div>
+              )}
 
               <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
-                <Button type="button" variant="outline">Spara som utkast</Button>
-                <Button type="submit">{submitting ? "Skickar..." : "Skicka registrering"}</Button>
+                <Button type="button" variant="outline">
+                  Spara som utkast
+                </Button>
+                <Button type="submit">
+                  {submitting ? "Skickar..." : "Skicka registrering"}
+                </Button>
               </div>
             </form>
           </div>
@@ -608,21 +1291,46 @@ export default function FloristSocialRegistrationPage() {
           <aside className="lg:sticky lg:top-8 lg:h-fit">
             <div className="rounded-3xl border-none bg-white p-6 shadow-xl">
               <h2 className="text-xl font-semibold">Profilstatus</h2>
-              <p className="mt-2 text-sm leading-6 text-stone-600">Fyll i stad, radie, pris, tjänster och bilder för att göra profilen stark.</p>
+              <p className="mt-2 text-sm leading-6 text-stone-600">
+                Fyll i stad, radie, pris, tjänster och bilder för att göra
+                profilen stark.
+              </p>
               <div className="mt-6">
-                <div className="mb-2 flex items-center justify-between text-sm"><span className="font-medium">Komplett profil</span><span>{completionScore}%</span></div>
-                <div className="h-3 overflow-hidden rounded-full bg-stone-100"><div className="h-full rounded-full bg-stone-900 transition-all" style={{ width: `${completionScore}%` }} /></div>
+                <div className="mb-2 flex items-center justify-between text-sm">
+                  <span className="font-medium">Komplett profil</span>
+                  <span>{completionScore}%</span>
+                </div>
+                <div className="h-3 overflow-hidden rounded-full bg-stone-100">
+                  <div
+                    className="h-full rounded-full bg-stone-900 transition-all"
+                    style={{ width: `${completionScore}%` }}
+                  />
+                </div>
               </div>
               <div className="mt-6 space-y-3 text-sm text-stone-600">
                 <StatusItem done label="Kontaktuppgifter" />
                 <StatusItem done label="Företagsuppgifter" />
-                <StatusItem done={coverageAreas.length > 0} label="Stad, pris och radie" />
-                <StatusItem done={selectedServices.length > 0} label="Tjänster valda" />
-                <StatusItem done={selectedStyles.length > 0} label="Stilar valda" />
-                <StatusItem done={portfolioCount > 0} label={`${portfolioCount} portfolio-bild(er) sparade`} />
+                <StatusItem
+                  done={coverageAreas.length > 0}
+                  label="Stad, pris och radie"
+                />
+                <StatusItem
+                  done={selectedServices.length > 0}
+                  label="Tjänster valda"
+                />
+                <StatusItem
+                  done={selectedStyles.length > 0}
+                  label="Stilar valda"
+                />
+                <StatusItem
+                  done={portfolioCount > 0}
+                  label={`${portfolioCount} portfolio-bild(er) sparade`}
+                />
               </div>
               <div className="mt-6 rounded-2xl bg-[#fbf7f2] p-4 text-sm leading-6 text-stone-600">
-                Ändring av adress, telefon, e-post, företagsnamn, organisationsnummer, hemsida, kontaktperson och Stripe ska senare gå via adminbegäran.
+                Ändring av adress, telefon, e-post, företagsnamn,
+                organisationsnummer, hemsida, kontaktperson och Stripe ska
+                senare gå via adminbegäran.
               </div>
             </div>
           </aside>
@@ -639,7 +1347,13 @@ function maskOrgNumber(value: string) {
   return "XXXXXX-" + trimmed.slice(-4);
 }
 
-function PasswordFields({ generatedPassword, onGenerate }: { generatedPassword: string; onGenerate: () => void }) {
+function PasswordFields({
+  generatedPassword,
+  onGenerate,
+}: {
+  generatedPassword: string;
+  onGenerate: () => void;
+}) {
   const [password, setPassword] = useState(generatedPassword);
   const [confirmPassword, setConfirmPassword] = useState(generatedPassword);
 
@@ -655,35 +1369,98 @@ function PasswordFields({ generatedPassword, onGenerate }: { generatedPassword: 
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h3 className="font-semibold">Säkert lösenord</h3>
-          <p className="text-sm text-stone-600">Floristen kan skriva eget lösenord eller generera ett starkt lösenord.</p>
+          <p className="text-sm text-stone-600">
+            Floristen kan skriva eget lösenord eller generera ett starkt
+            lösenord.
+          </p>
         </div>
-        <Button type="button" onClick={generate}><KeyRound size={16} /> Generera lösenord</Button>
+        <Button type="button" onClick={generate}>
+          <KeyRound size={16} /> Generera lösenord
+        </Button>
       </div>
       <div className="grid gap-4 md:grid-cols-2">
         <label className="block">
           <span className="mb-2 block text-sm font-semibold">Lösenord</span>
-          <input name="password" required type="text" minLength={8} value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Minst 8 tecken" className="h-12 w-full rounded-2xl border border-stone-200 bg-white px-4 outline-none transition placeholder:text-stone-400 focus:border-stone-500" />
+          <input
+            name="password"
+            required
+            type="text"
+            minLength={8}
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            placeholder="Minst 8 tecken"
+            className="h-12 w-full rounded-2xl border border-stone-200 bg-white px-4 outline-none transition placeholder:text-stone-400 focus:border-stone-500"
+          />
         </label>
         <label className="block">
-          <span className="mb-2 block text-sm font-semibold">Bekräfta lösenord</span>
-          <input name="confirmPassword" required type="text" minLength={8} value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} placeholder="Upprepa lösenordet" className="h-12 w-full rounded-2xl border border-stone-200 bg-white px-4 outline-none transition placeholder:text-stone-400 focus:border-stone-500" />
+          <span className="mb-2 block text-sm font-semibold">
+            Bekräfta lösenord
+          </span>
+          <input
+            name="confirmPassword"
+            required
+            type="text"
+            minLength={8}
+            value={confirmPassword}
+            onChange={(event) => setConfirmPassword(event.target.value)}
+            placeholder="Upprepa lösenordet"
+            className="h-12 w-full rounded-2xl border border-stone-200 bg-white px-4 outline-none transition placeholder:text-stone-400 focus:border-stone-500"
+          />
         </label>
       </div>
     </div>
   );
 }
 
-function OpeningHoursEditor({ openingHours, onChange }: { openingHours: OpeningHour[]; onChange: (id: number, field: keyof OpeningHour, value: string | boolean) => void }) {
+function OpeningHoursEditor({
+  openingHours,
+  onChange,
+}: {
+  openingHours: OpeningHour[];
+  onChange: (
+    id: number,
+    field: keyof OpeningHour,
+    value: string | boolean,
+  ) => void;
+}) {
   return (
     <div className="rounded-3xl bg-stone-50 p-5">
       <h3 className="mb-4 font-semibold">Veckans öppettider</h3>
       <div className="space-y-3">
         {openingHours.map((row) => (
-          <div key={row.id} className="grid gap-3 rounded-2xl bg-white p-3 md:grid-cols-[120px_1fr_1fr_120px] md:items-center">
+          <div
+            key={row.id}
+            className="grid gap-3 rounded-2xl bg-white p-3 md:grid-cols-[120px_1fr_1fr_120px] md:items-center"
+          >
             <strong className="text-sm">{row.dayLabel}</strong>
-            <input type="time" value={row.openTime} disabled={row.isClosed} onChange={(event) => onChange(row.id, "openTime", event.target.value)} className="h-11 rounded-xl border border-stone-200 px-3 disabled:bg-stone-100" />
-            <input type="time" value={row.closeTime} disabled={row.isClosed} onChange={(event) => onChange(row.id, "closeTime", event.target.value)} className="h-11 rounded-xl border border-stone-200 px-3 disabled:bg-stone-100" />
-            <label className="flex items-center gap-2 text-sm font-medium"><input type="checkbox" checked={row.isClosed} onChange={(event) => onChange(row.id, "isClosed", event.target.checked)} /> Stängt</label>
+            <input
+              type="time"
+              value={row.openTime}
+              disabled={row.isClosed}
+              onChange={(event) =>
+                onChange(row.id, "openTime", event.target.value)
+              }
+              className="h-11 rounded-xl border border-stone-200 px-3 disabled:bg-stone-100"
+            />
+            <input
+              type="time"
+              value={row.closeTime}
+              disabled={row.isClosed}
+              onChange={(event) =>
+                onChange(row.id, "closeTime", event.target.value)
+              }
+              className="h-11 rounded-xl border border-stone-200 px-3 disabled:bg-stone-100"
+            />
+            <label className="flex items-center gap-2 text-sm font-medium">
+              <input
+                type="checkbox"
+                checked={row.isClosed}
+                onChange={(event) =>
+                  onChange(row.id, "isClosed", event.target.checked)
+                }
+              />{" "}
+              Stängt
+            </label>
           </div>
         ))}
       </div>
@@ -691,13 +1468,26 @@ function OpeningHoursEditor({ openingHours, onChange }: { openingHours: OpeningH
   );
 }
 
-function ServiceUploadModal({ service, initialItems, onClose, onSave }: { service: string; initialItems: PortfolioDraftItem[]; onClose: () => void; onSave: (items: PortfolioDraftItem[]) => void }) {
+function ServiceUploadModal({
+  service,
+  initialItems,
+  onClose,
+  onSave,
+}: {
+  service: string;
+  initialItems: PortfolioDraftItem[];
+  onClose: () => void;
+  onSave: (items: PortfolioDraftItem[]) => void;
+}) {
   const [items, setItems] = useState<PortfolioDraftItem[]>(initialItems);
 
   function addFiles(fileList: FileList | null) {
     if (!fileList) return;
     const nextItems = Array.from(fileList)
-      .filter((file) => file.type.startsWith("image/") || file.type.startsWith("video/"))
+      .filter(
+        (file) =>
+          file.type.startsWith("image/") || file.type.startsWith("video/"),
+      )
       .map((file) => ({
         id: `${file.name}-${file.size}-${Date.now()}-${Math.random()}`,
         file,
@@ -711,8 +1501,16 @@ function ServiceUploadModal({ service, initialItems, onClose, onSave }: { servic
     setItems((current) => [...current, ...nextItems]);
   }
 
-  function updateItem(id: string, field: keyof PortfolioDraftItem, value: string | boolean) {
-    setItems((current) => current.map((item) => (item.id === id ? { ...item, [field]: value } : item)));
+  function updateItem(
+    id: string,
+    field: keyof PortfolioDraftItem,
+    value: string | boolean,
+  ) {
+    setItems((current) =>
+      current.map((item) =>
+        item.id === id ? { ...item, [field]: value } : item,
+      ),
+    );
   }
 
   function removeItem(id: string) {
@@ -729,61 +1527,156 @@ function ServiceUploadModal({ service, initialItems, onClose, onSave }: { servic
         <div className="mb-4 flex items-start justify-between gap-4">
           <div>
             <h2 className="text-xl font-semibold">Portfolio för {service}</h2>
-            <p className="mt-2 text-sm text-stone-600">Lägg till bild/video, titel, pris, beskrivning och hashtags.</p>
+            <p className="mt-2 text-sm text-stone-600">
+              Lägg till bild/video, titel, pris, beskrivning och hashtags.
+            </p>
           </div>
-          <button type="button" onClick={onClose} className="rounded-full p-2 hover:bg-stone-100"><X size={18} /></button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full p-2 hover:bg-stone-100"
+          >
+            <X size={18} />
+          </button>
         </div>
 
-        <div onDragOver={(event) => event.preventDefault()} onDrop={(event) => { event.preventDefault(); addFiles(event.dataTransfer.files); }} className="rounded-3xl border-2 border-dashed border-stone-300 bg-stone-50 p-5 transition hover:border-stone-500">
+        <div
+          onDragOver={(event) => event.preventDefault()}
+          onDrop={(event) => {
+            event.preventDefault();
+            addFiles(event.dataTransfer.files);
+          }}
+          className="rounded-3xl border-2 border-dashed border-stone-300 bg-stone-50 p-5 transition hover:border-stone-500"
+        >
           <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl bg-white px-4 py-8 text-center text-sm text-stone-600 transition hover:bg-stone-100">
-            <UploadCloud size={32} /> Klicka eller dra in bild/video för {service}
-            <input type="file" accept="image/*,video/*" multiple onChange={(event) => addFiles(event.target.files)} className="hidden" />
+            <UploadCloud size={32} /> Klicka eller dra in bild/video för{" "}
+            {service}
+            <input
+              type="file"
+              accept="image/*,video/*"
+              multiple
+              onChange={(event) => addFiles(event.target.files)}
+              className="hidden"
+            />
           </label>
         </div>
 
         {items.length > 0 && (
           <div className="mt-5 grid gap-4 md:grid-cols-2">
             {items.map((item) => (
-              <PortfolioEditCard key={item.id} item={item} onUpdate={(field, value) => updateItem(item.id, field, value)} onRemove={() => removeItem(item.id)} />
+              <PortfolioEditCard
+                key={item.id}
+                item={item}
+                onUpdate={(field, value) => updateItem(item.id, field, value)}
+                onRemove={() => removeItem(item.id)}
+              />
             ))}
           </div>
         )}
 
         <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
-          <Button type="button" variant="outline" onClick={onClose}>Stäng utan att fortsätta</Button>
-          <Button type="button" onClick={() => onSave(items)}>Spara och fortsätt</Button>
+          <Button type="button" variant="outline" onClick={onClose}>
+            Stäng utan att fortsätta
+          </Button>
+          <Button type="button" onClick={() => onSave(items)}>
+            Spara och fortsätt
+          </Button>
         </div>
       </div>
     </div>
   );
 }
 
-function PortfolioEditCard({ item, onUpdate, onRemove }: { item: PortfolioDraftItem; onUpdate: (field: keyof PortfolioDraftItem, value: string | boolean) => void; onRemove: () => void }) {
+function PortfolioEditCard({
+  item,
+  onUpdate,
+  onRemove,
+}: {
+  item: PortfolioDraftItem;
+  onUpdate: (field: keyof PortfolioDraftItem, value: string | boolean) => void;
+  onRemove: () => void;
+}) {
   return (
     <div className="overflow-hidden rounded-3xl border border-stone-200 bg-white shadow-sm">
-      {item.file.type.startsWith("video/") ? <video src={item.previewUrl} controls className="h-56 w-full object-cover" /> : <img src={item.previewUrl} alt={item.file.name} className="h-56 w-full object-cover" />}
+      {item.file.type.startsWith("video/") ? (
+        <video
+          src={item.previewUrl}
+          controls
+          className="h-56 w-full object-cover"
+        />
+      ) : (
+        <img
+          src={item.previewUrl}
+          alt={item.file.name}
+          className="h-56 w-full object-cover"
+        />
+      )}
       <div className="flex flex-wrap items-center gap-2 border-b border-stone-100 p-3">
-        <Button type="button" onClick={() => onUpdate("isSaved", true)}><Save size={16} /> Spara bild</Button>
-        <Button type="button" variant="outline" onClick={onRemove}><Trash2 size={16} /> Ta bort bild</Button>
-        <span className={`rounded-full px-3 py-2 text-xs font-semibold ${item.isSaved ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}>{item.isSaved ? "Sparad" : "Ej sparad"}</span>
+        <Button type="button" onClick={() => onUpdate("isSaved", true)}>
+          <Save size={16} /> Spara bild
+        </Button>
+        <Button type="button" variant="outline" onClick={onRemove}>
+          <Trash2 size={16} /> Ta bort bild
+        </Button>
+        <span
+          className={`rounded-full px-3 py-2 text-xs font-semibold ${item.isSaved ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"}`}
+        >
+          {item.isSaved ? "Sparad" : "Ej sparad"}
+        </span>
       </div>
       <div className="space-y-3 p-4">
-        <p className="break-all text-xs font-medium text-stone-500">{item.file.name}</p>
-        <ControlledInput label="Titel" value={item.title} onChange={(value) => onUpdate("title", value)} placeholder="Ex. Bröllopsbukett i ljusa toner" />
-        <ControlledInput label="Pris" value={item.price} onChange={(value) => onUpdate("price", value)} placeholder="Ex. 1 250 kr" />
-        <SmallTextarea label="Beskrivning" value={item.description} onChange={(value) => onUpdate("description", value)} placeholder="Beskriv material, stil, säsong och passande tillfälle." />
-        <ControlledInput label="Hashtags" value={item.hashtags} onChange={(value) => onUpdate("hashtags", value)} placeholder="#Bukett #Bröllop #Sommarblommor" />
+        <p className="break-all text-xs font-medium text-stone-500">
+          {item.file.name}
+        </p>
+        <ControlledInput
+          label="Titel"
+          value={item.title}
+          onChange={(value) => onUpdate("title", value)}
+          placeholder="Ex. Bröllopsbukett i ljusa toner"
+        />
+        <ControlledInput
+          label="Pris"
+          value={item.price}
+          onChange={(value) => onUpdate("price", value)}
+          placeholder="Ex. 1 250 kr"
+        />
+        <SmallTextarea
+          label="Beskrivning"
+          value={item.description}
+          onChange={(value) => onUpdate("description", value)}
+          placeholder="Beskriv material, stil, säsong och passande tillfälle."
+        />
+        <ControlledInput
+          label="Hashtags"
+          value={item.hashtags}
+          onChange={(value) => onUpdate("hashtags", value)}
+          placeholder="#Bukett #Bröllop #Sommarblommor"
+        />
       </div>
     </div>
   );
 }
 
-function SingleImagePicker({ label, description, value, onChange }: { label: string; description: string; value: UploadedImage | null; onChange: (image: UploadedImage | null) => void }) {
+function SingleImagePicker({
+  label,
+  description,
+  value,
+  onChange,
+}: {
+  label: string;
+  description: string;
+  value: UploadedImage | null;
+  onChange: (image: UploadedImage | null) => void;
+}) {
   function addFile(fileList: FileList | null) {
     const file = fileList?.[0];
     if (!file || !file.type.startsWith("image/")) return;
     if (value) URL.revokeObjectURL(value.previewUrl);
-    onChange({ id: `${file.name}-${file.size}-${Date.now()}`, file, previewUrl: URL.createObjectURL(file) });
+    onChange({
+      id: `${file.name}-${file.size}-${Date.now()}`,
+      file,
+      previewUrl: URL.createObjectURL(file),
+    });
   }
 
   function handlePaste(event: React.ClipboardEvent<HTMLDivElement>) {
@@ -809,19 +1702,38 @@ function SingleImagePicker({ label, description, value, onChange }: { label: str
     >
       <h3 className="text-sm font-semibold">{label}</h3>
       <p className="mt-1 text-sm text-stone-500">{description}</p>
-      <p className="mt-2 text-xs text-stone-400">Tips: klicka i rutan och klistra in bild med ⌘V / Ctrl+V.</p>
+      <p className="mt-2 text-xs text-stone-400">
+        Tips: klicka i rutan och klistra in bild med ⌘V / Ctrl+V.
+      </p>
 
       <label className="mt-4 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl bg-stone-50 px-4 py-6 text-center text-sm text-stone-600 transition hover:bg-stone-100">
         <UploadCloud size={28} /> Klicka, dra in eller klistra in bild här
-        <input type="file" accept="image/*" onChange={(event) => addFile(event.target.files)} className="hidden" />
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(event) => addFile(event.target.files)}
+          className="hidden"
+        />
       </label>
 
       {value && (
         <div className="mt-4 overflow-hidden rounded-2xl border border-stone-200 bg-stone-50">
-          <img src={value.previewUrl} alt={value.file.name} className="h-36 w-full object-cover" />
+          <img
+            src={value.previewUrl}
+            alt={value.file.name}
+            className="h-36 w-full object-cover"
+          />
           <div className="flex items-center justify-between gap-2 p-3">
-            <p className="truncate text-xs font-medium text-stone-700">{value.file.name}</p>
-            <button type="button" onClick={() => onChange(null)} className="rounded-xl px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50">Ta bort</button>
+            <p className="truncate text-xs font-medium text-stone-700">
+              {value.file.name}
+            </p>
+            <button
+              type="button"
+              onClick={() => onChange(null)}
+              className="rounded-xl px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50"
+            >
+              Ta bort
+            </button>
           </div>
         </div>
       )}
@@ -829,19 +1741,30 @@ function SingleImagePicker({ label, description, value, onChange }: { label: str
   );
 }
 
-function GeneralPortfolioEditor({ items, onChange }: { items: PortfolioDraftItem[]; onChange: (items: PortfolioDraftItem[]) => void }) {
+function GeneralPortfolioEditor({
+  items,
+  onChange,
+}: {
+  items: PortfolioDraftItem[];
+  onChange: (items: PortfolioDraftItem[]) => void;
+}) {
   function addFiles(fileList: FileList | null) {
     if (!fileList) return;
-    const nextItems = Array.from(fileList).filter((file) => file.type.startsWith("image/") || file.type.startsWith("video/")).map((file) => ({
-      id: `${file.name}-${file.size}-${Date.now()}-${Math.random()}`,
-      file,
-      previewUrl: URL.createObjectURL(file),
-      title: "",
-      price: "",
-      description: "",
-      hashtags: "",
-      isSaved: false,
-    }));
+    const nextItems = Array.from(fileList)
+      .filter(
+        (file) =>
+          file.type.startsWith("image/") || file.type.startsWith("video/"),
+      )
+      .map((file) => ({
+        id: `${file.name}-${file.size}-${Date.now()}-${Math.random()}`,
+        file,
+        previewUrl: URL.createObjectURL(file),
+        title: "",
+        price: "",
+        description: "",
+        hashtags: "",
+        isSaved: false,
+      }));
     onChange([...items, ...nextItems]);
   }
 
@@ -851,8 +1774,16 @@ function GeneralPortfolioEditor({ items, onChange }: { items: PortfolioDraftItem
     addFiles(event.clipboardData.files);
   }
 
-  function updateItem(id: string, field: keyof PortfolioDraftItem, value: string | boolean) {
-    onChange(items.map((item) => (item.id === id ? { ...item, [field]: value } : item)));
+  function updateItem(
+    id: string,
+    field: keyof PortfolioDraftItem,
+    value: string | boolean,
+  ) {
+    onChange(
+      items.map((item) =>
+        item.id === id ? { ...item, [field]: value } : item,
+      ),
+    );
   }
 
   function removeItem(id: string) {
@@ -877,17 +1808,35 @@ function GeneralPortfolioEditor({ items, onChange }: { items: PortfolioDraftItem
       className="md:col-span-2 rounded-3xl border-2 border-dashed border-stone-300 bg-white p-5 transition hover:border-stone-500 focus:border-stone-700 focus:outline-none"
     >
       <h3 className="text-sm font-semibold">Allmän portfolio</h3>
-      <p className="mt-1 text-sm text-stone-500">Frivilliga bilder med titel, beskrivning, pris och hashtags.</p>
-      <p className="mt-2 text-xs text-stone-400">Tips: klicka i rutan och klistra in bild med ⌘V / Ctrl+V.</p>
+      <p className="mt-1 text-sm text-stone-500">
+        Frivilliga bilder med titel, beskrivning, pris och hashtags.
+      </p>
+      <p className="mt-2 text-xs text-stone-400">
+        Tips: klicka i rutan och klistra in bild med ⌘V / Ctrl+V.
+      </p>
 
       <label className="mt-4 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl bg-stone-50 px-4 py-8 text-center text-sm text-stone-600 transition hover:bg-stone-100">
-        <UploadCloud size={32} /> Klicka, dra in eller klistra in flera bilder/videos
-        <input type="file" accept="image/*,video/*" multiple onChange={(event) => addFiles(event.target.files)} className="hidden" />
+        <UploadCloud size={32} /> Klicka, dra in eller klistra in flera
+        bilder/videos
+        <input
+          type="file"
+          accept="image/*,video/*"
+          multiple
+          onChange={(event) => addFiles(event.target.files)}
+          className="hidden"
+        />
       </label>
 
       {items.length > 0 && (
         <div className="mt-5 grid gap-4 md:grid-cols-2">
-          {items.map((item) => <PortfolioEditCard key={item.id} item={item} onUpdate={(field, value) => updateItem(item.id, field, value)} onRemove={() => removeItem(item.id)} />)}
+          {items.map((item) => (
+            <PortfolioEditCard
+              key={item.id}
+              item={item}
+              onUpdate={(field, value) => updateItem(item.id, field, value)}
+              onRemove={() => removeItem(item.id)}
+            />
+          ))}
         </div>
       )}
     </div>
@@ -895,78 +1844,315 @@ function GeneralPortfolioEditor({ items, onChange }: { items: PortfolioDraftItem
 }
 
 function Card({ children }: { children: ReactNode }) {
-  return <section className="rounded-3xl border-none bg-white/90 p-6 shadow-sm backdrop-blur md:p-8">{children}</section>;
+  return (
+    <section className="rounded-3xl border-none bg-white/90 p-6 shadow-sm backdrop-blur md:p-8">
+      {children}
+    </section>
+  );
 }
 
-function Button({ children, onClick, type = "button", variant = "default" }: { children: ReactNode; onClick?: () => void; type?: "button" | "submit" | "reset"; variant?: "default" | "outline" }) {
-  const className = variant === "outline"
-    ? "inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-stone-300 bg-white px-6 text-sm font-medium text-stone-900 transition hover:bg-stone-50"
-    : "inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-stone-900 px-6 text-sm font-medium text-white transition hover:bg-stone-800";
-  return <button type={type} onClick={onClick} className={className}>{children}</button>;
+function Button({
+  children,
+  onClick,
+  type = "button",
+  variant = "default",
+}: {
+  children: ReactNode;
+  onClick?: () => void;
+  type?: "button" | "submit" | "reset";
+  variant?: "default" | "outline";
+}) {
+  const className =
+    variant === "outline"
+      ? "inline-flex h-12 items-center justify-center gap-2 rounded-2xl border border-stone-300 bg-white px-6 text-sm font-medium text-stone-900 transition hover:bg-stone-50"
+      : "inline-flex h-12 items-center justify-center gap-2 rounded-2xl bg-stone-900 px-6 text-sm font-medium text-white transition hover:bg-stone-800";
+  return (
+    <button type={type} onClick={onClick} className={className}>
+      {children}
+    </button>
+  );
 }
 
-function SectionHeader({ icon, title, description }: { icon: ReactNode; title: string; description: string }) {
+function SectionHeader({
+  icon,
+  title,
+  description,
+}: {
+  icon: ReactNode;
+  title: string;
+  description: string;
+}) {
   return (
     <div className="mb-6 flex gap-3">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-stone-900 text-white">{icon}</div>
-      <div><h2 className="text-xl font-semibold">{title}</h2><p className="mt-1 text-sm leading-6 text-stone-600">{description}</p></div>
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-stone-900 text-white">
+        {icon}
+      </div>
+      <div>
+        <h2 className="text-xl font-semibold">{title}</h2>
+        <p className="mt-1 text-sm leading-6 text-stone-600">{description}</p>
+      </div>
     </div>
   );
 }
 
-function Field({ name, label, placeholder, icon, type = "text", inputMode, required = false, value, readOnly = false }: { name?: string; label: string; placeholder: string; icon?: ReactNode; type?: "text" | "email" | "tel" | "password"; inputMode?: "text" | "numeric" | "decimal" | "tel" | "email" | "url"; required?: boolean; value?: string; readOnly?: boolean }) {
+function Field({
+  name,
+  label,
+  placeholder,
+  icon,
+  type = "text",
+  inputMode,
+  required = false,
+  value,
+  readOnly = false,
+}: {
+  name?: string;
+  label: string;
+  placeholder: string;
+  icon?: ReactNode;
+  type?: "text" | "email" | "tel" | "password";
+  inputMode?: "text" | "numeric" | "decimal" | "tel" | "email" | "url";
+  required?: boolean;
+  value?: string;
+  readOnly?: boolean;
+}) {
   return (
     <label className="block">
       <span className="mb-2 block text-sm font-semibold">{label}</span>
       <div className="relative">
-        {icon ? <div className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400">{icon}</div> : null}
-        <input name={name} required={required} type={type} inputMode={inputMode} placeholder={placeholder} defaultValue={value} readOnly={readOnly} className={`h-12 w-full rounded-2xl border border-stone-200 bg-white px-4 outline-none transition placeholder:text-stone-400 focus:border-stone-500 ${icon ? "pl-12" : ""} ${readOnly ? "bg-stone-100 text-stone-500" : ""}`} />
+        {icon ? (
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400">
+            {icon}
+          </div>
+        ) : null}
+        <input
+          name={name}
+          required={required}
+          type={type}
+          inputMode={inputMode}
+          placeholder={placeholder}
+          defaultValue={value}
+          readOnly={readOnly}
+          className={`h-12 w-full rounded-2xl border border-stone-200 bg-white px-4 outline-none transition placeholder:text-stone-400 focus:border-stone-500 ${icon ? "pl-12" : ""} ${readOnly ? "bg-stone-100 text-stone-500" : ""}`}
+        />
       </div>
     </label>
   );
 }
 
-function UrlField({ name, label, placeholder, icon, required = false }: { name?: string; label: string; placeholder: string; icon?: ReactNode; required?: boolean }) {
+function UrlField({
+  name,
+  label,
+  placeholder,
+  icon,
+  required = false,
+}: {
+  name?: string;
+  label: string;
+  placeholder: string;
+  icon?: ReactNode;
+  required?: boolean;
+}) {
   const [value, setValue] = useState("");
   return (
     <label className="block">
       <span className="mb-2 block text-sm font-semibold">{label}</span>
       <div className="relative">
-        {icon ? <div className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400">{icon}</div> : null}
-        <input name={name} required={required} type="text" inputMode="url" value={value} onChange={(event) => setValue(event.target.value)} onBlur={() => setValue((current) => normalizeUrl(current))} placeholder={placeholder} className={`h-12 w-full rounded-2xl border border-stone-200 bg-white px-4 outline-none transition placeholder:text-stone-400 focus:border-stone-500 ${icon ? "pl-12" : ""}`} />
+        {icon ? (
+          <div className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400">
+            {icon}
+          </div>
+        ) : null}
+        <input
+          name={name}
+          required={required}
+          type="text"
+          inputMode="url"
+          value={value}
+          onChange={(event) => setValue(event.target.value)}
+          onBlur={() => setValue((current) => normalizeUrl(current))}
+          placeholder={placeholder}
+          className={`h-12 w-full rounded-2xl border border-stone-200 bg-white px-4 outline-none transition placeholder:text-stone-400 focus:border-stone-500 ${icon ? "pl-12" : ""}`}
+        />
       </div>
-      <p className="mt-2 text-xs text-stone-500">Skriv t.ex. makalosablommor.se — vi lägger till https:// automatiskt.</p>
+      <p className="mt-2 text-xs text-stone-500">
+        Skriv t.ex. makalosablommor.se — vi lägger till https:// automatiskt.
+      </p>
     </label>
   );
 }
 
-function ControlledInput({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (value: string) => void; placeholder: string }) {
-  return <label className="block"><span className="mb-2 block text-sm font-semibold">{label}</span><input value={value} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} className="h-12 w-full rounded-2xl border border-stone-200 bg-white px-4 outline-none transition placeholder:text-stone-400 focus:border-stone-500" /></label>;
+function ControlledInput({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm font-semibold">{label}</span>
+      <input
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        className="h-12 w-full rounded-2xl border border-stone-200 bg-white px-4 outline-none transition placeholder:text-stone-400 focus:border-stone-500"
+      />
+    </label>
+  );
 }
 
-function SmallTextarea({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (value: string) => void; placeholder: string }) {
-  return <label className="block"><span className="mb-2 block text-sm font-semibold">{label}</span><textarea value={value} onChange={(event) => onChange(event.target.value)} rows={3} placeholder={placeholder} className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3 outline-none transition placeholder:text-stone-400 focus:border-stone-500" /></label>;
+function SmallTextarea({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm font-semibold">{label}</span>
+      <textarea
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        rows={3}
+        placeholder={placeholder}
+        className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3 outline-none transition placeholder:text-stone-400 focus:border-stone-500"
+      />
+    </label>
+  );
 }
 
-function Textarea({ name, label, placeholder, required = false }: { name?: string; label: string; placeholder: string; required?: boolean }) {
-  return <div className="mt-8"><label className="mb-3 block text-sm font-semibold">{label}</label><textarea name={name} required={required} rows={5} placeholder={placeholder} className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3 outline-none transition focus:border-stone-500" /></div>;
+function Textarea({
+  name,
+  label,
+  placeholder,
+  required = false,
+}: {
+  name?: string;
+  label: string;
+  placeholder: string;
+  required?: boolean;
+}) {
+  return (
+    <div className="mt-8">
+      <label className="mb-3 block text-sm font-semibold">{label}</label>
+      <textarea
+        name={name}
+        required={required}
+        rows={5}
+        placeholder={placeholder}
+        className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3 outline-none transition focus:border-stone-500"
+      />
+    </div>
+  );
 }
 
-function SelectField({ name, label, options, required = false }: { name?: string; label: string; options: string[]; required?: boolean }) {
-  return <label className="block"><span className="mb-2 block text-sm font-semibold">{label}</span><select name={name} required={required} className="h-12 w-full rounded-2xl border border-stone-200 bg-white px-4 outline-none transition focus:border-stone-500">{options.map((option) => <option key={option} value={option}>{option}</option>)}</select></label>;
+function SelectField({
+  name,
+  label,
+  options,
+  required = false,
+}: {
+  name?: string;
+  label: string;
+  options: string[];
+  required?: boolean;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm font-semibold">{label}</span>
+      <select
+        name={name}
+        required={required}
+        className="h-12 w-full rounded-2xl border border-stone-200 bg-white px-4 outline-none transition focus:border-stone-500"
+      >
+        {options.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
 }
 
-function ControlledSelect({ label, value, options, onChange }: { label: string; value: string; options: string[]; onChange: (value: string) => void }) {
-  return <label className="block"><span className="mb-2 block text-sm font-semibold">{label}</span><select value={value} onChange={(event) => onChange(event.target.value)} className="h-12 w-full rounded-2xl border border-stone-200 bg-white px-4 outline-none transition focus:border-stone-500">{options.map((option) => <option key={option} value={option}>{option}</option>)}</select></label>;
+function ControlledSelect({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: string[];
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm font-semibold">{label}</span>
+      <select
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className="h-12 w-full rounded-2xl border border-stone-200 bg-white px-4 outline-none transition focus:border-stone-500"
+      >
+        {options.map((option) => (
+          <option key={option} value={option}>
+            {option}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
 }
 
-function PillButton({ children, active, onClick, variant = "default" }: { children: ReactNode; active: boolean; onClick: () => void; variant?: "default" | "pink" }) {
-  const activeClass = variant === "pink" ? "border-pink-700 bg-pink-700 text-white" : "border-stone-900 bg-stone-900 text-white";
-  const inactiveClass = variant === "pink" ? "border-stone-200 bg-white text-stone-700 hover:border-pink-300" : "border-stone-200 bg-white text-stone-700 hover:border-stone-400";
-  return <button type="button" onClick={onClick} className={`w-full rounded-2xl border px-4 py-3 text-left text-sm font-medium transition ${active ? activeClass : inactiveClass}`}>{children}</button>;
+function PillButton({
+  children,
+  active,
+  onClick,
+  variant = "default",
+}: {
+  children: ReactNode;
+  active: boolean;
+  onClick: () => void;
+  variant?: "default" | "pink";
+}) {
+  const activeClass =
+    variant === "pink"
+      ? "border-pink-700 bg-pink-700 text-white"
+      : "border-stone-900 bg-stone-900 text-white";
+  const inactiveClass =
+    variant === "pink"
+      ? "border-stone-200 bg-white text-stone-700 hover:border-pink-300"
+      : "border-stone-200 bg-white text-stone-700 hover:border-stone-400";
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`w-full rounded-2xl border px-4 py-3 text-left text-sm font-medium transition ${active ? activeClass : inactiveClass}`}
+    >
+      {children}
+    </button>
+  );
 }
 
 function StatusItem({ done, label }: { done: boolean; label: string }) {
-  return <div className="flex items-center gap-2"><span className={done ? "text-emerald-600" : "text-stone-300"}><Check size={16} /></span><span className={done ? "text-stone-800" : "text-stone-400"}>{label}</span></div>;
+  return (
+    <div className="flex items-center gap-2">
+      <span className={done ? "text-emerald-600" : "text-stone-300"}>
+        <Check size={16} />
+      </span>
+      <span className={done ? "text-stone-800" : "text-stone-400"}>
+        {label}
+      </span>
+    </div>
+  );
 }
-

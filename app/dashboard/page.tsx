@@ -55,24 +55,24 @@ export default async function DashboardPage() {
       <p className="text-sm font-semibold uppercase tracking-[0.35em] text-amber-700">
         Florist dashboard
       </p>
-  <p className="text-sm font-semibold uppercase tracking-[0.35em] text-stone-500">
-  Florist dashboard
-  </p>
+      <p className="text-sm font-semibold uppercase tracking-[0.35em] text-stone-500">
+        Florist dashboard
+      </p>
 
-  <a
-    href="/logout"
-    style={{
-      display: "inline-block",
-      marginTop: "1rem",
-      padding: "0.5rem 1rem",
-      background: "black",
-      color: "white",
-      borderRadius: "6px",
-      textDecoration: "none",
-    }}
-  >
-    Logga ut
-  </a>
+      <a
+        href="/logout"
+        style={{
+          display: "inline-block",
+          marginTop: "1rem",
+          padding: "0.5rem 1rem",
+          background: "black",
+          color: "white",
+          borderRadius: "6px",
+          textDecoration: "none",
+        }}
+      >
+        Logga ut
+      </a>
       <h1 className="mt-4 text-4xl font-semibold tracking-tight text-stone-900">
         Orders, products and payout visibility in one place.
       </h1>
@@ -108,18 +108,18 @@ export default async function DashboardPage() {
       </div>
       {userEmail ? (
         <div className="mt-8 grid gap-4 md:grid-cols-3">
-        <div className="rounded-[2rem] border border-stone-300 bg-white/80 p-6">
-         <p className="text-sm font-semibold uppercase tracking-[0.3em] text-stone-500">
-           Role
-         </p>
-         <h2 className="mt-3 text-2xl font-semibold text-stone-900">
-           Florist
-         </h2>
-         <p className="mt-3 text-sm leading-6 text-stone-600">
-           The onboarding flow upgrades the signed-in account to `florist`
-           and stores the public shop details.
-         </p>
-       </div>
+          <div className="rounded-[2rem] border border-stone-300 bg-white/80 p-6">
+            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-stone-500">
+              Role
+            </p>
+            <h2 className="mt-3 text-2xl font-semibold text-stone-900">
+              Florist
+            </h2>
+            <p className="mt-3 text-sm leading-6 text-stone-600">
+              The onboarding flow upgrades the signed-in account to `florist`
+              and stores the public shop details.
+            </p>
+          </div>
           <div className="rounded-[2rem] border border-stone-300 bg-white/80 p-6">
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-stone-500">
               Onboarding
@@ -252,7 +252,8 @@ export default async function DashboardPage() {
                   Incoming orders
                 </p>
                 <h2 className="mt-3 text-2xl font-semibold text-stone-900">
-                  {floristOrders.length} order{floristOrders.length === 1 ? "" : "s"}
+                  {floristOrders.length} order
+                  {floristOrders.length === 1 ? "" : "s"}
                 </h2>
               </div>
               <Link
@@ -319,7 +320,8 @@ export default async function DashboardPage() {
               Payout records
             </p>
             <h2 className="mt-3 text-2xl font-semibold text-stone-900">
-              {floristPayouts.length} payout{floristPayouts.length === 1 ? "" : "s"}
+              {floristPayouts.length} payout
+              {floristPayouts.length === 1 ? "" : "s"}
             </h2>
             {floristPayouts.length > 0 ? (
               <div className="mt-6 space-y-3">

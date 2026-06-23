@@ -1,0 +1,775 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { Check, Flower2, ImagePlus, Minus, Plus, Trash2, UploadCloud } from "lucide-react";
+
+type GroupName =
+  | "Bukett"
+  | "Rosor"
+  | "Begravning"
+  | "Bröllop"
+  | "Event"
+  | "Företagsblommor"
+  | "Växter"
+  | "Presentbox"
+  | "Egna önskemål";
+
+type OrderItem = {
+  id: string;
+  group: GroupName;
+  product: string;
+  style: string;
+  colors: string[];
+  option: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+  wishes: string;
+  cardText?: string;
+  ribbonText?: string;
+  uploadedImageName?: string;
+};
+
+const groups: { name: GroupName; icon: string; description: string }[] = [
+  { name: "Bukett", icon: "🌸", description: "Säsongens handbundna buketter" },
+  { name: "Rosor", icon: "🌹", description: "Rosor i vald längd och antal" },
+  { name: "Begravning", icon: "🕊️", description: "Värdiga blomsterarrangemang" },
+  { name: "Bröllop", icon: "💍", description: "Brudbuketter och dekorationer" },
+  { name: "Event", icon: "🎉", description: "Blommor till event och scen" },
+  { name: "Företagsblommor", icon: "🏢", description: "Kontor, reception och gåvor" },
+  { name: "Växter", icon: "🪴", description: "Växter och planteringar" },
+  { name: "Presentbox", icon: "🎁", description: "Blommor med extra gåva" },
+  { name: "Egna önskemål", icon: "✨", description: "Beskriv fritt vad du önskar" },
+];
+
+const productOptions: Record<GroupName, string[]> = {
+  Bukett: ["Bukett", "Bukett-Prenumeration"],
+  Rosor: ["Rosor"],
+  Begravning: [
+    "Krans",
+    "Hjärta",
+    "Stående dekoration",
+    "Liggande dekoration",
+    "Begravningsdekoration / Kistdekoration",
+    "Bordsdekoration",
+    "Lokaldekoration / Kyrkdekoration",
+    "Helhetsdekoration",
+  ],
+  Bröllop: [
+    "Brudbukett",
+    "Tärnbukett / Näbb-bukett",
+    "Corsage",
+    "Bordsbukett",
+    "Bordsdekoration",
+    "Entrédekoration",
+    "Kyrkdekoration",
+    "Vigselbåge",
+  ],
+  Event: [
+    "Bordsdekoration",
+    "Scendekoration",
+    "Bordsbukett",
+    "Bordsdekoration i Oasis",
+    "Mingelblommor i små vaser",
+    "Entrédekoration",
+    "Prisbukett",
+    "Talarbukett",
+  ],
+  Företagsblommor: [
+    "Veckobukett (Reception)",
+    "Födelsedag / Årsdag",
+    "Gratulationsbukett",
+    "Mingelbuketter i små vaser",
+    "Familjetillskott",
+    "Bordsbukett",
+    "VD-Bukett",
+    "Bordsdekoration i Oasis",
+  ],
+  Växter: ["Växtarrangemang", "Plantering", "Floristens val"],
+  Presentbox: ["Presentbox", "Presentbox med blommor", "Floristens presentbox"],
+  "Egna önskemål": ["Egna önskemål"],
+};
+
+const styleOptions = ["Romantisk", "Modern", "Klassisk", "Sorg", "Lyxig", "Färgstark"];
+
+const colorOptions = [
+  { name: "Lila", emoji: "🟣" },
+  { name: "Blått", emoji: "🔵" },
+  { name: "Gult", emoji: "🟡" },
+  { name: "Orange", emoji: "🟠" },
+  { name: "Rött", emoji: "🔴" },
+  { name: "Rosa", emoji: "🩷" },
+  { name: "Vitt", emoji: "⚪" },
+];
+
+const defaultPriceOptions = [500, 625, 750, 1000, 1250, 1500, 2000];
+
+const priceOptionsByProduct: Partial<Record<GroupName, Record<string, number[]>>> = {
+  Bukett: {
+    Bukett: [500, 625, 750, 1000, 1250, 1500, 2000],
+    "Bukett-Prenumeration": [500, 625, 750, 1000, 1250, 1500, 2000],
+  },
+  Begravning: {
+    Krans: [3000, 4000, 4500, 5000],
+    Hjärta: [3500, 4700, 5500],
+    "Stående dekoration": [1250, 1500, 2000, 2500],
+    "Liggande dekoration": [1250, 1500, 2000, 2500],
+    "Begravningsdekoration / Kistdekoration": [3000, 4000, 5000, 6000],
+    Bordsdekoration: [750, 1000, 1250, 1500],
+    "Lokaldekoration / Kyrkdekoration": [1250, 2000, 3000],
+    Helhetsdekoration: [3000, 5000, 8000, 12000],
+  },
+  Bröllop: {
+    Brudbukett: [2000, 2500, 3000, 4000],
+    "Tärnbukett / Näbb-bukett": [750, 1000, 1250],
+    Corsage: [250, 350, 500],
+    Bordsbukett: [650, 750, 1000, 1250],
+    Bordsdekoration: [650, 1000, 1500, 2000],
+    Entrédekoration: [1250, 2000, 3000, 4000],
+    Kyrkdekoration: [1500, 2500, 4000, 6000],
+    Vigselbåge: [4000, 6000, 8000, 12000],
+  },
+  Event: {
+    Bordsdekoration: [750, 1000, 1250, 1500],
+    Scendekoration: [2000, 3000, 4000, 5000],
+    Bordsbukett: [650, 750, 1000, 1250],
+    "Bordsdekoration i Oasis": [650, 1000, 1500],
+    "Mingelblommor i små vaser": [125, 150, 200],
+    Entrédekoration: [625, 750, 1000, 1500],
+    Prisbukett: [1250, 2000, 3000, 4000],
+    Talarbukett: [500, 750, 1000],
+  },
+  Företagsblommor: {
+    "Veckobukett (Reception)": [625, 750, 1000, 1500, 2000],
+    "Födelsedag / Årsdag": [625, 750, 1000, 1500, 2000],
+    Gratulationsbukett: [625, 750, 1000, 1500, 2000],
+    "Mingelbuketter i små vaser": [125, 150, 200],
+    Familjetillskott: [625, 750, 1000, 1500],
+    Bordsbukett: [650, 750, 1000, 1250],
+    "VD-Bukett": [1000, 1500, 2000, 3000],
+    "Bordsdekoration i Oasis": [650, 1000, 1500],
+  },
+  Växter: {
+    Växtarrangemang: [500, 625, 750, 1000, 1250, 1500, 2000],
+    Plantering: [500, 750, 1000, 1500, 2000],
+    "Floristens val": [500, 750, 1000, 1500, 2000],
+  },
+  Presentbox: {
+    Presentbox: [500, 625, 750, 1000, 1250, 1500, 2000],
+    "Presentbox med blommor": [750, 1000, 1250, 1500, 2000],
+    "Floristens presentbox": [500, 750, 1000, 1500],
+  },
+  "Egna önskemål": {
+    "Egna önskemål": [500, 625, 750, 1000, 1250, 1500, 2000],
+  },
+};
+
+const roseLengthOptions = ["60 cm", "70 cm", "80 cm"];
+const roseCountOptions = ["5", "7", "10", "15", "20", "30", "40", "50", "100", "200"];
+
+const rosePrices: Record<string, Record<string, number>> = {
+  "60 cm": {
+    "5": 450,
+    "7": 625,
+    "10": 875,
+    "15": 1290,
+    "20": 1750,
+    "30": 2500,
+    "40": 3500,
+    "50": 4000,
+    "100": 7800,
+    "200": 15000,
+  },
+  "70 cm": {
+    "5": 525,
+    "7": 695,
+    "10": 950,
+    "15": 1450,
+    "20": 1895,
+    "30": 2850,
+    "40": 3750,
+    "50": 4500,
+    "100": 9000,
+    "200": 18750,
+  },
+  "80 cm": {
+    "5": 625,
+    "7": 780,
+    "10": 1100,
+    "15": 1500,
+    "20": 1950,
+    "30": 2950,
+    "40": 3900,
+    "50": 4800,
+    "100": 9500,
+    "200": 19000,
+  },
+};
+
+
+const greetingCardGroups: GroupName[] = ["Bukett", "Rosor", "Företagsblommor", "Växter", "Presentbox", "Egna önskemål"];
+const funeralBandOptions = [
+  { label: "Välj band", price: 0, maxWords: 0 },
+  { label: "Band 350 kr", price: 350, maxWords: 8 },
+  { label: "Band 500 kr - upp till 12 ord", price: 500, maxWords: 12 },
+  { label: "Band 700 kr - upp till 20 ord", price: 700, maxWords: 20 },
+  { label: "Band 900 kr - upp till 30 ord", price: 900, maxWords: 30 },
+];
+const bandColorOptions = ["Vit", "Kräm", "Grönt", "Rosa", "Blått", "Gul", "Guld", "Rött"];
+const chocolateOptions = [0, 125, 200, 300];
+const balloonOptions = [0, 125, 250];
+const teddyOptions = [0, 250, 500];
+const vaseOptions = [0, 149, 299, 499, 699];
+const potOptions = [0, 200, 400, 600, 950];
+
+function money(value: number) {
+  return new Intl.NumberFormat("sv-SE").format(value) + " kr";
+}
+
+function colorLabel(colors: string[]) {
+  if (colors.length === 0) return "Ingen färg vald";
+  return colors.join(" + ");
+}
+
+function groupIcon(name: GroupName) {
+  return groups.find((group) => group.name === name)?.icon || "🌸";
+}
+
+function getPriceOptions(group: GroupName, product: string) {
+  return priceOptionsByProduct[group]?.[product] || defaultPriceOptions;
+}
+
+function clampPriceForProduct(group: GroupName, product: string, currentPrice: number) {
+  const prices = getPriceOptions(group, product);
+  if (prices.includes(currentPrice)) return currentPrice;
+  return prices[0] || 500;
+}
+
+export default function GuestV4BestallningsstudioPage() {
+  const [selectedGroup, setSelectedGroup] = useState<GroupName>("Bukett");
+  const [selectedProduct, setSelectedProduct] = useState("Bukett");
+  const [selectedStyle, setSelectedStyle] = useState("Modern");
+  const [selectedColors, setSelectedColors] = useState<string[]>(["Rosa", "Vitt"]);
+  const [selectedPrice, setSelectedPrice] = useState(750);
+  const [quantity, setQuantity] = useState(1);
+  const [roseLength, setRoseLength] = useState("70 cm");
+  const [roseCount, setRoseCount] = useState("5");
+  const [personalWishes, setPersonalWishes] = useState("");
+  const [greetingText, setGreetingText] = useState("");
+  const [selectedBandLabel, setSelectedBandLabel] = useState("Välj band");
+  const [bandColor, setBandColor] = useState("Vit");
+  const [ribbonTextLeft, setRibbonTextLeft] = useState("");
+  const [ribbonTextRight, setRibbonTextRight] = useState("");
+  const [uploadedImageName, setUploadedImageName] = useState("");
+  const [chocolatePrice, setChocolatePrice] = useState(0);
+  const [balloonPrice, setBalloonPrice] = useState(0);
+  const [teddyPrice, setTeddyPrice] = useState(0);
+  const [vasePrice, setVasePrice] = useState(0);
+  const [potPrice, setPotPrice] = useState(0);
+  const [luxuryWrap, setLuxuryWrap] = useState(false);
+  const [pollenFree, setPollenFree] = useState(false);
+  const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
+
+  const products = productOptions[selectedGroup];
+  const isRoseOrder = selectedGroup === "Rosor";
+  const currentPriceOptions = getPriceOptions(selectedGroup, selectedProduct);
+  const currentUnitPrice = isRoseOrder ? rosePrices[roseLength]?.[roseCount] || 0 : selectedPrice;
+  const currentTotal = currentUnitPrice * quantity;
+  const shouldShowGreetingText = greetingCardGroups.includes(selectedGroup);
+  const selectedBand = funeralBandOptions.find((band) => band.label === selectedBandLabel) || funeralBandOptions[0];
+  const ribbonWords = (ribbonTextLeft + " " + ribbonTextRight).trim().split(/\s+/).filter(Boolean).length;
+  const bandTotal = selectedGroup === "Begravning" ? selectedBand.price : 0;
+  const extrasTotal = chocolatePrice + balloonPrice + teddyPrice + vasePrice + potPrice + (luxuryWrap ? 90 : 0);
+
+  const currentDesign = useMemo(() => {
+    const option = isRoseOrder ? `${roseCount} rosor · ${roseLength}` : money(selectedPrice);
+    return {
+      icon: groupIcon(selectedGroup),
+      title: selectedProduct,
+      subtitle: `${selectedStyle} · ${colorLabel(selectedColors)} · ${option} · ${quantity} st`,
+    };
+  }, [selectedGroup, selectedProduct, selectedStyle, selectedColors, selectedPrice, quantity, isRoseOrder, roseCount, roseLength]);
+
+  const productTotal = orderItems.reduce((sum, item) => sum + item.total, 0);
+  const total = productTotal + extrasTotal + bandTotal;
+
+  function selectGroup(group: GroupName) {
+    const firstProduct = productOptions[group][0];
+    setSelectedGroup(group);
+    setSelectedProduct(firstProduct);
+    setSelectedPrice(clampPriceForProduct(group, firstProduct, selectedPrice));
+    setQuantity(1);
+  }
+
+  function selectProduct(product: string) {
+    setSelectedProduct(product);
+    setSelectedPrice(clampPriceForProduct(selectedGroup, product, selectedPrice));
+    setQuantity(1);
+  }
+
+  function toggleColor(color: string) {
+    setSelectedColors((current) => {
+      if (current.includes(color)) return current.filter((item) => item !== color);
+      if (current.length >= 2) return current;
+      return [...current, color];
+    });
+  }
+
+  function changeQuantity(nextQuantity: number) {
+    setQuantity(Math.max(1, nextQuantity));
+  }
+
+  function addToOrder() {
+    const option = isRoseOrder ? `${roseCount} rosor, ${roseLength}` : money(selectedPrice);
+    const item: OrderItem = {
+      id: String(Date.now()) + Math.random().toString(16).slice(2),
+      group: selectedGroup,
+      product: selectedProduct,
+      style: selectedStyle,
+      colors: selectedColors,
+      option,
+      quantity,
+      unitPrice: currentUnitPrice,
+      total: currentTotal,
+      wishes: personalWishes,
+      cardText: shouldShowGreetingText ? greetingText : undefined,
+      ribbonText: selectedGroup === "Begravning" && selectedBand.price > 0 ? `${selectedBand.label} · ${bandColor} · ${ribbonTextLeft} / ${ribbonTextRight}` : undefined,
+      uploadedImageName: uploadedImageName || undefined,
+    };
+
+    setOrderItems((current) => [...current, item]);
+    setPersonalWishes("");
+    setGreetingText("");
+  }
+
+  function removeItem(id: string) {
+    setOrderItems((current) => current.filter((item) => item.id !== id));
+  }
+
+  return (
+    <main className="min-h-screen bg-[#fbf7f2] px-4 py-6 text-stone-950 md:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl">
+        <section className="mb-5 rounded-[2rem] border border-white/70 bg-white/80 p-5 shadow-sm backdrop-blur md:p-6">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <p className="inline-flex items-center gap-2 rounded-full bg-pink-50 px-3 py-1 text-xs font-semibold text-pink-700">
+                <Flower2 size={14} /> FloristSocial Beställningsstudio V4
+              </p>
+              <h1 className="mt-3 text-2xl font-semibold tracking-tight md:text-4xl">
+                Designa din egen bukett eller blomsterdekoration
+              </h1>
+              <p className="mt-2 max-w-3xl text-sm leading-6 text-stone-600 md:text-base">
+                Välj grupp, stil, färg, pris och antal. Floristen skapar sedan ett unikt arrangemang utifrån dina val, säsongens blommor och sin professionella kreativitet.
+              </p>
+            </div>
+
+            <div className="rounded-2xl bg-stone-950 px-4 py-3 text-sm font-semibold text-white">
+              Mobil-först · En sida · Multi-order
+            </div>
+          </div>
+        </section>
+
+        <div className="grid gap-5 lg:grid-cols-[230px_minmax(0,1fr)_320px]">
+          <aside className="rounded-[2rem] border border-white/70 bg-white/85 p-4 shadow-sm backdrop-blur lg:sticky lg:top-5 lg:self-start">
+            <h2 className="text-sm font-semibold uppercase tracking-[0.18em] text-stone-400">Jag önskar beställa</h2>
+
+            <div className="mt-4 flex gap-2 overflow-x-auto pb-2 lg:grid lg:gap-2 lg:overflow-visible lg:pb-0">
+              {groups.map((group) => {
+                const active = selectedGroup === group.name;
+                return (
+                  <button
+                    key={group.name}
+                    type="button"
+                    onClick={() => selectGroup(group.name)}
+                    className={
+                      "min-w-[170px] rounded-2xl border px-3 py-3 text-left transition lg:min-w-0 " +
+                      (active
+                        ? "border-stone-950 bg-stone-950 text-white shadow-md"
+                        : "border-stone-200 bg-white text-stone-700 hover:border-pink-200 hover:bg-pink-50")
+                    }
+                  >
+                    <div className="flex items-center gap-2 text-sm font-semibold">
+                      <span>{active ? "⭕" : group.icon}</span>
+                      <span>{group.name}</span>
+                    </div>
+                    <p className={"mt-1 text-xs leading-4 " + (active ? "text-white/70" : "text-stone-500")}>{group.description}</p>
+                  </button>
+                );
+              })}
+            </div>
+          </aside>
+
+          <section className="space-y-5">
+            <div className="rounded-[2rem] border border-white/70 bg-white/90 p-4 shadow-sm backdrop-blur md:p-5">
+              <div className="grid gap-5 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
+                <div className="overflow-hidden rounded-[1.7rem] border border-pink-100 bg-gradient-to-br from-pink-50 via-white to-emerald-50 p-4">
+                  <div className="flex min-h-[260px] flex-col items-center justify-center rounded-[1.4rem] border border-white/80 bg-white/70 p-5 text-center shadow-inner">
+                    <div className="text-7xl">{currentDesign.icon}</div>
+                    <h2 className="mt-4 text-2xl font-semibold">Inspirationsbild</h2>
+                    <p className="mt-2 max-w-sm text-sm leading-6 text-stone-600">
+                      {currentDesign.title} · {currentDesign.subtitle}
+                    </p>
+                    <div className="mt-5 flex gap-2">
+                      {selectedColors.map((color) => {
+                        const item = colorOptions.find((option) => option.name === color);
+                        return (
+                          <span key={color} className="rounded-full bg-white px-3 py-1 text-lg shadow-sm">
+                            ⭕{item?.emoji}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="rounded-3xl bg-stone-50 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-400">Din design hittills</p>
+                    <div className="mt-3 flex items-start gap-3">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-2xl shadow-sm">{currentDesign.icon}</div>
+                      <div>
+                        <h3 className="text-lg font-semibold">{currentDesign.title}</h3>
+                        <p className="mt-1 text-sm text-stone-600">{currentDesign.subtitle}</p>
+                        <p className="mt-1 text-sm font-semibold text-stone-950">Totalt för valt arrangemang: {money(currentTotal)}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <ControlBlock title="Välj produkt">
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {products.map((product) => (
+                        <CompactButton key={product} active={selectedProduct === product} onClick={() => selectProduct(product)}>
+                          {product}
+                        </CompactButton>
+                      ))}
+                    </div>
+                  </ControlBlock>
+
+                  <ControlBlock title="Stil">
+                    <div className="flex flex-wrap gap-2">
+                      {styleOptions.map((style) => (
+                        <CompactButton key={style} active={selectedStyle === style} onClick={() => setSelectedStyle(style)}>
+                          {selectedStyle === style ? "⭕ " : "○ "}{style}
+                        </CompactButton>
+                      ))}
+                    </div>
+                  </ControlBlock>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-5 xl:grid-cols-2">
+              <ControlCard title="Färg" description="Välj upp till två färger. Grönt behöver inte väljas eftersom blad och grönt material ofta ingår naturligt.">
+                <div className="flex flex-wrap gap-3">
+                  {colorOptions.map((color) => {
+                    const active = selectedColors.includes(color.name);
+                    const disabled = !active && selectedColors.length >= 2;
+                    return (
+                      <button
+                        key={color.name}
+                        type="button"
+                        disabled={disabled}
+                        onClick={() => toggleColor(color.name)}
+                        className={
+                          "flex h-12 min-w-12 items-center justify-center rounded-full border bg-white px-3 text-2xl shadow-sm transition " +
+                          (active ? "border-stone-950 ring-2 ring-stone-950" : "border-stone-200 hover:border-pink-300") +
+                          (disabled ? " opacity-40" : "")
+                        }
+                        title={color.name}
+                      >
+                        {active ? "⭕" : ""}{color.emoji}
+                      </button>
+                    );
+                  })}
+                </div>
+              </ControlCard>
+
+              {isRoseOrder ? (
+                <ControlCard title="Rosor" description="Välj längd och antal rosor. Priset räknas automatiskt enligt prislistan.">
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="mb-2 text-sm font-semibold">Längd</h4>
+                      <div className="flex flex-wrap gap-2">
+                        {roseLengthOptions.map((length) => (
+                          <CompactButton key={length} active={roseLength === length} onClick={() => setRoseLength(length)}>
+                            {roseLength === length ? "⭕ " : "○ "}{length}
+                          </CompactButton>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <h4 className="mb-2 text-sm font-semibold">Antal rosor</h4>
+                      <div className="grid grid-cols-5 gap-2">
+                        {roseCountOptions.map((count) => (
+                          <CompactButton key={count} active={roseCount === count} onClick={() => setRoseCount(count)}>
+                            {roseCount === count ? "⭕ " : "○ "}{count}
+                          </CompactButton>
+                        ))}
+                      </div>
+                    </div>
+
+                    <p className="rounded-2xl bg-white p-3 text-sm font-semibold text-stone-800">
+                      Pris för valda rosor: {money(currentUnitPrice)}
+                    </p>
+                  </div>
+                </ControlCard>
+              ) : (
+                <ControlCard title="Pris" description="Priset styr storlek, innehåll och exklusivitet. Prislistan ändras efter vald produktgrupp.">
+                  <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                    {currentPriceOptions.map((price) => (
+                      <button
+                        key={price}
+                        type="button"
+                        onClick={() => setSelectedPrice(price)}
+                        className={
+                          "rounded-2xl border px-3 py-3 text-sm font-semibold transition " +
+                          (selectedPrice === price
+                            ? "border-stone-950 bg-stone-950 text-white"
+                            : "border-stone-200 bg-white text-stone-700 hover:border-pink-300")
+                        }
+                      >
+                        {selectedPrice === price ? "⭕ " : "○ "}{money(price)}
+                      </button>
+                    ))}
+                  </div>
+                </ControlCard>
+              )}
+            </div>
+
+            <section className="rounded-[2rem] border border-white/70 bg-white/90 p-5 shadow-sm backdrop-blur">
+              <div className="grid gap-5 xl:grid-cols-[220px_minmax(0,1fr)]">
+                <div className="rounded-3xl bg-stone-50 p-4">
+                  <h3 className="text-base font-semibold">Antal</h3>
+                  <p className="mt-1 text-sm text-stone-600">Välj hur många av detta arrangemang som ska läggas till.</p>
+                  <div className="mt-4 flex items-center gap-3">
+                    <button type="button" onClick={() => changeQuantity(quantity - 1)} className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm">
+                      <Minus size={16} />
+                    </button>
+                    <span className="min-w-10 text-center text-lg font-semibold">{quantity}</span>
+                    <button type="button" onClick={() => changeQuantity(quantity + 1)} className="flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-sm">
+                      <Plus size={16} />
+                    </button>
+                  </div>
+                  <p className="mt-4 text-sm font-semibold">{money(currentUnitPrice)} x {quantity} = {money(currentTotal)}</p>
+                </div>
+
+                <div>
+                  <div className="rounded-2xl bg-blue-50 p-4 text-sm leading-6 text-blue-950">
+                    <strong>Inspirationsbild</strong>
+                    <p className="mt-2">
+                      En liknande bukett eller dekoration kommer att levereras till mottagaren. Blommor och material väljs säsongsmässigt av floristen och kan variera beroende på tillgänglighet. Färgskala, stil och känsla eftersträvas så nära inspirationsbilden som möjligt.
+                    </p>
+                  </div>
+
+                  {shouldShowGreetingText && (
+                    <label className="mt-5 block rounded-2xl bg-stone-50 p-4">
+                      <span className="text-base font-semibold">Hälsningskort text</span>
+                      <span className="mt-1 block text-sm text-stone-600">Skriv texten som ska stå på kortet till mottagaren.</span>
+                      <textarea
+                        value={greetingText}
+                        onChange={(event) => setGreetingText(event.target.value)}
+                        rows={3}
+                        placeholder="Till exempel: Grattis på födelsedagen! Många kramar från oss."
+                        className="mt-3 w-full rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-stone-400 focus:border-stone-500"
+                      />
+                    </label>
+                  )}
+
+                  {selectedGroup === "Begravning" && (
+                    <div className="mt-5 rounded-2xl bg-stone-50 p-4">
+                      <h3 className="text-base font-semibold">Bandtext</h3>
+                      <p className="mt-1 text-sm text-stone-600">Välj bandpris efter textlängd. Antal ord just nu: {ribbonWords}.</p>
+                      <div className="mt-4 grid gap-3 md:grid-cols-2">
+                        <SelectBox label="Band" value={selectedBandLabel} onChange={setSelectedBandLabel} options={funeralBandOptions.map((band) => band.label)} />
+                        <SelectBox label="Bandfärg" value={bandColor} onChange={setBandColor} options={bandColorOptions} />
+                      </div>
+                      {selectedBand.price > 0 && ribbonWords > selectedBand.maxWords && (
+                        <p className="mt-3 rounded-2xl bg-red-50 p-3 text-sm font-semibold text-red-700">
+                          Vald bandnivå tillåter upp till {selectedBand.maxWords} ord. Välj högre bandpris eller korta texten.
+                        </p>
+                      )}
+                      <div className="mt-4 grid gap-3 md:grid-cols-2">
+                        <TextAreaBox label="Bandtext vänster sida" value={ribbonTextLeft} onChange={setRibbonTextLeft} placeholder="Tack för alla fina minnen" />
+                        <TextAreaBox label="Bandtext höger sida" value={ribbonTextRight} onChange={setRibbonTextRight} placeholder="Familjen Andersson" />
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="mt-5 rounded-2xl border-2 border-dashed border-stone-300 bg-white p-4">
+                    <h3 className="text-base font-semibold">Bifoga inspirationsbild</h3>
+                    <p className="mt-1 text-sm text-stone-600">Dra och släpp eller hämta en bild som floristen kan använda som inspiration.</p>
+                    <label className="mt-3 flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl bg-stone-50 px-4 py-6 text-center text-sm text-stone-600 transition hover:bg-stone-100">
+                      <UploadCloud size={28} /> Dra & drop eller hämta bild
+                      <input type="file" accept="image/*" onChange={(event) => setUploadedImageName(event.target.files?.[0]?.name || "")} className="hidden" />
+                    </label>
+                    {uploadedImageName && <p className="mt-3 truncate text-xs font-medium text-stone-700"><ImagePlus size={14} className="inline" /> {uploadedImageName}</p>}
+                  </div>
+
+                  <label className="mt-5 block">
+                    <span className="text-base font-semibold">Personliga önskemål</span>
+                    <span className="mt-1 block text-sm text-stone-600">Vad vill du att floristen ska tänka på?</span>
+                    <textarea
+                      value={personalWishes}
+                      onChange={(event) => setPersonalWishes(event.target.value)}
+                      rows={4}
+                      placeholder={"T.ex.\n• Gärna pioner om möjligt\n• Inga liljor på grund av allergi\n• Extra romantisk känsla\n• Matcha företagets färger\n• Mottagaren älskar rosa toner"}
+                      className="mt-3 w-full rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-stone-400 focus:border-stone-500"
+                    />
+                  </label>
+
+                  <button
+                    type="button"
+                    onClick={addToOrder}
+                    className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-stone-950 px-5 py-4 text-sm font-semibold text-white transition hover:bg-stone-800 sm:w-auto"
+                  >
+                    <Plus size={18} /> Lägg till i beställning
+                  </button>
+                </div>
+              </div>
+            </section>
+            <section className="rounded-[2rem] border border-white/70 bg-white/90 p-5 shadow-sm backdrop-blur">
+              <h3 className="text-base font-semibold">Extra produkter</h3>
+              <p className="mt-1 text-sm text-stone-600">Tillval som räknas med i totalsumman.</p>
+              <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <PriceSelect label="Choklad" value={chocolatePrice} onChange={setChocolatePrice} options={chocolateOptions} />
+                <PriceSelect label="Ballong" value={balloonPrice} onChange={setBalloonPrice} options={balloonOptions} />
+                <PriceSelect label="Nalle" value={teddyPrice} onChange={setTeddyPrice} options={teddyOptions} />
+                <PriceSelect label="Vas" value={vasePrice} onChange={setVasePrice} options={vaseOptions} />
+                <PriceSelect label="Kruka" value={potPrice} onChange={setPotPrice} options={potOptions} />
+                <label className="flex items-start gap-3 rounded-2xl bg-stone-50 p-4 text-sm text-stone-700">
+                  <input type="checkbox" checked={luxuryWrap} onChange={(event) => setLuxuryWrap(event.target.checked)} className="mt-1 h-4 w-4 accent-stone-900" />
+                  <span>Lyxigare inslagning 90 kr</span>
+                </label>
+                <label className="flex items-start gap-3 rounded-2xl bg-stone-50 p-4 text-sm text-stone-700">
+                  <input type="checkbox" checked={pollenFree} onChange={(event) => setPollenFree(event.target.checked)} className="mt-1 h-4 w-4 accent-stone-900" />
+                  <span>Pollenfri önskas</span>
+                </label>
+              </div>
+            </section>
+          </section>
+
+          <aside className="rounded-[2rem] border border-white/70 bg-white/90 p-5 shadow-sm backdrop-blur lg:sticky lg:top-5 lg:self-start">
+            <h2 className="text-xl font-semibold">Din beställning</h2>
+            <p className="mt-1 text-sm text-stone-500">Allt kunden bygger hamnar här.</p>
+
+            <div className="mt-5 space-y-3">
+              {orderItems.length === 0 ? (
+                <div className="rounded-2xl bg-stone-50 p-4 text-sm text-stone-500">Inga produkter tillagda ännu.</div>
+              ) : (
+                orderItems.map((item) => (
+                  <div key={item.id} className="rounded-2xl border border-stone-100 bg-stone-50 p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-semibold">{groupIcon(item.group)} {item.product}</p>
+                        <p className="mt-1 text-xs leading-5 text-stone-500">
+                          {item.style} · {colorLabel(item.colors)} · {item.option}
+                        </p>
+                        <p className="mt-1 text-xs leading-5 text-stone-500">
+                          {money(item.unitPrice)} x {item.quantity} = {money(item.total)}
+                        </p>
+                        {item.cardText && <p className="mt-2 text-xs leading-5 text-stone-500">Kort: {item.cardText}</p>}
+                        {item.ribbonText && <p className="mt-2 text-xs leading-5 text-stone-500">Band: {item.ribbonText}</p>}
+                        {item.uploadedImageName && <p className="mt-2 text-xs leading-5 text-stone-500">Bild: {item.uploadedImageName}</p>}
+                        {item.wishes && <p className="mt-2 text-xs leading-5 text-stone-500">{item.wishes}</p>}
+                      </div>
+                      <button type="button" onClick={() => removeItem(item.id)} className="rounded-full p-1 text-stone-400 hover:bg-white hover:text-red-600">
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="mt-6 border-t border-stone-100 pt-5">
+              <div className="flex items-center justify-between text-sm text-stone-500">
+                <span>Produktrader</span>
+                <span>{orderItems.length} st</span>
+              </div>
+              <div className="mt-3 space-y-2 text-sm text-stone-600">
+                <div className="flex items-center justify-between"><span>Produkter</span><span>{money(productTotal)}</span></div>
+                <div className="flex items-center justify-between"><span>Band</span><span>{money(bandTotal)}</span></div>
+                <div className="flex items-center justify-between"><span>Extra produkter</span><span>{money(extrasTotal)}</span></div>
+              </div>
+              <div className="mt-4 flex items-center justify-between text-xl font-semibold">
+                <span>Totalt</span>
+                <span>{money(total)}</span>
+              </div>
+            </div>
+
+            <div className="mt-5 rounded-2xl bg-pink-50 p-4 text-sm leading-6 text-pink-950">
+              <Check size={16} className="mr-1 inline" /> Detta är V4-designprototyp. Leverans, betalning och Supabase kopplas in senare.
+            </div>
+          </aside>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+function CompactButton({ children, active, onClick }: { children: React.ReactNode; active: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={
+        "rounded-full border px-3 py-2 text-sm font-semibold transition " +
+        (active ? "border-stone-950 bg-stone-950 text-white" : "border-stone-200 bg-white text-stone-700 hover:border-pink-300")
+      }
+    >
+      {children}
+    </button>
+  );
+}
+
+function ControlBlock({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <h3 className="mb-2 text-sm font-semibold text-stone-800">{title}</h3>
+      {children}
+    </div>
+  );
+}
+
+
+function SelectBox({ label, value, onChange, options }: { label: string; value: string; onChange: (value: string) => void; options: string[] }) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm font-semibold">{label}</span>
+      <select value={value} onChange={(event) => onChange(event.target.value)} className="h-12 w-full rounded-2xl border border-stone-200 bg-white px-4 text-sm outline-none transition focus:border-stone-500">
+        {options.map((option) => <option key={option} value={option}>{option}</option>)}
+      </select>
+    </label>
+  );
+}
+
+function TextAreaBox({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (value: string) => void; placeholder: string }) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm font-semibold">{label}</span>
+      <textarea value={value} onChange={(event) => onChange(event.target.value)} rows={3} placeholder={placeholder} className="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-stone-400 focus:border-stone-500" />
+    </label>
+  );
+}
+
+function PriceSelect({ label, value, onChange, options }: { label: string; value: number; onChange: (value: number) => void; options: number[] }) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-sm font-semibold">{label}</span>
+      <select value={value} onChange={(event) => onChange(Number(event.target.value))} className="h-12 w-full rounded-2xl border border-stone-200 bg-white px-4 text-sm outline-none transition focus:border-stone-500">
+        {options.map((option) => <option key={option} value={option}>{option === 0 ? "Välj" : money(option)}</option>)}
+      </select>
+    </label>
+  );
+}
+
+function ControlCard({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
+  return (
+    <section className="rounded-[2rem] border border-white/70 bg-white/90 p-5 shadow-sm backdrop-blur">
+      <h3 className="text-base font-semibold">{title}</h3>
+      <p className="mt-1 text-sm leading-6 text-stone-600">{description}</p>
+      <div className="mt-4">{children}</div>
+    </section>
+  );
+}

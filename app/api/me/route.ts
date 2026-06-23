@@ -14,7 +14,7 @@ export async function GET() {
     if (userError || !user) {
       return NextResponse.json(
         { authenticated: false, error: "Ej inloggad" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
@@ -28,14 +28,14 @@ export async function GET() {
     if (floristError) {
       return NextResponse.json(
         { authenticated: false, error: "Kunde inte hämta florist" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
     if (!florist) {
       return NextResponse.json(
         { authenticated: false, error: "Florist hittades inte" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -55,7 +55,7 @@ export async function GET() {
 
     return NextResponse.json(
       { authenticated: false, error: "Serverfel" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
