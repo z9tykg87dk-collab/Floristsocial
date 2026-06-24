@@ -111,12 +111,9 @@ export default async function FloristsPage() {
                     className="h-12 w-full bg-transparent text-sm font-semibold outline-none placeholder:text-stone-400"
                     placeholder="Sök florist, stad, bukett eller specialitet"
                   />
-                  <Link
-                    href="/test-hitta-florist"
-                    className="hidden rounded-full bg-stone-950 px-5 py-3 text-sm font-black !text-white sm:block cursor-pointer hover:opacity-90 transition"
-                  >
+                  <button className="hidden rounded-full bg-stone-950 px-5 py-3 text-sm font-black !text-white sm:block">
                     Sök
-                  </Link>
+                  </button>
                 </div>
               </div>
 
