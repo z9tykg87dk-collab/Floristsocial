@@ -284,28 +284,32 @@ export default function TestHittaFloristPage() {
                       </span>
                     </div>
 
-                    <p className="mt-3 flex items-center gap-2 text-sm font-semibold text-stone-500">
-                      <MapPin size={16} className="text-pink-600" />
-                      {florist.area ? `${florist.area}, ` : ""}
-                      {florist.city || "Okänd stad"}
-                    </p>
+                    <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-sm font-semibold">
+                      <div className="flex items-center gap-2 text-stone-500">
+                        <MapPin size={15} className="text-pink-600" />
+                        <span>{florist.area ? `${florist.area}, ` : ""}{florist.city || "Okänd stad"}</span>
+                      </div>
 
-                    <p className="mt-2 flex items-center gap-2 text-sm font-semibold text-stone-600">
-                      <Truck size={16} className="text-emerald-600" />
-                      Leverans {florist.standard_delivery_fee ?? 0} kr
-                    </p>
+                      <div className="flex items-center gap-2 text-stone-600">
+                        <Clock size={15} className="text-pink-600" />
+                        <span className="hidden md:inline">Stopptid {florist.same_day_cutoff_time || "-"}</span>
+                        <span className="md:hidden">{florist.same_day_cutoff_time || "-"}</span>
+                      </div>
 
-                    <p className="mt-2 flex items-center gap-2 text-sm font-semibold text-stone-600">
-                      <Clock size={16} className="text-pink-600" />
-                      Stopptid idag {florist.same_day_cutoff_time || "Ej angiven"}
-                    </p>
+                      <div className="flex items-center gap-2 text-stone-600">
+                        <Truck size={15} className="text-emerald-600" />
+                        <span className="hidden md:inline">Leverans {florist.standard_delivery_fee ?? 0} kr</span>
+                        <span className="md:hidden">{florist.standard_delivery_fee ?? 0} kr</span>
+                      </div>
 
-                    {florist.express_delivery_available && (
-                      <p className="mt-2 flex items-center gap-2 text-sm font-semibold text-stone-600">
-                        <Zap size={16} className="text-yellow-600" />
-                        Express {florist.express_delivery_fee ?? 0} kr
-                      </p>
-                    )}
+                      {florist.express_delivery_available && (
+                        <div className="flex items-center gap-2 text-stone-600">
+                          <Zap size={15} className="text-yellow-600" />
+                          <span className="hidden md:inline">Express {florist.express_delivery_fee ?? 0} kr</span>
+                          <span className="md:hidden">{florist.express_delivery_fee ?? 0} kr</span>
+                        </div>
+                      )}
+                    </div>
 
                     <p className="mt-2 text-sm font-black text-stone-800">
                       Cirka {florist.distance_km} km från mottagaren
@@ -319,6 +323,14 @@ export default function TestHittaFloristPage() {
                     className="rounded-full bg-white px-5 py-3 text-sm font-black text-stone-900 ring-1 ring-stone-200 transition hover:bg-stone-50"
                   >
                     Visa profil
+                  </Link>
+
+                  <Link
+                    href={`/chat?floristId=${florist.florist_id}`}
+                    className="rounded-full bg-white px-5 py-3 text-sm font-black text-stone-900 ring-1 ring-stone-200 transition hover:bg-stone-50"
+                  >
+                    <span className="hidden md:inline">Chatta</span>
+                    <span className="md:hidden">💬</span>
                   </Link>
 
                   <button
