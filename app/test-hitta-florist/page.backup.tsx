@@ -361,34 +361,33 @@ export default function TestHittaFloristPage() {
                           )}
                         </div>
 
+                        <div className="mt-3 grid grid-cols-3 gap-2">
+                          <Link
+                            href={`/florist/${florist.florist_id}`}
+                            className="inline-flex items-center justify-center gap-1 rounded-xl bg-white px-3 py-3 text-xs font-black text-stone-900 ring-1 ring-stone-200 transition hover:bg-stone-50"
+                          >
+                            <Store size={15} />
+                            <span className="hidden sm:inline">Besök butik</span>
+                          </Link>
+
+                          <Link
+                            href={`/chat?floristId=${florist.florist_id}`}
+                            className="inline-flex items-center justify-center gap-1 rounded-xl bg-white px-3 py-3 text-xs font-black text-stone-900 ring-1 ring-stone-200 transition hover:bg-stone-50"
+                          >
+                            <MessageCircle size={15} />
+                            <span className="hidden sm:inline">Chatta</span>
+                          </Link>
+
+                          <button
+                            type="button"
+                            onClick={() => orderFromFlorist(florist)}
+                            className="inline-flex cursor-pointer items-center justify-center gap-1 rounded-xl bg-pink-600 px-3 py-3 text-xs font-black !text-white transition hover:bg-pink-700"
+                          >
+                            <ShoppingCart size={15} />
+                            <span className="hidden sm:inline">Beställ här</span>
+                          </button>
+                        </div>
                       </div>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-3 border-t border-stone-100 p-4 pt-3">
-                      <Link
-                        href={`/florist/${florist.florist_id}`}
-                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-3 py-3 text-xs font-black text-stone-900 ring-1 ring-stone-200 transition hover:bg-stone-50"
-                      >
-                        <Store size={15} />
-                        <span className="hidden sm:inline">Besök butik</span>
-                      </Link>
-
-                      <Link
-                        href={`/chat?floristId=${florist.florist_id}`}
-                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-3 py-3 text-xs font-black text-stone-900 ring-1 ring-stone-200 transition hover:bg-stone-50"
-                      >
-                        <MessageCircle size={15} />
-                        <span className="hidden sm:inline">Chatta</span>
-                      </Link>
-
-                      <button
-                        type="button"
-                        onClick={() => orderFromFlorist(florist)}
-                        className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-pink-600 px-3 py-3 text-xs font-black !text-white transition hover:bg-pink-700"
-                      >
-                        <ShoppingCart size={15} />
-                        <span className="hidden sm:inline">Beställ här</span>
-                      </button>
                     </div>
                   </article>
                 );

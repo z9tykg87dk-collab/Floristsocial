@@ -112,7 +112,7 @@ export default async function FloristsPage() {
                     placeholder="Sök florist, stad, bukett eller specialitet"
                   />
                   <Link
-                    href="/test-hitta-florist"
+                    href="#hitta-florist"
                     className="hidden rounded-full bg-stone-950 px-5 py-3 text-sm font-black !text-white sm:block cursor-pointer hover:opacity-90 transition"
                   >
                     Sök
