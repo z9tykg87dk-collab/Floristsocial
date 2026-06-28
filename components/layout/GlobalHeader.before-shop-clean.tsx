@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
 import {
   Search,
   Globe,
@@ -42,11 +41,6 @@ function HeaderIcon({
 }
 
 export default function GlobalHeader() {
-  const pathname = usePathname();
-
-  const isPublicShop =
-    pathname.startsWith("/shop/") || pathname.startsWith("/public/florist/");
-
   const messageCount = 2;
   const actionCount = 1;
   const notificationCount = 14;
@@ -97,39 +91,29 @@ export default function GlobalHeader() {
             <Palette size={20} />
           </HeaderIcon>
 
-          {isPublicShop ? (
-            <>
-              <HeaderIcon href="/messages">
-                <MessageCircle size={20} />
-              </HeaderIcon>
-            </>
-          ) : (
-            <>
-              <div className="hidden items-center gap-2 md:flex">
-                <HeaderIcon href="/messages" count={messageCount}>
-                  <MessageCircle size={20} />
-                </HeaderIcon>
+          <div className="hidden items-center gap-2 md:flex">
+            <HeaderIcon href="/messages" count={messageCount}>
+              <MessageCircle size={20} />
+            </HeaderIcon>
 
-                <HeaderIcon href="/actions" count={actionCount} important>
-                  <ShieldAlert size={21} />
-                </HeaderIcon>
+            <HeaderIcon href="/actions" count={actionCount} important>
+              <ShieldAlert size={21} />
+            </HeaderIcon>
 
-                <HeaderIcon href="/notifications" count={notificationCount}>
-                  <Bell size={20} />
-                </HeaderIcon>
-              </div>
+            <HeaderIcon href="/notifications" count={notificationCount}>
+              <Bell size={20} />
+            </HeaderIcon>
+          </div>
 
-              <div className="md:hidden">
-                <HeaderIcon href="/actions" count={actionCount} important>
-                  <ShieldAlert size={21} />
-                </HeaderIcon>
-              </div>
+          <div className="md:hidden">
+            <HeaderIcon href="/actions" count={actionCount} important>
+              <ShieldAlert size={21} />
+            </HeaderIcon>
+          </div>
 
-              <HeaderIcon href="/menu">
-                <Menu size={24} />
-              </HeaderIcon>
-            </>
-          )}
+          <HeaderIcon href="/menu">
+            <Menu size={24} />
+          </HeaderIcon>
         </nav>
       </div>
     </header>

@@ -218,53 +218,28 @@ function ProductCarousel({
         Inspiration från butiken
       </div>
 
-      <div style={{ position: "relative" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "34px 1fr 34px", gap: 10, alignItems: "center" }}>
+        <button
+          type="button"
+          onClick={() => setIndex((current) => (current === 0 ? demoProducts.length - 1 : current - 1))}
+          style={{
+            height: 34,
+            borderRadius: 999,
+            border: "1px solid #e7e5e4",
+            background: "white",
+            cursor: "pointer",
+            fontWeight: 900,
+          }}
+        >
+          ‹
+        </button>
+
         <div style={{ overflow: "hidden", borderRadius: 16, border: "1px solid #f1f5f9" }}>
           <img
             src={item.image}
             alt={item.title}
-            style={{ width: "100%", height: 120, objectFit: "cover", display: "block" }}
+            style={{ width: "100%", height: 145, objectFit: "cover", display: "block" }}
           />
-
-          <button
-            type="button"
-            onClick={() => setIndex((current) => (current === 0 ? demoProducts.length - 1 : current - 1))}
-            style={{
-              position: "absolute",
-              left: 10,
-              top: 44,
-              width: 34,
-              height: 34,
-              borderRadius: 999,
-              border: "1px solid #e7e5e4",
-              background: "rgba(255,255,255,.92)",
-              cursor: "pointer",
-              fontWeight: 900,
-              boxShadow: "0 8px 20px rgba(0,0,0,.15)",
-            }}
-          >
-            ‹
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setIndex((current) => (current === demoProducts.length - 1 ? 0 : current + 1))}
-            style={{
-              position: "absolute",
-              right: 10,
-              top: 44,
-              width: 34,
-              height: 34,
-              borderRadius: 999,
-              border: "1px solid #e7e5e4",
-              background: "rgba(255,255,255,.92)",
-              cursor: "pointer",
-              fontWeight: 900,
-              boxShadow: "0 8px 20px rgba(0,0,0,.15)",
-            }}
-          >
-            ›
-          </button>
 
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: 12 }}>
             <div>
@@ -293,6 +268,20 @@ function ProductCarousel({
           </div>
         </div>
 
+        <button
+          type="button"
+          onClick={() => setIndex((current) => (current === demoProducts.length - 1 ? 0 : current + 1))}
+          style={{
+            height: 34,
+            borderRadius: 999,
+            border: "1px solid #e7e5e4",
+            background: "white",
+            cursor: "pointer",
+            fontWeight: 900,
+          }}
+        >
+          ›
+        </button>
       </div>
 
       <div style={{ marginTop: 9, textAlign: "center", fontSize: 12, fontWeight: 800, color: "#78716c" }}>
@@ -369,15 +358,15 @@ export default function FloristSearchMap({
                 mouseout: () => onHoverFlorist?.(null),
               }}
             >
-              <Popup closeButton maxWidth={430} minWidth={400}>
-                <div style={{ width: 400, maxWidth: "95vw", padding: 9 }}>
+              <Popup closeButton maxWidth={560} minWidth={520}>
+                <div style={{ width: 520, maxWidth: "95vw", padding: 10 }}>
                   <div style={{ display: "flex", gap: 16 }}>
                     <img
                       src={image}
                       alt={name}
                       style={{
-                        width: 100,
-                        height: 100,
+                        width: 132,
+                        height: 132,
                         borderRadius: 18,
                         objectFit: "cover",
                       }}
@@ -412,19 +401,19 @@ export default function FloristSearchMap({
                     </div>
                   </div>
 
-                  <div style={{ display: "grid", gridTemplateColumns: "0.9fr 0.9fr 1.4fr", gap: 10, marginTop: 18 }}>
-                    <a href={`/florist/${florist.florist_id}`} style={{ padding: 10, borderRadius: 12, border: "1px solid #e7e5e4", textAlign: "center", fontWeight: 800 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginTop: 18 }}>
+                    <a href={`/florist/${florist.florist_id}`} style={{ padding: 12, borderRadius: 12, border: "1px solid #e7e5e4", textAlign: "center", fontWeight: 800 }}>
                       Besök butik
                     </a>
 
-                    <a href={`/chat?floristId=${florist.florist_id}`} style={{ padding: 10, borderRadius: 12, border: "1px solid #e7e5e4", textAlign: "center", fontWeight: 800 }}>
+                    <a href={`/chat?floristId=${florist.florist_id}`} style={{ padding: 12, borderRadius: 12, border: "1px solid #e7e5e4", textAlign: "center", fontWeight: 800 }}>
                       Chatta
                     </a>
 
                     <button
                       type="button"
                       onClick={() => onOrderFlorist?.(florist)}
-                      style={{ padding: 10, borderRadius: 12, border: 0, background: "#db2777", color: "white", fontWeight: 900, cursor: "pointer" }}
+                      style={{ padding: 12, borderRadius: 12, border: 0, background: "#db2777", color: "white", fontWeight: 900, cursor: "pointer" }}
                     >
                       Beställ här
                     </button>

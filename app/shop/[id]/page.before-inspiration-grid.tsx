@@ -30,7 +30,6 @@ import {
   Video,
 } from "lucide-react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import FloristCompactCalendar from "./FloristCompactCalendar";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -589,6 +588,23 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
         image: product.image,
       }));
 
+  const inspirationPosts = imagePosts
+    .filter((post) => postImage(post))
+    .slice(0, 4)
+    .map((post) => ({
+      id: post.id,
+      title:
+        text(post.product_title, post.title, post.caption) ||
+        "Floristinspiration",
+      caption: text(post.caption, post.description, post.text),
+      price: formatPrice(post.base_price || post.price, post.currency || "SEK"),
+      image: safeImage(postImage(post), FALLBACK_COVER),
+      isShoppable: Boolean(post.is_shoppable),
+      href: post.is_shoppable
+        ? `/order/private/guest-v4?floristId=${florist.id}&postId=${post.id}`
+        : `/feed?floristId=${florist.id}&postId=${post.id}`,
+    }));
+
   return (
     <>
       <main
@@ -950,126 +966,6 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
           >
             <div
               style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 560px",
-                gap: 28,
-                alignItems: "start",
-              }}
-            >
-              <div>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: 18,
-                  }}
-                >
-                  <div>
-                    <h2
-                      style={{
-                        margin: 0,
-                        fontSize: 24,
-                        fontWeight: 950,
-                        color: "#1c1917",
-                        letterSpacing: "-0.02em",
-                      }}
-                    >
-                      Floristkalender
-                    </h2>
-                    <p
-                      style={{
-                        margin: "8px 0 0",
-                        fontSize: 14,
-                        lineHeight: 1.7,
-                        color: "#57534e",
-                      }}
-                    >
-                      Mini-kalendern visar två veckor bakåt och sex veckor
-                      framåt. Här samlas floristens ordrar, uppdrag, högtider i
-                      floristens land, stängda dagar och egna påminnelser.
-                    </p>
-                  </div>
-                  <Link
-                    href={`/florist-dashboard/calendar?floristId=${florist.id}`}
-                    style={{
-                      height: 44,
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      borderRadius: 14,
-                      background: "#e60073",
-                      color: "white",
-                      padding: "0 18px",
-                      fontSize: 14,
-                      fontWeight: 900,
-                      textDecoration: "none",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    Öppna stort
-                  </Link>
-                </div>
-
-                <div
-                  style={{
-                    marginTop: 18,
-                    display: "grid",
-                    gridTemplateColumns: "repeat(4, 1fr)",
-                    gap: 10,
-                  }}
-                >
-                  <CalendarMiniCard title="Godkänd" value="2" />
-                  <CalendarMiniCard title="Under behandling" value="4" />
-                  <CalendarMiniCard title="Under leverans" value="1" />
-                  <CalendarMiniCard title="Levererad" value="8" />
-                </div>
-
-                <div
-                  style={{
-                    marginTop: 14,
-                    borderRadius: 18,
-                    background: "#fff7fb",
-                    border: "1px solid #ffe0ed",
-                    padding: 14,
-                  }}
-                >
-                  <div
-                    style={{ fontSize: 13, fontWeight: 900, color: "#e60073" }}
-                  >
-                    CRM-synk med Mina ordrar
-                  </div>
-                  <p
-                    style={{
-                      margin: "5px 0 0",
-                      fontSize: 13,
-                      lineHeight: 1.55,
-                      color: "#57534e",
-                    }}
-                  >
-                    Ordrar visas automatiskt i kalendern och kan byta status:
-                    godkänd → under behandling → under leverans → leverans
-                    bekräftad.
-                  </p>
-                </div>
-              </div>
-
-              <FloristCompactCalendar floristId={florist.id} />
-            </div>
-          </section>
-
-          <section
-            style={{
-              marginTop: 20,
-              borderRadius: 26,
-              background: "white",
-              padding: 20,
-              boxShadow: "0 10px 35px rgba(15,23,42,0.04)",
-              border: "1px solid #e7e2dc",
-            }}
-          >
-            <div
-              style={{
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "space-between",
@@ -1086,17 +982,16 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
                     letterSpacing: "-0.02em",
                   }}
                 >
-                  Populärt just nu
+                  Upptäck floristinspiration
                 </h2>
                 <p
                   style={{ margin: "5px 0 0", fontSize: 14, color: "#78716c" }}
                 >
-                  Trendande buketter, högtider och presentidéer på
-                  FloristSocial.
+                  Senaste publicerade bilderna från floristens sociala feed.
                 </p>
               </div>
               <Link
-                href="/popular"
+                href={`/feed?floristId=${florist.id}`}
                 style={{
                   fontSize: 14,
                   fontWeight: 950,
@@ -1104,37 +999,25 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
                   textDecoration: "none",
                 }}
               >
-                Visa populärt →
+                Visa alla sociala inlägg →
               </Link>
             </div>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(4, 1fr)",
-                gap: 14,
-              }}
-            >
-              <PopularCard
-                icon={<Sparkles size={22} />}
-                title="Säsongens buketter"
-                text="Aktuella färger, blommor och stilar."
-              />
-              <PopularCard
-                icon={<CalendarDays size={22} />}
-                title="Kommande högtider"
-                text="Planera beställningar i god tid."
-              />
-              <PopularCard
-                icon={<Gift size={22} />}
-                title="Presentkort"
-                text="Digital gåva med valfri hälsning."
-              />
-              <PopularCard
-                icon={<Globe2 size={22} />}
-                title="Internationellt"
-                text="Skicka omtanke över gränser."
-              />
-            </div>
+
+            {inspirationPosts.length === 0 ? (
+              <EmptyState text="Floristen har inte publicerat några bilder ännu." />
+            ) : (
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(4, 1fr)",
+                  gap: 14,
+                }}
+              >
+                {inspirationPosts.map((post) => (
+                  <FeedInspirationCard key={post.id} post={post} />
+                ))}
+              </div>
+            )}
           </section>
 
           <section
@@ -1730,6 +1613,115 @@ function PopularCard({
 
 
 
+
+function FeedInspirationCard({
+  post,
+}: {
+  post: {
+    id: string;
+    title: string;
+    caption: string;
+    price: string;
+    image: string;
+    isShoppable: boolean;
+    href: string;
+  };
+}) {
+  return (
+    <Link
+      href={post.href}
+      style={{ display: "block", color: "#1c1917", textDecoration: "none" }}
+    >
+      <article
+        style={{
+          overflow: "hidden",
+          borderRadius: 22,
+          background: "white",
+          border: "1px solid #e7e2dc",
+          boxShadow: "0 8px 24px rgba(15,23,42,0.035)",
+        }}
+      >
+        <div style={{ height: 190, background: "#f5f5f4", position: "relative" }}>
+          <img
+            src={post.image}
+            alt={post.title}
+            style={{
+              height: "100%",
+              width: "100%",
+              objectFit: "cover",
+              display: "block",
+            }}
+          />
+          {post.isShoppable && (
+            <div
+              style={{
+                position: "absolute",
+                left: 12,
+                top: 12,
+                borderRadius: 999,
+                background: "#e60073",
+                color: "white",
+                padding: "7px 12px",
+                fontSize: 12,
+                fontWeight: 950,
+              }}
+            >
+              Köpbar
+            </div>
+          )}
+        </div>
+
+        <div style={{ padding: 14 }}>
+          <h3 style={{ margin: 0, fontSize: 15, fontWeight: 950 }}>
+            {post.title}
+          </h3>
+
+          {post.caption && (
+            <p
+              style={{
+                margin: "6px 0 0",
+                fontSize: 13,
+                lineHeight: 1.45,
+                color: "#57534e",
+              }}
+            >
+              {post.caption.length > 75
+                ? `${post.caption.slice(0, 75)}...`
+                : post.caption}
+            </p>
+          )}
+
+          <div
+            style={{
+              marginTop: 12,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 10,
+            }}
+          >
+            <strong style={{ fontSize: 14 }}>
+              {post.price || "Pris på förfrågan"}
+            </strong>
+
+            <span
+              style={{
+                borderRadius: 999,
+                background: post.isShoppable ? "#e60073" : "#fff1f7",
+                color: post.isShoppable ? "white" : "#e60073",
+                padding: "8px 12px",
+                fontSize: 12,
+                fontWeight: 950,
+              }}
+            >
+              {post.isShoppable ? "Köp denna" : "Visa inlägg"}
+            </span>
+          </div>
+        </div>
+      </article>
+    </Link>
+  );
+}
 
 function NewsletterBox() {
   return (

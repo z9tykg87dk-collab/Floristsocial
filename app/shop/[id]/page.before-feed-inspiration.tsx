@@ -30,7 +30,6 @@ import {
   Video,
 } from "lucide-react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import FloristCompactCalendar from "./FloristCompactCalendar";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -936,126 +935,6 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
               text="Köp digitala presentkort och skicka till mottagaren via e-post eller SMS."
               href="/gift-cards"
             />
-          </section>
-
-          <section
-            style={{
-              marginTop: 20,
-              borderRadius: 26,
-              background: "white",
-              padding: 20,
-              boxShadow: "0 10px 35px rgba(15,23,42,0.04)",
-              border: "1px solid #e7e2dc",
-            }}
-          >
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 560px",
-                gap: 28,
-                alignItems: "start",
-              }}
-            >
-              <div>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: 18,
-                  }}
-                >
-                  <div>
-                    <h2
-                      style={{
-                        margin: 0,
-                        fontSize: 24,
-                        fontWeight: 950,
-                        color: "#1c1917",
-                        letterSpacing: "-0.02em",
-                      }}
-                    >
-                      Floristkalender
-                    </h2>
-                    <p
-                      style={{
-                        margin: "8px 0 0",
-                        fontSize: 14,
-                        lineHeight: 1.7,
-                        color: "#57534e",
-                      }}
-                    >
-                      Mini-kalendern visar två veckor bakåt och sex veckor
-                      framåt. Här samlas floristens ordrar, uppdrag, högtider i
-                      floristens land, stängda dagar och egna påminnelser.
-                    </p>
-                  </div>
-                  <Link
-                    href={`/florist-dashboard/calendar?floristId=${florist.id}`}
-                    style={{
-                      height: 44,
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      borderRadius: 14,
-                      background: "#e60073",
-                      color: "white",
-                      padding: "0 18px",
-                      fontSize: 14,
-                      fontWeight: 900,
-                      textDecoration: "none",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    Öppna stort
-                  </Link>
-                </div>
-
-                <div
-                  style={{
-                    marginTop: 18,
-                    display: "grid",
-                    gridTemplateColumns: "repeat(4, 1fr)",
-                    gap: 10,
-                  }}
-                >
-                  <CalendarMiniCard title="Godkänd" value="2" />
-                  <CalendarMiniCard title="Under behandling" value="4" />
-                  <CalendarMiniCard title="Under leverans" value="1" />
-                  <CalendarMiniCard title="Levererad" value="8" />
-                </div>
-
-                <div
-                  style={{
-                    marginTop: 14,
-                    borderRadius: 18,
-                    background: "#fff7fb",
-                    border: "1px solid #ffe0ed",
-                    padding: 14,
-                  }}
-                >
-                  <div
-                    style={{ fontSize: 13, fontWeight: 900, color: "#e60073" }}
-                  >
-                    CRM-synk med Mina ordrar
-                  </div>
-                  <p
-                    style={{
-                      margin: "5px 0 0",
-                      fontSize: 13,
-                      lineHeight: 1.55,
-                      color: "#57534e",
-                    }}
-                  >
-                    Ordrar visas automatiskt i kalendern och kan byta status:
-                    godkänd → under behandling → under leverans → leverans
-                    bekräftad.
-                  </p>
-                </div>
-              </div>
-
-              <FloristCompactCalendar floristId={florist.id} />
-            </div>
           </section>
 
           <section

@@ -200,8 +200,7 @@ function collectRegisteredServices(florist: Florist) {
       ),
   );
 
-  const result = uniqueLabels([...matched, ...custom]);
-  return result.length ? result : SERVICE_OPTIONS;
+  return uniqueLabels([...matched, ...custom]);
 }
 
 function collectRegisteredStyles(florist: Florist) {
@@ -234,8 +233,7 @@ function collectRegisteredStyles(florist: Florist) {
       ),
   );
 
-  const result = uniqueLabels([...matched, ...custom]);
-  return result.length ? result : STYLE_OPTIONS;
+  return uniqueLabels([...matched, ...custom]);
 }
 
 function imgFrom(value: any) {

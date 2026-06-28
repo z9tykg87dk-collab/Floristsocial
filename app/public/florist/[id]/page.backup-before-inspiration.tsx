@@ -30,7 +30,8 @@ import {
   Video,
 } from "lucide-react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import FloristCompactCalendar from "./FloristCompactCalendar";
+import FloristCompactCalendar from "@/app/florist/[id]/FloristCompactCalendar";
+import GuestAuthAction from "./GuestAuthAction";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -555,7 +556,7 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
         postImage(post),
         productFallbacks[index] || FALLBACK_COVER,
       ),
-      href: `/orders/new?floristId=${florist.id}&postId=${post.id}`,
+      href: `/order/private/guest-v4?floristId=${florist.id}&postId=${post.id}`,
     }))
     .filter((item) => item.image && item.image.length > 5);
 
@@ -574,7 +575,7 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
             productFallbacks[index] ||
             FALLBACK_PRODUCTS[index] ||
             FALLBACK_COVER,
-          href: `/orders/new?floristId=${florist.id}`,
+          href: `/order/private/guest-v4?floristId=${florist.id}`,
         }),
       );
 
@@ -763,27 +764,17 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
                   }}
                 >
                   <MapButton name={name} address={getAddress(florist)} />
-                  <Action
-                    href={`/messages/new?floristId=${florist.id}`}
-                    icon={<MessageCircle size={18} />}
-                    primary
-                  >
+                  <GuestAuthAction icon={<MessageCircle size={18} />} primary>
                     Chatta
-                  </Action>
-                  <Action
-                    href={`/calls/audio?floristId=${florist.id}`}
-                    icon={<Phone size={18} />}
-                  >
+                  </GuestAuthAction>
+                  <GuestAuthAction icon={<Phone size={18} />}>
                     Ljudsamtal
-                  </Action>
-                  <Action
-                    href={`/calls/video?floristId=${florist.id}`}
-                    icon={<Video size={18} />}
-                  >
+                  </GuestAuthAction>
+                  <GuestAuthAction icon={<Video size={18} />}>
                     Video
-                  </Action>
+                  </GuestAuthAction>
                   <Action
-                    href={`/orders/new?floristId=${florist.id}`}
+                    href={`/order/private/guest-v4?floristId=${florist.id}`}
                     icon={<ShoppingBag size={18} />}
                     primary
                   >
@@ -923,12 +914,13 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
               icon={<Globe2 size={22} />}
               title="Leverans över hela världen"
               text="Internationella beställningar, företagsgåvor och specialleveranser kan hanteras via FloristSocial."
+              href="/order/private/guest-v4"
             />
             <FeaturePill
               icon={<CalendarDays size={22} />}
               title="Högtidskalender"
               text="Högtider per land, årsdagar och födelsedagar med påminnelser via e-post eller SMS."
-              href="/holiday-calendar"
+              href="/holidays/sweden"
             />
             <FeaturePill
               icon={<Gift size={22} />}
@@ -1086,17 +1078,16 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
                     letterSpacing: "-0.02em",
                   }}
                 >
-                  Populärt just nu
+                  Upptäck floristinspiration
                 </h2>
                 <p
                   style={{ margin: "5px 0 0", fontSize: 14, color: "#78716c" }}
                 >
-                  Trendande buketter, högtider och presentidéer på
-                  FloristSocial.
+                  De senaste publicerade bilderna och sociala inläggen från florister på FloristSocial.
                 </p>
               </div>
               <Link
-                href="/popular"
+                href="/feed"
                 style={{
                   fontSize: 14,
                   fontWeight: 950,
@@ -1104,7 +1095,7 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
                   textDecoration: "none",
                 }}
               >
-                Visa populärt →
+                Visa alla sociala inlägg →
               </Link>
             </div>
             <div
@@ -1148,7 +1139,7 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
             <Panel
               title="Sortiment & produkter"
               link="Visa alla produkter"
-              href={`/marketplace?floristId=${florist.id}`}
+              href={`/public/florist/${florist.id}/products`}
             >
               <div
                 style={{
@@ -1237,7 +1228,7 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
             <Panel
               title="Portfolio"
               link="Visa hela portfolion"
-              href="#portfolio"
+              href={`/public/florist/${florist.id}/products`}
             >
               <div
                 style={{
@@ -1249,7 +1240,7 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
                 {portfolioPreview.map((item) => (
                   <Link
                     key={item.id || item.title}
-                    href={`/orders/new?item=${encodeURIComponent(item.title)}`}
+                    href={`/order/private/guest-v4?item=${encodeURIComponent(item.title)}`}
                     style={{ display: "block", textDecoration: "none" }}
                   >
                     <div
@@ -1529,7 +1520,7 @@ function canEditProfileContent(
 
 function customerOrderHref(floristId: string, params: Record<string, string>) {
   const query = new URLSearchParams({ floristId, ...params });
-  return `/orders/new?${query.toString()}`;
+  return `/order/private/guest-v4?${query.toString()}`;
 }
 
 function floristEditHref(floristId: string, section: string) {
@@ -1854,8 +1845,7 @@ function MapButton({
 }) {
   return (
     <Link
-      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${name} ${address}`)}`}
-      target="_blank"
+      href="/florists"
       style={{
         marginTop: compact ? 14 : 0,
         height: compact ? 42 : 48,
@@ -1949,8 +1939,10 @@ function Panel({
         borderRadius: 26,
         background: "white",
         padding: 20,
+        overflow: "hidden",
         boxShadow: "0 10px 35px rgba(15,23,42,0.04)",
         border: "1px solid #e7e2dc",
+        overflow: "hidden",
       }}
     >
       <div
@@ -2094,7 +2086,7 @@ function MiniMetric({
 function PortfolioTile({ item }: { item: PortfolioItem }) {
   return (
     <Link
-      href={`/orders/new?item=${encodeURIComponent(item.title)}`}
+      href={`/order/private/guest-v4?item=${encodeURIComponent(item.title)}`}
       style={{ display: "block", color: "#1c1917", textDecoration: "none" }}
     >
       <article

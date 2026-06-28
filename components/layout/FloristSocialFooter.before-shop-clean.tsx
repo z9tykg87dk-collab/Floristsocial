@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 import { Heart, Mail, MapPin, MessageCircle, ShieldCheck, Sparkles, Store } from "lucide-react";
 
@@ -11,6 +9,15 @@ const footerGroups = [
       { label: "Marketplace", href: "/marketplace" },
       { label: "Feed", href: "/feed" },
       { label: "Florister", href: "/florists" },
+    ],
+  },
+  {
+    title: "För florister",
+    links: [
+      { label: "Registrera florist", href: "/florist/register" },
+      { label: "Florist-dashboard", href: "/dashboard" },
+      { label: "Orderhantering", href: "/dashboard/orders" },
+      { label: "Florist-chat", href: "/florist-chat" },
     ],
   },
   {
@@ -60,7 +67,7 @@ export default function FloristSocialFooter() {
             </div>
           </div>
 
-          <div className="grid gap-8 sm:grid-cols-3">
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
             {footerGroups.map((group) => (
               <div key={group.title}>
                 <h3 className="text-sm font-black uppercase tracking-wide text-stone-950">{group.title}</h3>
@@ -81,7 +88,17 @@ export default function FloristSocialFooter() {
             © {new Date().getFullYear()} FloristSocial. Alla rättigheter förbehållna.
           </div>
 
-
+          <div className="flex flex-wrap gap-2">
+            <Link href="/messages" className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-pink-50 px-4 text-sm font-bold text-pink-700 transition hover:bg-pink-100">
+              <MessageCircle size={16} /> Meddelanden
+            </Link>
+            <Link href="/marketplace" className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-stone-50 px-4 text-sm font-bold text-stone-700 transition hover:bg-stone-100">
+              <Store size={16} /> Marketplace
+            </Link>
+            <Link href="/favorites" className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-stone-50 px-4 text-sm font-bold text-stone-700 transition hover:bg-stone-100">
+              <Heart size={16} /> Favoriter
+            </Link>
+          </div>
         </div>
       </section>
     </footer>

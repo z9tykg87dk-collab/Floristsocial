@@ -53,12 +53,6 @@ type FloristResult = {
   standard_delivery_fee: number | null;
   express_delivery_available: boolean | null;
   express_delivery_fee: number | null;
-  bio?: string | null;
-  description?: string | null;
-  offer?: string | null;
-  specialties?: string[] | null;
-  categories?: string[] | null;
-  service_portfolio_items?: any;
 };
 
 const filters = [
@@ -92,27 +86,8 @@ function isOpenNow(openingHours: OpeningHour[] | null) {
   return { open, label: open ? "Öppet nu" : "Stängt just nu" };
 }
 
-function floristHasSpecialty(florist: FloristResult, filter: string) {
-  if (filter === "Alla") return true;
-
-  const searchable = [
-    florist.bio,
-    florist.description,
-    florist.offer,
-    ...(florist.specialties || []),
-    ...(florist.categories || []),
-    JSON.stringify(florist.service_portfolio_items || ""),
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-
-  return searchable.includes(filter.toLowerCase());
-}
-
 export default function FloristsHeroSearch() {
   const [address, setAddress] = useState("");
-  const [activeFilter, setActiveFilter] = useState("Alla");
   const [results, setResults] = useState<FloristResult[]>([]);
   const [recipientLat, setRecipientLat] = useState<number | null>(null);
   const [recipientLng, setRecipientLng] = useState<number | null>(null);
@@ -198,7 +173,7 @@ export default function FloristsHeroSearch() {
     <>
       <section className="mx-auto max-w-7xl px-4 py-8 md:px-8 lg:px-10">
         <div className="overflow-hidden rounded-[38px] bg-gradient-to-br from-white via-pink-50 to-emerald-50 p-6 shadow-sm ring-1 ring-stone-200/70 md:p-9">
-          <div className="grid gap-8 lg:grid-cols-[300px_1fr] lg:items-center">
+          <div className="grid gap-8 lg:grid-cols-[1fr_520px] lg:items-center">
             <div>
               <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-black text-pink-700 shadow-sm ring-1 ring-pink-100">
                 <Sparkles size={16} />
@@ -206,11 +181,11 @@ export default function FloristsHeroSearch() {
               </div>
 
               <h1 className="text-4xl font-black tracking-tight md:text-6xl">
-                Upptäck florister nära mottagaren
+                Upptäck florister i ditt område
               </h1>
 
               <p className="mt-4 max-w-2xl text-lg leading-8 text-stone-600">
-                Skriv mottagarens adress så visar vi florister som kan leverera dit.
+                Sök på mottagarens adress och hitta florister som kan leverera dit.
               </p>
 
               <div className="mt-7 max-w-2xl rounded-full bg-white p-2 shadow-lg ring-1 ring-stone-200">
@@ -242,15 +217,13 @@ export default function FloristsHeroSearch() {
               )}
 
               <div className="mt-5 flex flex-wrap gap-2">
-                {filters.map((filter) => (
+                {filters.map((filter, index) => (
                   <button
                     key={filter}
-                    type="button"
-                    onClick={() => setActiveFilter(filter)}
                     className={
-                      activeFilter === filter
-                        ? "cursor-pointer rounded-full bg-pink-600 px-4 py-2 text-sm font-black !text-white transition hover:scale-105"
-                        : "cursor-pointer rounded-full bg-white px-4 py-2 text-sm font-black text-stone-800 ring-1 ring-stone-200 transition hover:bg-pink-50 hover:text-pink-700"
+                      index === 0
+                        ? "rounded-full bg-pink-600 px-4 py-2 text-sm font-black !text-white"
+                        : "rounded-full bg-white px-4 py-2 text-sm font-black text-stone-800 ring-1 ring-stone-200"
                     }
                   >
                     {filter}
@@ -260,8 +233,7 @@ export default function FloristsHeroSearch() {
             </div>
 
             {results.length > 0 ? (
-              <div>
-                <FloristSearchMap
+              <FloristSearchMap
                 recipientLat={recipientLat}
                 recipientLng={recipientLng}
                 florists={results}
@@ -269,7 +241,6 @@ export default function FloristsHeroSearch() {
                 onHoverFlorist={setHoveredFloristId}
                 onOrderFlorist={orderFromFlorist}
               />
-              </div>
             ) : (
               <div className="relative min-h-[380px] overflow-hidden rounded-[32px] bg-gradient-to-br from-emerald-100 via-sky-100 to-amber-50 shadow-xl ring-1 ring-stone-200">
                 <div className="absolute inset-0 opacity-80">
@@ -313,7 +284,6 @@ export default function FloristsHeroSearch() {
               const image = florist.profile_image_url || florist.logo_url || fallbackImage;
               const status = isOpenNow(florist.opening_hours);
               const isHovered = hoveredFloristId === florist.florist_id;
-              const matchesSpecialty = floristHasSpecialty(florist, activeFilter);
 
               return (
                 <article
@@ -363,18 +333,6 @@ export default function FloristsHeroSearch() {
                         </span>
                       )}
                     </div>
-
-                    {activeFilter !== "Alla" && !matchesSpecialty && (
-                      <div className="mt-4 rounded-2xl bg-orange-50 px-4 py-3 text-sm font-black text-orange-700">
-                        Säljer ej {activeFilter}
-                      </div>
-                    )}
-
-                    {activeFilter !== "Alla" && matchesSpecialty && (
-                      <div className="mt-4 rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-black text-emerald-700">
-                        Säljer {activeFilter}
-                      </div>
-                    )}
 
                     <div className="mt-5 grid gap-2 sm:grid-cols-3">
                       <Link href={`/florist/${florist.florist_id}`} className="inline-flex items-center justify-center gap-1 rounded-full bg-stone-950 px-4 py-2 text-sm font-black !text-white">

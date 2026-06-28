@@ -30,7 +30,8 @@ import {
   Video,
 } from "lucide-react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import FloristCompactCalendar from "./FloristCompactCalendar";
+import FloristCompactCalendar from "@/app/florist/[id]/FloristCompactCalendar";
+import GuestAuthAction from "./GuestAuthAction";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -555,7 +556,7 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
         postImage(post),
         productFallbacks[index] || FALLBACK_COVER,
       ),
-      href: `/orders/new?floristId=${florist.id}&postId=${post.id}`,
+      href: `/order/private/guest-v4?floristId=${florist.id}&postId=${post.id}`,
     }))
     .filter((item) => item.image && item.image.length > 5);
 
@@ -574,7 +575,7 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
             productFallbacks[index] ||
             FALLBACK_PRODUCTS[index] ||
             FALLBACK_COVER,
-          href: `/orders/new?floristId=${florist.id}`,
+          href: `/order/private/guest-v4?floristId=${florist.id}`,
         }),
       );
 
@@ -763,27 +764,17 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
                   }}
                 >
                   <MapButton name={name} address={getAddress(florist)} />
-                  <Action
-                    href={`/messages/new?floristId=${florist.id}`}
-                    icon={<MessageCircle size={18} />}
-                    primary
-                  >
+                  <GuestAuthAction icon={<MessageCircle size={18} />} primary>
                     Chatta
-                  </Action>
-                  <Action
-                    href={`/calls/audio?floristId=${florist.id}`}
-                    icon={<Phone size={18} />}
-                  >
+                  </GuestAuthAction>
+                  <GuestAuthAction icon={<Phone size={18} />}>
                     Ljudsamtal
-                  </Action>
-                  <Action
-                    href={`/calls/video?floristId=${florist.id}`}
-                    icon={<Video size={18} />}
-                  >
+                  </GuestAuthAction>
+                  <GuestAuthAction icon={<Video size={18} />}>
                     Video
-                  </Action>
+                  </GuestAuthAction>
                   <Action
-                    href={`/orders/new?floristId=${florist.id}`}
+                    href={`/order/private/guest-v4?floristId=${florist.id}`}
                     icon={<ShoppingBag size={18} />}
                     primary
                   >
@@ -923,12 +914,13 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
               icon={<Globe2 size={22} />}
               title="Leverans över hela världen"
               text="Internationella beställningar, företagsgåvor och specialleveranser kan hanteras via FloristSocial."
+              href="/order/private/guest-v4"
             />
             <FeaturePill
               icon={<CalendarDays size={22} />}
               title="Högtidskalender"
               text="Högtider per land, årsdagar och födelsedagar med påminnelser via e-post eller SMS."
-              href="/holiday-calendar"
+              href="/holidays/sweden"
             />
             <FeaturePill
               icon={<Gift size={22} />}
@@ -950,112 +942,106 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
           >
             <div
               style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 560px",
-                gap: 28,
-                alignItems: "start",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 20,
+                marginBottom: 16,
               }}
             >
               <div>
-                <div
+                <h2
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: 18,
+                    margin: 0,
+                    fontSize: 24,
+                    fontWeight: 950,
+                    color: "#1c1917",
+                    letterSpacing: "-0.02em",
                   }}
                 >
-                  <div>
-                    <h2
-                      style={{
-                        margin: 0,
-                        fontSize: 24,
-                        fontWeight: 950,
-                        color: "#1c1917",
-                        letterSpacing: "-0.02em",
-                      }}
-                    >
-                      Floristkalender
-                    </h2>
-                    <p
-                      style={{
-                        margin: "8px 0 0",
-                        fontSize: 14,
-                        lineHeight: 1.7,
-                        color: "#57534e",
-                      }}
-                    >
-                      Mini-kalendern visar två veckor bakåt och sex veckor
-                      framåt. Här samlas floristens ordrar, uppdrag, högtider i
-                      floristens land, stängda dagar och egna påminnelser.
-                    </p>
-                  </div>
-                  <Link
-                    href={`/florist-dashboard/calendar?floristId=${florist.id}`}
-                    style={{
-                      height: 44,
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      borderRadius: 14,
-                      background: "#e60073",
-                      color: "white",
-                      padding: "0 18px",
-                      fontSize: 14,
-                      fontWeight: 900,
-                      textDecoration: "none",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    Öppna stort
-                  </Link>
-                </div>
-
-                <div
+                  Blomsterinspiration
+                </h2>
+                <p
                   style={{
-                    marginTop: 18,
-                    display: "grid",
-                    gridTemplateColumns: "repeat(4, 1fr)",
-                    gap: 10,
+                    margin: "7px 0 0",
+                    fontSize: 14,
+                    lineHeight: 1.7,
+                    color: "#57534e",
                   }}
                 >
-                  <CalendarMiniCard title="Godkänd" value="2" />
-                  <CalendarMiniCard title="Under behandling" value="4" />
-                  <CalendarMiniCard title="Under leverans" value="1" />
-                  <CalendarMiniCard title="Levererad" value="8" />
-                </div>
-
-                <div
-                  style={{
-                    marginTop: 14,
-                    borderRadius: 18,
-                    background: "#fff7fb",
-                    border: "1px solid #ffe0ed",
-                    padding: 14,
-                  }}
-                >
-                  <div
-                    style={{ fontSize: 13, fontWeight: 900, color: "#e60073" }}
-                  >
-                    CRM-synk med Mina ordrar
-                  </div>
-                  <p
-                    style={{
-                      margin: "5px 0 0",
-                      fontSize: 13,
-                      lineHeight: 1.55,
-                      color: "#57534e",
-                    }}
-                  >
-                    Ordrar visas automatiskt i kalendern och kan byta status:
-                    godkänd → under behandling → under leverans → leverans
-                    bekräftad.
-                  </p>
-                </div>
+                  Se några av floristens senaste publicerade produkter och bilder på FloristSocial.
+                </p>
               </div>
 
-              <FloristCompactCalendar floristId={florist.id} />
+              <Link
+                href={`/public/florist/${florist.id}/inspiration`}
+                style={{
+                  fontSize: 14,
+                  fontWeight: 950,
+                  color: "#e60073",
+                  textDecoration: "none",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Visa floristens Blomsterinspiration →
+              </Link>
             </div>
+
+            <Link
+              href={`/public/florist/${florist.id}/inspiration`}
+              style={{ display: "block", color: "inherit", textDecoration: "none" }}
+            >
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(4, 1fr)",
+                  gap: 14,
+                }}
+              >
+                {(imagePosts.length ? imagePosts.slice(0, 4) : products.slice(0, 4)).map((item: any, index: number) => {
+                  const image = postImage(item) || item.image || FALLBACK_PRODUCTS[index % FALLBACK_PRODUCTS.length] || FALLBACK_COVER;
+                  const title = text(item.product_title, item.title, item.caption) || item.title || "Blomsterinspiration";
+                  const price = formatPrice(item.base_price || item.price, item.currency || "SEK") || item.price || "Pris på förfrågan";
+
+                  return (
+                    <article
+                      key={item.id || item.title || index}
+                      style={{
+                        overflow: "hidden",
+                        borderRadius: 20,
+                        border: "1px solid #e7e2dc",
+                        background: "white",
+                        boxShadow: "0 8px 24px rgba(15,23,42,0.035)",
+                      }}
+                    >
+                      <div style={{ height: 220, background: "#f5f5f4" }}>
+                        <img
+                          src={image}
+                          alt={title}
+                          style={{
+                            height: "100%",
+                            width: "100%",
+                            objectFit: "cover",
+                            display: "block",
+                          }}
+                        />
+                      </div>
+                      <div style={{ padding: 14 }}>
+                        <div style={{ fontSize: 12, fontWeight: 950, color: "#e60073" }}>
+                          Blomsterinspiration
+                        </div>
+                        <h3 style={{ margin: "6px 0 0", fontSize: 15, fontWeight: 950 }}>
+                          {title}
+                        </h3>
+                        <p style={{ margin: "4px 0 0", fontSize: 13, color: "#57534e" }}>
+                          {price}
+                        </p>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            </Link>
           </section>
 
           <section
@@ -1086,17 +1072,16 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
                     letterSpacing: "-0.02em",
                   }}
                 >
-                  Populärt just nu
+                  Blomsterinspiration
                 </h2>
                 <p
                   style={{ margin: "5px 0 0", fontSize: 14, color: "#78716c" }}
                 >
-                  Trendande buketter, högtider och presentidéer på
-                  FloristSocial.
+                  De senaste publicerade bilderna och sociala inläggen från florister på FloristSocial.
                 </p>
               </div>
               <Link
-                href="/popular"
+                href={`/public/florist/${florist.id}/inspiration`}
                 style={{
                   fontSize: 14,
                   fontWeight: 950,
@@ -1104,7 +1089,7 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
                   textDecoration: "none",
                 }}
               >
-                Visa populärt →
+                Visa floristens Blomsterinspiration →
               </Link>
             </div>
             <div
@@ -1148,7 +1133,7 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
             <Panel
               title="Sortiment & produkter"
               link="Visa alla produkter"
-              href={`/marketplace?floristId=${florist.id}`}
+              href={`/public/florist/${florist.id}/products`}
             >
               <div
                 style={{
@@ -1237,7 +1222,7 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
             <Panel
               title="Portfolio"
               link="Visa hela portfolion"
-              href="#portfolio"
+              href={`/public/florist/${florist.id}/products`}
             >
               <div
                 style={{
@@ -1249,7 +1234,7 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
                 {portfolioPreview.map((item) => (
                   <Link
                     key={item.id || item.title}
-                    href={`/orders/new?item=${encodeURIComponent(item.title)}`}
+                    href={`/order/private/guest-v4?item=${encodeURIComponent(item.title)}`}
                     style={{ display: "block", textDecoration: "none" }}
                   >
                     <div
@@ -1529,7 +1514,7 @@ function canEditProfileContent(
 
 function customerOrderHref(floristId: string, params: Record<string, string>) {
   const query = new URLSearchParams({ floristId, ...params });
-  return `/orders/new?${query.toString()}`;
+  return `/order/private/guest-v4?${query.toString()}`;
 }
 
 function floristEditHref(floristId: string, section: string) {
@@ -1854,8 +1839,7 @@ function MapButton({
 }) {
   return (
     <Link
-      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${name} ${address}`)}`}
-      target="_blank"
+      href="/florists"
       style={{
         marginTop: compact ? 14 : 0,
         height: compact ? 42 : 48,
@@ -1949,8 +1933,10 @@ function Panel({
         borderRadius: 26,
         background: "white",
         padding: 20,
+        overflow: "hidden",
         boxShadow: "0 10px 35px rgba(15,23,42,0.04)",
         border: "1px solid #e7e2dc",
+        overflow: "hidden",
       }}
     >
       <div
@@ -2094,7 +2080,7 @@ function MiniMetric({
 function PortfolioTile({ item }: { item: PortfolioItem }) {
   return (
     <Link
-      href={`/orders/new?item=${encodeURIComponent(item.title)}`}
+      href={`/order/private/guest-v4?item=${encodeURIComponent(item.title)}`}
       style={{ display: "block", color: "#1c1917", textDecoration: "none" }}
     >
       <article

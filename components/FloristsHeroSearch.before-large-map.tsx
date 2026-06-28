@@ -260,8 +260,7 @@ export default function FloristsHeroSearch() {
             </div>
 
             {results.length > 0 ? (
-              <div>
-                <FloristSearchMap
+              <FloristSearchMap
                 recipientLat={recipientLat}
                 recipientLng={recipientLng}
                 florists={results}
@@ -269,7 +268,6 @@ export default function FloristsHeroSearch() {
                 onHoverFlorist={setHoveredFloristId}
                 onOrderFlorist={orderFromFlorist}
               />
-              </div>
             ) : (
               <div className="relative min-h-[380px] overflow-hidden rounded-[32px] bg-gradient-to-br from-emerald-100 via-sky-100 to-amber-50 shadow-xl ring-1 ring-stone-200">
                 <div className="absolute inset-0 opacity-80">

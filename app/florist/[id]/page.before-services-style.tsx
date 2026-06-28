@@ -85,35 +85,6 @@ const DAY_NAMES = [
   "Söndag",
 ];
 const SHORT_DAYS = ["Mån", "Tis", "Ons", "Tor", "Fre", "Lör", "Sön"];
-const SERVICE_OPTIONS = [
-  "Bröllop",
-  "Begravning",
-  "Event",
-  "Företagsblommor",
-  "Buketter",
-  "Blombud",
-  "Prenumerationer",
-  "Samma dag-leverans",
-  "Hotell & restaurang",
-  "Workshops",
-  "Hemleverans",
-  "Skyltfönster & installationer",
-  "Krukväxter",
-];
-
-const STYLE_OPTIONS = [
-  "Romantiskt",
-  "Modernt",
-  "Vilt & organiskt",
-  "Klassiskt",
-  "Minimalistiskt",
-  "Färgstarkt",
-  "Lyxigt",
-  "Nordiskt",
-  "Säsongsbaserat",
-  "Exklusivt",
-];
-
 
 function isUuid(value: string) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
@@ -137,105 +108,6 @@ function text(...values: any[]) {
       .find((value) => typeof value === "string" && value.trim().length > 0)
       ?.trim() || ""
   );
-}
-
-function labelFromItem(value: any) {
-  if (!value) return "";
-  if (typeof value === "string") return value.trim();
-  if (typeof value === "number") return String(value);
-  if (typeof value === "object") {
-    return text(
-      value.label,
-      value.title,
-      value.name,
-      value.serviceName,
-      value.service_name,
-      value.category,
-      value.style,
-      value.value,
-    );
-  }
-  return "";
-}
-
-function labelsFromArray(value: any) {
-  return asArray(value)
-    .map(labelFromItem)
-    .filter((item) => item && item.length > 0);
-}
-
-function uniqueLabels(items: string[]) {
-  return Array.from(new Set(items.map((item) => item.trim()).filter(Boolean)));
-}
-
-function collectRegisteredServices(florist: Florist) {
-  const rawLabels = [
-    ...labelsFromArray(florist.services),
-    ...labelsFromArray(florist.specialties),
-    ...labelsFromArray(florist.specialities),
-    ...labelsFromArray(florist.service_specialties),
-    ...labelsFromArray(florist.selected_services),
-    ...labelsFromArray(florist.offered_services),
-    ...labelsFromArray(florist.categories),
-    ...Object.keys(asObject(florist.service_portfolio_items)),
-  ];
-
-  const searchable = [
-    ...rawLabels,
-    text(florist.offer),
-    text(florist.bio),
-    text(florist.description),
-  ]
-    .join(" ")
-    .toLowerCase();
-
-  const matched = SERVICE_OPTIONS.filter((option) =>
-    searchable.includes(option.toLowerCase()),
-  );
-
-  const custom = rawLabels.filter(
-    (label) =>
-      !SERVICE_OPTIONS.some(
-        (option) => option.toLowerCase() === label.toLowerCase(),
-      ),
-  );
-
-  const result = uniqueLabels([...matched, ...custom]);
-  return result.length ? result : SERVICE_OPTIONS;
-}
-
-function collectRegisteredStyles(florist: Florist) {
-  const rawLabels = [
-    ...labelsFromArray(florist.styles),
-    ...labelsFromArray(florist.design_styles),
-    ...labelsFromArray(florist.selected_styles),
-    ...labelsFromArray(florist.florist_styles),
-    ...labelsFromArray(florist.style_options),
-  ];
-
-  const searchable = [
-    ...rawLabels,
-    text(florist.style),
-    text(florist.design_style),
-    text(florist.bio),
-    text(florist.description),
-  ]
-    .join(" ")
-    .toLowerCase();
-
-  const matched = STYLE_OPTIONS.filter((option) =>
-    searchable.includes(option.toLowerCase()),
-  );
-
-  const custom = rawLabels.filter(
-    (label) =>
-      !STYLE_OPTIONS.some(
-        (option) => option.toLowerCase() === label.toLowerCase(),
-      ),
-  );
-
-  const result = uniqueLabels([...matched, ...custom]);
-  return result.length ? result : STYLE_OPTIONS;
 }
 
 function imgFrom(value: any) {
@@ -507,8 +379,10 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
   }
 
   const name = getName(florist);
-  const services = collectRegisteredServices(florist);
-  const styles = collectRegisteredStyles(florist);
+  const services = Array.from(
+    new Set([...asArray(florist.services), "Krukväxter"]),
+  );
+  const styles = asArray(florist.styles);
   const openingHours = asArray(florist.opening_hours);
   const today = getTodayStatus(openingHours);
   const description = splitDescription(
