@@ -73,7 +73,7 @@ function BusinessProfile({
               Samma kalenderstruktur som floristprofilen: 2 veckor bakåt och 6 veckor framåt.
             </p>
           </div>
-<CalendarEngine role="company" floristId="internal-profile" />
+          <CalendarEngine floristId="internal-profile" />
         </div>
 
         <section className="mt-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">

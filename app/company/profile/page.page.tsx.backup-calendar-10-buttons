@@ -73,7 +73,46 @@ function BusinessProfile({
               Samma kalenderstruktur som floristprofilen: 2 veckor bakåt och 6 veckor framåt.
             </p>
           </div>
-<CalendarEngine role="company" floristId="internal-profile" />
+
+          <div className="calendar-action-buttons mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <button
+              type="button"
+              className="rounded-2xl border border-pink-200 bg-pink-50 px-4 py-3 text-sm font-black text-pink-700 transition hover:bg-pink-100"
+            >
+              Ny beställning
+            </button>
+            <button
+              type="button"
+              className="rounded-2xl border border-pink-200 bg-pink-50 px-4 py-3 text-sm font-black text-pink-700 transition hover:bg-pink-100"
+            >
+              Återkommande order
+            </button>
+            <button
+              type="button"
+              className="rounded-2xl border border-pink-200 bg-pink-50 px-4 py-3 text-sm font-black text-pink-700 transition hover:bg-pink-100"
+            >
+              Faktura
+            </button>
+            <button
+              type="button"
+              className="rounded-2xl border border-pink-200 bg-pink-50 px-4 py-3 text-sm font-black text-pink-700 transition hover:bg-pink-100"
+            >
+              Påminnelse
+            </button>
+            <button
+              type="button"
+              className="rounded-2xl border border-pink-200 bg-pink-50 px-4 py-3 text-sm font-black text-pink-700 transition hover:bg-pink-100"
+            >
+              Knapp 5
+            </button>
+            <button
+              type="button"
+              className="rounded-2xl border border-pink-200 bg-pink-50 px-4 py-3 text-sm font-black text-pink-700 transition hover:bg-pink-100"
+            >
+              Knapp 6
+            </button>
+          </div>
+          <CalendarEngine floristId="internal-profile" />
         </div>
 
         <section className="mt-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">

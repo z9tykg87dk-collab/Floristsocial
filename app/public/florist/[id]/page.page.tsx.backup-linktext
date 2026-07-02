@@ -30,7 +30,8 @@ import {
   Video,
 } from "lucide-react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import FloristCompactCalendar from "./FloristCompactCalendar";
+import FloristCompactCalendar from "@/app/florist/[id]/FloristCompactCalendar";
+import GuestAuthAction from "./GuestAuthAction";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -46,7 +47,7 @@ type ProductCard = {
   href: string;
 };
 
-type PortfolioItem = {
+type BlomsterinspirationItem = {
   id: string;
   title: string;
   description: string;
@@ -380,7 +381,7 @@ function getHoursSummary(hours: any[]) {
     : weekdayText;
 }
 
-function buildPortfolio(florist: Florist) {
+function buildBlomsterinspiration(florist: Florist) {
   const serviceItems = Object.entries(
     asObject(florist.service_portfolio_items),
   ).flatMap(([serviceName, items]) =>
@@ -397,11 +398,11 @@ function buildPortfolio(florist: Florist) {
   const generalItems = asArray(florist.general_portfolio_items).map(
     (item: any, index: number) => ({
       id: item.id || `general-${index}`,
-      title: text(item.title, item.name) || `Portfolio ${index + 1}`,
+      title: text(item.title, item.name) || `Blomsterinspiration ${index + 1}`,
       description: text(item.description, item.text),
       price: item.price || item.base_price || "",
       serviceName:
-        text(item.serviceName, item.service_name, item.category) || "Portfolio",
+        text(item.serviceName, item.service_name, item.category) || "Blomsterinspiration",
       image: imgFrom(item),
     }),
   );
@@ -409,17 +410,17 @@ function buildPortfolio(florist: Florist) {
   const oldImages = asArray(florist.portfolio_images).map(
     (item: any, index: number) => ({
       id: `old-${index}`,
-      title: text(item.title, item.name) || `Portfolio ${index + 1}`,
+      title: text(item.title, item.name) || `Blomsterinspiration ${index + 1}`,
       description: text(item.description, item.text),
       price: item.price || "",
-      serviceName: "Portfolio",
+      serviceName: "Blomsterinspiration",
       image: imgFrom(item),
     }),
   );
 
   return [...serviceItems, ...generalItems, ...oldImages].filter(
     (item) => item.image && item.image.length > 5,
-  ) as PortfolioItem[];
+  ) as BlomsterinspirationItem[];
 }
 
 function splitDescription(value: string, name: string) {
@@ -497,26 +498,6 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
             <h1 style={{ marginTop: 18, fontSize: 30, fontWeight: 900 }}>
               Florist hittades inte
             </h1>
-
-<Link
-  href="/profile/edit?role=florist"
-  style={{
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 14,
-    padding: "12px 22px",
-    borderRadius: 999,
-    background: "#e60073",
-    color: "white",
-    fontWeight: 900,
-    textDecoration: "none",
-    boxShadow: "0 8px 24px rgba(230,0,115,.18)",
-  }}
->
-  Redigera profil
-</Link>
-
             <p style={{ marginTop: 12, color: "#57534e" }}>
               Vi kunde inte hitta floristprofilen du försökte öppna.
             </p>
@@ -535,7 +516,7 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
     text(florist.bio, florist.description),
     name,
   );
-  const portfolio = buildPortfolio(florist);
+  const portfolio = buildBlomsterinspiration(florist);
   const imagePosts = posts.filter((post) => postImage(post) || post.video_url);
   const shopPosts = imagePosts.filter((post) => post.is_shoppable);
   const deliveryAreas = asArray(florist.delivery_areas);
@@ -575,7 +556,7 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
         postImage(post),
         productFallbacks[index] || FALLBACK_COVER,
       ),
-      href: `/orders/new?floristId=${florist.id}&postId=${post.id}`,
+      href: `/order/private/guest-v4?floristId=${florist.id}&postId=${post.id}`,
     }))
     .filter((item) => item.image && item.image.length > 5);
 
@@ -594,7 +575,7 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
             productFallbacks[index] ||
             FALLBACK_PRODUCTS[index] ||
             FALLBACK_COVER,
-          href: `/orders/new?floristId=${florist.id}`,
+          href: `/order/private/guest-v4?floristId=${florist.id}`,
         }),
       );
 
@@ -605,7 +586,7 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
         title: product.title,
         description: "",
         price: product.price,
-        serviceName: "Portfolio",
+        serviceName: "Blomsterinspiration",
         image: product.image,
       }));
 
@@ -649,7 +630,7 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
                 style={{
                   display: "grid",
                   gridTemplateColumns: "165px 1fr 620px",
-                  gap: 24,
+                  gap: 14,
                 }}
               >
                 <div>
@@ -783,27 +764,17 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
                   }}
                 >
                   <MapButton name={name} address={getAddress(florist)} />
-                  <Action
-                    href={`/messages/new?floristId=${florist.id}`}
-                    icon={<MessageCircle size={18} />}
-                    primary
-                  >
+                  <GuestAuthAction icon={<MessageCircle size={18} />} primary>
                     Chatta
-                  </Action>
-                  <Action
-                    href={`/calls/audio?floristId=${florist.id}`}
-                    icon={<Phone size={18} />}
-                  >
+                  </GuestAuthAction>
+                  <GuestAuthAction icon={<Phone size={18} />}>
                     Ljudsamtal
-                  </Action>
-                  <Action
-                    href={`/calls/video?floristId=${florist.id}`}
-                    icon={<Video size={18} />}
-                  >
+                  </GuestAuthAction>
+                  <GuestAuthAction icon={<Video size={18} />}>
                     Video
-                  </Action>
+                  </GuestAuthAction>
                   <Action
-                    href={`/orders/new?floristId=${florist.id}`}
+                    href={`/order/private/guest-v4?floristId=${florist.id}`}
                     icon={<ShoppingBag size={18} />}
                     primary
                   >
@@ -943,12 +914,13 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
               icon={<Globe2 size={22} />}
               title="Leverans över hela världen"
               text="Internationella beställningar, företagsgåvor och specialleveranser kan hanteras via FloristSocial."
+              href="/order/private/guest-v4"
             />
             <FeaturePill
               icon={<CalendarDays size={22} />}
               title="Högtidskalender"
               text="Högtider per land, årsdagar och födelsedagar med påminnelser via e-post eller SMS."
-              href="/holiday-calendar"
+              href="/holidays/sweden"
             />
             <FeaturePill
               icon={<Gift size={22} />}
@@ -956,126 +928,6 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
               text="Köp digitala presentkort och skicka till mottagaren via e-post eller SMS."
               href="/gift-cards"
             />
-          </section>
-
-          <section
-            style={{
-              marginTop: 20,
-              borderRadius: 26,
-              background: "white",
-              padding: 20,
-              boxShadow: "0 10px 35px rgba(15,23,42,0.04)",
-              border: "1px solid #e7e2dc",
-            }}
-          >
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 560px",
-                gap: 28,
-                alignItems: "start",
-              }}
-            >
-              <div>
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: 18,
-                  }}
-                >
-                  <div>
-                    <h2
-                      style={{
-                        margin: 0,
-                        fontSize: 24,
-                        fontWeight: 950,
-                        color: "#1c1917",
-                        letterSpacing: "-0.02em",
-                      }}
-                    >
-                      Floristkalender
-                    </h2>
-                    <p
-                      style={{
-                        margin: "8px 0 0",
-                        fontSize: 14,
-                        lineHeight: 1.7,
-                        color: "#57534e",
-                      }}
-                    >
-                      Mini-kalendern visar två veckor bakåt och sex veckor
-                      framåt. Här samlas floristens ordrar, uppdrag, högtider i
-                      floristens land, stängda dagar och egna påminnelser.
-                    </p>
-                  </div>
-                  <Link
-                    href={`/florist-dashboard/calendar?floristId=${florist.id}`}
-                    style={{
-                      height: 44,
-                      display: "inline-flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      borderRadius: 14,
-                      background: "#e60073",
-                      color: "white",
-                      padding: "0 18px",
-                      fontSize: 14,
-                      fontWeight: 900,
-                      textDecoration: "none",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    Öppna stort
-                  </Link>
-                </div>
-
-                <div
-                  style={{
-                    marginTop: 18,
-                    display: "grid",
-                    gridTemplateColumns: "repeat(4, 1fr)",
-                    gap: 10,
-                  }}
-                >
-                  <CalendarMiniCard title="Godkänd" value="2" />
-                  <CalendarMiniCard title="Under behandling" value="4" />
-                  <CalendarMiniCard title="Under leverans" value="1" />
-                  <CalendarMiniCard title="Levererad" value="8" />
-                </div>
-
-                <div
-                  style={{
-                    marginTop: 14,
-                    borderRadius: 18,
-                    background: "#fff7fb",
-                    border: "1px solid #ffe0ed",
-                    padding: 14,
-                  }}
-                >
-                  <div
-                    style={{ fontSize: 13, fontWeight: 900, color: "#e60073" }}
-                  >
-                    CRM-synk med Mina ordrar
-                  </div>
-                  <p
-                    style={{
-                      margin: "5px 0 0",
-                      fontSize: 13,
-                      lineHeight: 1.55,
-                      color: "#57534e",
-                    }}
-                  >
-                    Ordrar visas automatiskt i kalendern och kan byta status:
-                    godkänd → under behandling → under leverans → leverans
-                    bekräftad.
-                  </p>
-                </div>
-              </div>
-
-              <FloristCompactCalendar floristId={florist.id} />
-            </div>
           </section>
 
           <section
@@ -1101,60 +953,97 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
                 <h2
                   style={{
                     margin: 0,
-                    fontSize: 22,
+                    fontSize: 24,
                     fontWeight: 950,
+                    color: "#1c1917",
                     letterSpacing: "-0.02em",
                   }}
                 >
-                  Statistik
+                  Sociala Flödet
                 </h2>
                 <p
-                  style={{ margin: "5px 0 0", fontSize: 14, color: "#78716c" }}
+                  style={{
+                    margin: "7px 0 0",
+                    fontSize: 14,
+                    lineHeight: 1.7,
+                    color: "#57534e",
+                  }}
                 >
-                  Följ floristens utveckling, aktivitet och kundernas engagemang.
+                  Floristens senaste publicerade blomsterinlägg med bilder, pris och inspiration.
                 </p>
               </div>
+
               <Link
-                href="/popular"
+                href={`/feed?florist=${florist.id}`}
                 style={{
                   fontSize: 14,
                   fontWeight: 950,
                   color: "#e60073",
                   textDecoration: "none",
+                  whiteSpace: "nowrap",
                 }}
               >
-                Visa statistik →
+                Visa floristens inlägg →
               </Link>
             </div>
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(4, 1fr)",
-                gap: 14,
-              }}
+
+            <Link
+              href={`/feed?florist=${florist.id}`}
+              style={{ display: "block", color: "inherit", textDecoration: "none" }}
             >
-              <PopularCard
-                icon={<UserRound size={22} />}
-                title="Följare"
-                text={`${florist.follower_count ?? 0} följare`}
-              />
-              <PopularCard
-                icon={<Package size={22} />}
-                title="Inlägg"
-                text={`${imagePosts.length} publicerade inlägg`}
-              />
-              <PopularCard
-                icon={<MessageCircle size={22} />}
-                title="Kommentarer"
-                text={`${florist.comment_count ?? 0} kommentarer`}
-              />
-              <PopularCard
-                icon={<Heart size={22} />}
-                title="Rating"
-                text={`${Number(florist.rating ?? 5).toFixed(1)} ★`}
-              />
-            </div>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(4, 1fr)",
+                  gap: 14,
+                }}
+              >
+                {[...imagePosts, ...products, ...FALLBACK_PRODUCTS].slice(0, 4).map((item: any, index: number) => {
+                  const image = postImage(item) || item.image || FALLBACK_PRODUCTS[index % FALLBACK_PRODUCTS.length] || FALLBACK_COVER;
+                  const title = text(item.product_title, item.title, item.caption) || item.title || "Blomsterinspiration";
+                  const price = formatPrice(item.base_price || item.price, item.currency || "SEK") || item.price || "Pris på förfrågan";
+
+                  return (
+                    <article
+                      key={item.id || item.title || index}
+                      style={{
+                        overflow: "hidden",
+                        borderRadius: 20,
+                        border: "1px solid #e7e2dc",
+                        background: "white",
+                        boxShadow: "0 8px 24px rgba(15,23,42,0.035)",
+                      }}
+                    >
+                      <div style={{ height: 220, background: "#f5f5f4" }}>
+                        <img
+                          src={image}
+                          alt={title}
+                          style={{
+                            height: "100%",
+                            width: "100%",
+                            objectFit: "cover",
+                            display: "block",
+                          }}
+                        />
+                      </div>
+                      <div style={{ padding: 14 }}>
+                        <div style={{ fontSize: 12, fontWeight: 950, color: "#e60073" }}>
+                          Sociala flödet
+                        </div>
+                        <h3 style={{ margin: "6px 0 0", fontSize: 15, fontWeight: 950 }}>
+                          {title}
+                        </h3>
+                        <p style={{ margin: "4px 0 0", fontSize: 13, color: "#57534e" }}>
+                          {price}
+                        </p>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            </Link>
           </section>
+
 
           <section
             style={{
@@ -1167,7 +1056,7 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
             <Panel
               title="Sortiment & produkter"
               link="Visa alla produkter"
-              href={`/marketplace?floristId=${florist.id}`}
+              href={`/public/florist/${florist.id}/inspiration`}
             >
               <div
                 style={{
@@ -1255,7 +1144,7 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
 
             <Panel
               title="Blomsterinspiration"
-              link="Visa mera →"
+              link="Visa hela portfolion"
               href={`/public/florist/${florist.id}/inspiration`}
             >
               <div
@@ -1268,7 +1157,7 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
                 {portfolioPreview.map((item) => (
                   <Link
                     key={item.id || item.title}
-                    href={`/orders/new?item=${encodeURIComponent(item.title)}`}
+                    href={`/order/private/guest-v4?item=${encodeURIComponent(item.title)}`}
                     style={{ display: "block", textDecoration: "none" }}
                   >
                     <div
@@ -1296,296 +1185,6 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
               </div>
             </Panel>
           </section>
-
-          <section
-            style={{
-              marginTop: 20,
-              borderRadius: 26,
-              background: "white",
-              padding: 20,
-              boxShadow: "0 10px 35px rgba(15,23,42,0.04)",
-              border: "1px solid #e7e2dc",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 20,
-                marginBottom: 16,
-              }}
-            >
-              <div>
-                <h2
-                  style={{
-                    margin: 0,
-                    fontSize: 24,
-                    fontWeight: 950,
-                    color: "#1c1917",
-                    letterSpacing: "-0.02em",
-                  }}
-                >
-                  Sociala Flödet
-                </h2>
-                <p
-                  style={{
-                    margin: "7px 0 0",
-                    fontSize: 14,
-                    lineHeight: 1.7,
-                    color: "#57534e",
-                  }}
-                >
-                  Floristens senaste publicerade blomsterinlägg med bilder, pris och inspiration.
-                </p>
-              </div>
-
-              <Link
-                href={`/feed?floristId=${florist.id}`}
-                style={{
-                  fontSize: 14,
-                  fontWeight: 950,
-                  color: "#e60073",
-                  textDecoration: "none",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                Öppna Sociala Flödet →
-              </Link>
-            </div>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(3, 1fr)",
-                gap: 16,
-              }}
-            >
-              {(portfolioPreview.length ? portfolioPreview : products.slice(0, 3)).slice(0, 3).map((item: any, index: number) => {
-                const image = item.image || FALLBACK_PRODUCTS[index % FALLBACK_PRODUCTS.length] || FALLBACK_SHOP;
-                const title = item.title || item.product_title || "Blomsterinlägg";
-                const price = item.price || formatPrice(item.base_price || item.price_amount, item.currency || "SEK") || "Pris på förfrågan";
-
-                return (
-                  <Link
-                    key={item.id || item.title || index}
-                    href={`/feed?floristId=${florist.id}`}
-                    style={{
-                      display: "block",
-                      color: "inherit",
-                      textDecoration: "none",
-                    }}
-                  >
-                    <article
-                      style={{
-                        overflow: "hidden",
-                        borderRadius: 20,
-                        border: "1px solid #e7e2dc",
-                        background: "white",
-                        boxShadow: "0 8px 24px rgba(15,23,42,0.035)",
-                      }}
-                    >
-                      <div style={{ height: 230, background: "#f5f5f4" }}>
-                        <img
-                          src={image}
-                          alt={title}
-                          style={{
-                            height: "100%",
-                            width: "100%",
-                            objectFit: "cover",
-                            display: "block",
-                          }}
-                        />
-                      </div>
-
-                      <div style={{ padding: 14 }}>
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            gap: 10,
-                          }}
-                        >
-                          <div style={{ fontSize: 12, fontWeight: 950, color: "#e60073" }}>
-                            Sociala flödet
-                          </div>
-                          <div style={{ fontSize: 12, fontWeight: 900, color: "#78716c" }}>
-                            Nytt inlägg
-                          </div>
-                        </div>
-
-                        <h3 style={{ margin: "7px 0 0", fontSize: 16, fontWeight: 950 }}>
-                          {title}
-                        </h3>
-
-                        <p style={{ margin: "5px 0 0", fontSize: 14, fontWeight: 900, color: "#3f4f3f" }}>
-                          {price}
-                        </p>
-
-                        <div
-                          style={{
-                            marginTop: 12,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            gap: 12,
-                            fontSize: 13,
-                            fontWeight: 900,
-                            color: "#57534e",
-                          }}
-                        >
-                          <span>❤️ {item.like_count ?? 0}</span>
-                          <span>💬 {item.comment_count ?? 0}</span>
-                          <span>📍 {text(florist.city) || "FloristSocial"}</span>
-                        </div>
-                      </div>
-                    </article>
-                  </Link>
-                );
-              })}
-            </div>
-          </section>
-
-
-          <section
-            style={{
-              marginTop: 20,
-              borderRadius: 26,
-              background: "white",
-              padding: 14,
-              boxShadow: "0 10px 35px rgba(15,23,42,0.04)",
-              border: "1px solid #e7e2dc",
-            }}
-          >
-            <h2
-              style={{
-                margin: 0,
-                fontSize: 24,
-                fontWeight: 950,
-                color: "#1c1917",
-                letterSpacing: "-0.02em",
-              }}
-            >
-              Floristens Rating
-            </h2>
-
-            <p
-              style={{
-                margin: "4px 0 10px",
-                fontSize: 14,
-                lineHeight: 1.7,
-                color: "#57534e",
-              }}
-            >
-              Kundernas omdömen efter genomförda beställningar.
-            </p>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "170px 1fr 220px",
-                gap: 14,
-                alignItems: "center",
-              }}
-            >
-              <div
-                style={{
-                  borderRight: "1px solid #e7e2dc",
-                  paddingRight: 14,
-                  textAlign: "center",
-                }}
-              >
-                <div style={{ fontSize: 38, fontWeight: 950, color: "#3f4f3f" }}>
-                  {Number(florist.rating || 0).toFixed(1).replace(".", ",")}
-                </div>
-
-                <div style={{ marginTop: 4, fontSize: 20, color: "#e60073" }}>
-                  {"🌸".repeat(Math.round(Number(florist.rating || 0)))}
-                  <span style={{ color: "#e7e2dc" }}>
-                    {"🌸".repeat(Math.max(0, 5 - Math.round(Number(florist.rating || 0))))}
-                  </span>
-                </div>
-
-                <p style={{ margin: "8px 0 0", fontSize: 13, color: "#57534e" }}>
-                  Baserat på {florist.review_count || 0} omdömen
-                </p>
-              </div>
-
-              <div style={{ display: "grid", gap: 7 }}>
-                {[5, 4, 3, 2, 1].map((stars) => {
-                  const percent =
-                    stars === 5 ? 82 :
-                    stars === 4 ? 13 :
-                    stars === 3 ? 4 :
-                    stars === 2 ? 1 : 0;
-
-                  return (
-                    <div
-                      key={stars}
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns: "80px 1fr 42px",
-                        gap: 10,
-                        alignItems: "center",
-                        fontSize: 13,
-                        color: "#57534e",
-                      }}
-                    >
-                      <span>{stars} blommor</span>
-                      <div
-                        style={{
-                          height: 8,
-                          borderRadius: 999,
-                          background: "#f1eeeb",
-                          overflow: "hidden",
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: `${percent}%`,
-                            height: "100%",
-                            borderRadius: 999,
-                            background: "#e60073",
-                          }}
-                        />
-                      </div>
-                      <span>{percent}%</span>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div
-                style={{
-                  display: "grid",
-                  gap: 7,
-                  borderLeft: "1px solid #e7e2dc",
-                  paddingLeft: 14,
-                }}
-              >
-                <div>
-                  <strong>Hög kvalitet</strong>
-                  <p style={{ margin: "3px 0 0", fontSize: 13, color: "#57534e" }}>
-                    Rekommenderas av kunder
-                  </p>
-                </div>
-                <div>
-                  <strong>Snabb leverans</strong>
-                  <p style={{ margin: "3px 0 0", fontSize: 13, color: "#57534e" }}>
-                    Inom utsatt tid
-                  </p>
-                </div>
-                <div>
-                  <strong>Vacker design</strong>
-                  <p style={{ margin: "3px 0 0", fontSize: 13, color: "#57534e" }}>
-                    Kreativa buketter
-                  </p>
-                </div>
-              </div>
-            </div>
-          </section>
-
 
           <section
             style={{
@@ -1717,11 +1316,143 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
                 }}
               >
                 {portfolio.slice(0, 6).map((item) => (
-                  <PortfolioTile key={item.id} item={item} />
+                  <BlomsterinspirationTile key={item.id} item={item} />
                 ))}
               </div>
             )}
           </section>
+
+          <section
+            style={{
+              marginTop: 20,
+              borderRadius: 26,
+              background: "white",
+              padding: 14,
+              boxShadow: "0 10px 35px rgba(15,23,42,0.04)",
+              border: "1px solid #e7e2dc",
+            }}
+          >
+            <h2
+              style={{
+                margin: 0,
+                fontSize: 24,
+                fontWeight: 950,
+                color: "#1c1917",
+                letterSpacing: "-0.02em",
+              }}
+            >
+              Floristens Rating
+            </h2>
+
+            <p
+              style={{
+                margin: "4px 0 10px",
+                fontSize: 14,
+                lineHeight: 1.7,
+                color: "#57534e",
+              }}
+            >
+              Kundernas omdömen efter genomförda beställningar.
+            </p>
+
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "170px 1fr 220px",
+                gap: 24,
+                alignItems: "center",
+              }}
+            >
+              <div
+                style={{
+                  borderRight: "1px solid #e7e2dc",
+                  paddingRight: 14,
+                  textAlign: "center",
+                }}
+              >
+                <div style={{ fontSize: 38, fontWeight: 950, color: "#3f4f3f" }}>
+                  {Number(florist.rating || 0).toFixed(1).replace(".", ",")}
+                </div>
+                <div style={{ marginTop: 4, fontSize: 20, color: "#e60073" }}>
+                  {"🌸".repeat(Math.round(Number(florist.rating || 0)))}
+                  <span style={{ color: "#e7e2dc" }}>
+                    {"🌸".repeat(Math.max(0, 5 - Math.round(Number(florist.rating || 0))))}
+                  </span>
+                </div>
+                <p style={{ margin: "10px 0 0", fontSize: 13, color: "#57534e" }}>
+                  Baserat på {florist.review_count || 0} omdömen
+                </p>
+              </div>
+
+              <div style={{ display: "grid", gap: 10 }}>
+                {[5, 4, 3, 2, 1].map((stars) => {
+                  const percent = stars === 5 ? 82 : stars === 4 ? 13 : stars === 3 ? 4 : stars === 2 ? 1 : 0;
+                  return (
+                    <div
+                      key={stars}
+                      style={{
+                        display: "grid",
+                        gridTemplateColumns: "70px 1fr 42px",
+                        gap: 10,
+                        alignItems: "center",
+                        fontSize: 13,
+                        color: "#57534e",
+                      }}
+                    >
+                      <span>{stars} hjärtan</span>
+                      <div
+                        style={{
+                          height: 8,
+                          borderRadius: 999,
+                          background: "#f1eeeb",
+                          overflow: "hidden",
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: `${percent}%`,
+                            height: "100%",
+                            borderRadius: 999,
+                            background: "#e60073",
+                          }}
+                        />
+                      </div>
+                      <span>{percent}%</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
+                  gap: 7,
+                  borderLeft: "1px solid #e7e2dc",
+                  paddingLeft: 14,
+                }}
+              >
+                <div>
+                  <strong>Hög kvalitet</strong>
+                  <p style={{ margin: "3px 0 0", fontSize: 13, color: "#57534e" }}>
+                    Rekommenderas av kunder
+                  </p>
+                </div>
+                <div>
+                  <strong>Snabb leverans</strong>
+                  <p style={{ margin: "3px 0 0", fontSize: 13, color: "#57534e" }}>
+                    Inom utsatt tid
+                  </p>
+                </div>
+                <div>
+                  <strong>Vacker design</strong>
+                  <p style={{ margin: "3px 0 0", fontSize: 13, color: "#57534e" }}>
+                    Kreativa buketter
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+
 
           <section
             style={{
@@ -1838,7 +1569,7 @@ function canEditProfileContent(
 
 function customerOrderHref(floristId: string, params: Record<string, string>) {
   const query = new URLSearchParams({ floristId, ...params });
-  return `/orders/new?${query.toString()}`;
+  return `/order/private/guest-v4?${query.toString()}`;
 }
 
 function floristEditHref(floristId: string, section: string) {
@@ -2163,8 +1894,7 @@ function MapButton({
 }) {
   return (
     <Link
-      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${name} ${address}`)}`}
-      target="_blank"
+      href="/florists"
       style={{
         marginTop: compact ? 14 : 0,
         height: compact ? 42 : 48,
@@ -2258,8 +1988,10 @@ function Panel({
         borderRadius: 26,
         background: "white",
         padding: 20,
+        overflow: "hidden",
         boxShadow: "0 10px 35px rgba(15,23,42,0.04)",
         border: "1px solid #e7e2dc",
+        overflow: "hidden",
       }}
     >
       <div
@@ -2400,10 +2132,10 @@ function MiniMetric({
   );
 }
 
-function PortfolioTile({ item }: { item: PortfolioItem }) {
+function BlomsterinspirationTile({ item }: { item: BlomsterinspirationItem }) {
   return (
     <Link
-      href={`/orders/new?item=${encodeURIComponent(item.title)}`}
+      href={`/order/private/guest-v4?item=${encodeURIComponent(item.title)}`}
       style={{ display: "block", color: "#1c1917", textDecoration: "none" }}
     >
       <article

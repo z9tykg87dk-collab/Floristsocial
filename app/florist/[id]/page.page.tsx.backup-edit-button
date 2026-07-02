@@ -497,26 +497,6 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
             <h1 style={{ marginTop: 18, fontSize: 30, fontWeight: 900 }}>
               Florist hittades inte
             </h1>
-
-<Link
-  href="/profile/edit?role=florist"
-  style={{
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 14,
-    padding: "12px 22px",
-    borderRadius: 999,
-    background: "#e60073",
-    color: "white",
-    fontWeight: 900,
-    textDecoration: "none",
-    boxShadow: "0 8px 24px rgba(230,0,115,.18)",
-  }}
->
-  Redigera profil
-</Link>
-
             <p style={{ marginTop: 12, color: "#57534e" }}>
               Vi kunde inte hitta floristprofilen du försökte öppna.
             </p>

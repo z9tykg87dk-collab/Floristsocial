@@ -1,6 +1,5 @@
-import Link from "next/link";
-import ProfileHero from "@/components/profile/ProfileHero";
 import CalendarEngine from "@/components/calendar/CalendarEngine";
+import Link from "next/link";
 import {
   Building2,
   CalendarDays,
@@ -16,18 +15,18 @@ import {
   User,
 } from "lucide-react";
 
-export default function CompanyProfilePage() {
+export default function SupplierProfilePage() {
   return (
     <BusinessProfile
-      roleLabel="Företagskund"
-      title="Företagskund profil"
-      description="Intern profilsida för företagsbeställningar, faktura, redovisning och återkommande blomsterinköp."
+      roleLabel="Leverantör till florister"
+      title="Leverantörsprofil"
+      description="Intern profilsida för produkter, förmåner, annonser, ekonomi och kommunikation med florister."
       icon={<Building2 size={36} />}
       cards={[
-        ["Beställningar", "Företagets blomsterbeställningar och återkommande köp.", <ShoppingBag key="o" />],
-        ["Faktura", "Fakturastatus, fakturaadress, referens och betalningsvillkor.", <CreditCard key="f" />],
-        ["Redovisning", "Kvitton, månadsrapport och export till ekonomi.", <ReceiptText key="r" />],
-        ["Kontaktpersoner", "Hantera referenspersoner och avdelningar.", <User key="u" />],
+        ["Beställningar", "Produkter och tjänster som säljs till florister.", <ShoppingBag key="o" />],
+        ["Faktura", "Fakturor, försäljning och annonsköp.", <CreditCard key="f" />],
+        ["Redovisning", "Ekonomi, rapporter och försäljning till florister.", <ReceiptText key="r" />],
+        ["Kontaktpersoner", "Kontaktpersoner och säljansvariga.", <User key="u" />],
       ]}
     />
   );
@@ -49,16 +48,61 @@ function BusinessProfile({
   return (
     <main className="min-h-screen bg-[#f7f2ea] px-4 pt-2 pb-8 text-slate-950 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
-        
-<ProfileHero
-  roleLabel={roleLabel}
-  title={title}
-  description={description}
-  city="Stockholm"
-  country="Sverige"
-  editRole="company"
-/>
+        <section className="overflow-hidden rounded-[2rem] bg-white shadow-xl shadow-slate-200/80">
+          <div className="relative h-32 bg-gradient-to-br from-pink-200 via-rose-100 to-emerald-100 sm:h-52">
+            <div className="absolute bottom-5 right-5 rounded-3xl bg-white/85 p-4 text-pink-700 shadow-sm">
+              {icon}
+            </div>
+          </div>
 
+          <div className="relative px-6 pb-8 sm:px-10">
+            <div className="-mt-10 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+                <div className="grid h-28 w-28 place-items-center rounded-[2rem] border-4 border-white bg-pink-100 text-pink-700 shadow-lg">
+                  <Building2 size={52} />
+                </div>
+
+                <div className="pb-2">
+                  <div className="mb-2 inline-flex rounded-full bg-pink-100 px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-pink-700">
+                    {roleLabel}
+                  </div>
+                  <h1 className="text-3xl font-black tracking-tight sm:text-4xl">
+                    {title}
+                  </h1>
+
+<Link
+  href="/profile/edit?role=supplier"
+  style={{
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 14,
+    padding: "12px 22px",
+    borderRadius: 999,
+    background: "#e60073",
+    color: "white",
+    fontWeight: 900,
+    textDecoration: "none",
+    boxShadow: "0 8px 24px rgba(230,0,115,.18)",
+  }}
+>
+  Redigera profil
+</Link>
+
+                  <p className="mt-2 max-w-2xl text-sm font-bold leading-6 text-slate-500">
+                    {description}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                <Status label="Faktura" value="Pending" />
+                <Status label="Profil" value="Aktiv" />
+                <Status label="Konto" value="Verifieras" />
+              </div>
+            </div>
+          </div>
+        </section>
 
         
         <div className="mt-8 rounded-[2rem] bg-white p-6 shadow-xl shadow-slate-200/70">
@@ -73,7 +117,7 @@ function BusinessProfile({
               Samma kalenderstruktur som floristprofilen: 2 veckor bakåt och 6 veckor framåt.
             </p>
           </div>
-<CalendarEngine role="company" floristId="internal-profile" />
+<CalendarEngine role="supplier" floristId="internal-profile" />
         </div>
 
         <section className="mt-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
@@ -93,7 +137,7 @@ function BusinessProfile({
 
             <Panel title="Orderöversikt" icon={<ShoppingBag size={22} />}>
               <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 text-sm font-semibold text-slate-600">
-                Här visas företagets beställningar, referenspersoner, kostnadsställen och kvitton.
+                Här visas leverantörens produkter, kataloger, annonsköp, beställningar från florister och fakturor.
               </div>
             </Panel>
           </div>
@@ -106,9 +150,10 @@ function BusinessProfile({
             </Panel>
 
             <Panel title="Kommunikation" icon={<MessageCircle size={22} />}>
-              <Info label="Chat" value="Med florister" />
+              <Info label="Chat" value="Endast med florister" />
               <Info label="Ljudsamtal" value="Med florister" />
               <Info label="Videosamtal" value="Med florister" />
+              <Info label="Streaming" value="Produkter till florister" />
             </Panel>
           </aside>
         </section>

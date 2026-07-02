@@ -16,18 +16,18 @@ import {
   User,
 } from "lucide-react";
 
-export default function CompanyProfilePage() {
+export default function CourierProfilePage() {
   return (
     <BusinessProfile
-      roleLabel="Företagskund"
-      title="Företagskund profil"
-      description="Intern profilsida för företagsbeställningar, faktura, redovisning och återkommande blomsterinköp."
+      roleLabel="Budfirma"
+      title="Budfirma profil"
+      description="Intern profilsida för partnerbeställningar, ersättning, faktura och kommunikation med florister."
       icon={<Building2 size={36} />}
       cards={[
-        ["Beställningar", "Företagets blomsterbeställningar och återkommande köp.", <ShoppingBag key="o" />],
-        ["Faktura", "Fakturastatus, fakturaadress, referens och betalningsvillkor.", <CreditCard key="f" />],
-        ["Redovisning", "Kvitton, månadsrapport och export till ekonomi.", <ReceiptText key="r" />],
-        ["Kontaktpersoner", "Hantera referenspersoner och avdelningar.", <User key="u" />],
+        ["Beställningar", "Budfirmans beställningar via FloristSocial.", <ShoppingBag key="o" />],
+        ["Faktura", "Faktura, partnerersättning och återbetalning.", <CreditCard key="f" />],
+        ["Redovisning", "10% partnerersättning minus betalningsavgift i proportion.", <ReceiptText key="r" />],
+        ["Kontaktpersoner", "Kontaktpersoner, förare och interna referenser.", <User key="u" />],
       ]}
     />
   );
@@ -56,7 +56,7 @@ function BusinessProfile({
   description={description}
   city="Stockholm"
   country="Sverige"
-  editRole="company"
+  editRole="courier"
 />
 
 
@@ -73,7 +73,7 @@ function BusinessProfile({
               Samma kalenderstruktur som floristprofilen: 2 veckor bakåt och 6 veckor framåt.
             </p>
           </div>
-<CalendarEngine role="company" floristId="internal-profile" />
+          <CalendarEngine floristId="internal-profile" />
         </div>
 
         <section className="mt-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
@@ -93,7 +93,7 @@ function BusinessProfile({
 
             <Panel title="Orderöversikt" icon={<ShoppingBag size={22} />}>
               <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5 text-sm font-semibold text-slate-600">
-                Här visas företagets beställningar, referenspersoner, kostnadsställen och kvitton.
+                Här visas budfirmans beställningar, kunder, ersättningar och kvitton.
               </div>
             </Panel>
           </div>
