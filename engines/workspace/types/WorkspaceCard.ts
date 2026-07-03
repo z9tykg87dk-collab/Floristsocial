@@ -1,19 +1,25 @@
-export type WorkspaceCardType =
-  | "calendar"
-  | "crm"
-  | "orders"
-  | "economy"
-  | "notifications"
-  | "intelligence"
-  | "social"
-  | "supplier";
+export type WorkspaceCardColor =
+  | "pink"
+  | "green"
+  | "blue"
+  | "amber"
+  | "purple"
+  | "slate";
 
 export type WorkspaceCard = {
   id: string;
-  type: WorkspaceCardType;
+
   title: string;
+
   subtitle?: string;
-  value?: string;
-  actionLabel?: string;
+
+  value?: string | number;
+
+  icon?: string;
+
+  color: WorkspaceCardColor;
+
   href?: string;
+
+  priority?: number;
 };
