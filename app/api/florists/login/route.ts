@@ -38,10 +38,10 @@ export async function POST(req: Request) {
     }
 
     // 🌸 Kontrollera att user är florist
-    const { data: florist, error: floristError } = await supabase
+    const { data: florist, error: floristError } = await (supabase as any)
       .from("florists")
       .select("id, email, first_name, last_name")
-      .eq("id" as any, data.user.id)
+      .eq("id", data.user.id as string)
       .maybeSingle();
 
     if (floristError) {

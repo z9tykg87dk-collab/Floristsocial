@@ -11,7 +11,7 @@ export default async function ChatPage() {
 
   const supabase = await createSupabaseServerClient();
 
-  const { data: conversations } = await supabase
+  const { data: conversations } = await (supabase as any)
     .from("conversation_participants")
     .select(
       `
@@ -29,7 +29,7 @@ export default async function ChatPage() {
       <h1 className="text-2xl font-semibold mb-4">Chats</h1>
 
       <div className="flex flex-col gap-3">
-        {conversations?.map((c) => (
+        {conversations?.map((c: { conversation_id: string }) => (
           <Link
             key={c.conversation_id}
             href={`/chat/${c.conversation_id}`}

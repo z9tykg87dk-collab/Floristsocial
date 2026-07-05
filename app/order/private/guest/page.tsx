@@ -17,6 +17,7 @@ type OrderItem = {
   total: number;
   subscription?: string;
   note?: string;
+  band?: string | null;
 };
 
 const MINIMUM_ORDER_VALUE = 450;

@@ -98,7 +98,7 @@ export async function startDirectCheckoutAction(
   const deliveryFeeAmount = 0;
   const totalAmount = subtotalAmount + deliveryFeeAmount;
 
-  const { data: order, error: orderError } = await supabase
+  const { data: order, error: orderError } = await (supabase as any)
     .from("orders")
     .insert({
       customer_profile_id: user.id,
@@ -106,7 +106,7 @@ export async function startDirectCheckoutAction(
       seller_florist_profile_id: sellerFlorist?.id ?? null,
       source: sellerFlorist ? "referral" : "direct",
       status: "pending_payment",
-      currency: product.currency,
+      currency: product.currency || "sek",
       subtotal_amount: subtotalAmount,
       delivery_fee_amount: deliveryFeeAmount,
       total_amount: totalAmount,
@@ -133,7 +133,7 @@ export async function startDirectCheckoutAction(
     };
   }
 
-  const { error: orderItemError } = await supabase.from("order_items").insert({
+  const { error: orderItemError } = await (supabase as any).from("order_items").insert({
     order_id: order.id,
     product_id: product.id,
     product_title: product.title,
@@ -167,7 +167,7 @@ export async function startDirectCheckoutAction(
       {
         quantity: 1,
         price_data: {
-          currency: product.currency,
+          currency: product.currency || "sek",
           unit_amount: product.price_amount,
           product_data: {
             name: product.title,
@@ -178,7 +178,7 @@ export async function startDirectCheckoutAction(
     ],
   });
 
-  const { error: sessionUpdateError } = await supabase
+  const { error: sessionUpdateError } = await (supabase as any)
     .from("orders")
     .update({
       stripe_checkout_session_id: session.id,
@@ -189,6 +189,13 @@ export async function startDirectCheckoutAction(
     return {
       status: "error",
       message: sessionUpdateError.message,
+    };
+  }
+
+  if (!session.url) {
+    return {
+      status: "error",
+      message: "Stripe checkout session saknar redirect-URL.",
     };
   }
 

@@ -213,7 +213,7 @@ export default async function ChatDetailPage({
                       </div>
 
                       <p className="mt-2 text-[10px] font-semibold text-stone-400">
-                        {new Date(msg.created_at).toLocaleString("sv-SE")}
+                        {msg.created_at ? new Date(msg.created_at).toLocaleString("sv-SE") : ""}
                       </p>
                     </div>
                   </div>

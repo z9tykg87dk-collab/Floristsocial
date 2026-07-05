@@ -71,17 +71,3 @@ export type ChatListItem = {
 
   economy?: ChatEconomy | null;
 };
-export type ChatEconomy =
-  | {
-      can_view_all: true;
-      order_value: number | null;
-      seller_commission: number | null;
-      executor_commission: number | null;
-      platform_commission: number | null;
-      payment_fee: number | null;
-    }
-  | {
-      can_view_all: false;
-      order_value: number | null;
-      own_commission: number | null;
-    };

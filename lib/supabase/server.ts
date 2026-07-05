@@ -8,7 +8,11 @@ export async function createSupabaseServerClient() {
   const cookieStore = await cookies();
   const { url, anonKey } = getSupabaseEnv();
 
-  return createServerClient<Database>(url, anonKey, {
+  if (!url || !anonKey) {
+    throw new Error("Missing Supabase environment variables");
+  }
+
+  return createServerClient<Database, "public">(url, anonKey, {
     cookies: {
       getAll() {
         return cookieStore.getAll();

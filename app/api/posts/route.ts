@@ -313,7 +313,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let product = null;
+    let product: { id: string; currency?: string | null } | null = null;
 
     if (isShoppable) {
       const productPayload: JsonRecord = {
@@ -407,11 +407,11 @@ export async function POST(request: NextRequest) {
 
       await supabaseAdmin.from("product_variants").insert(
         variants.map((variant) => ({
-          product_id: product.id,
+          product_id: productData.id,
           label: variant.label,
           description: variant.description,
           price: variant.price,
-          currency: product.currency || "SEK",
+          currency: productData.currency || "SEK",
           sort_order: variant.sort_order,
           is_default: variant.is_default,
           is_active: true,

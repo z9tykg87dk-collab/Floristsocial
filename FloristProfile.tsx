@@ -4,7 +4,18 @@ import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { startChat } from "@/lib/chat"
 
-export default function FloristProfile({ florist, myFloristId }) {
+type Props = {
+  florist: {
+    id: string;
+    profile_image_url?: string | null;
+    shop_name?: string | null;
+    first_name?: string | null;
+    last_name?: string | null;
+  };
+  myFloristId: string;
+};
+
+export default function FloristProfile({ florist, myFloristId }: Props) {
   const router = useRouter()
 
   const handleChat = async () => {

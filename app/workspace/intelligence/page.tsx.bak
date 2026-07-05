@@ -1,0 +1,134 @@
+import Link from "next/link";
+import { AlertTriangle, ArrowRight, Brain, CalendarDays, LineChart, ShieldCheck, Sparkles } from "lucide-react";
+import { runFosIntelligence } from "@/lib/fos/intelligence";
+
+export default function WorkspaceIntelligencePage() {
+  const intelligence = runFosIntelligence({
+    ordersLast30Days: 34,
+    revenueLast30Days: 68500,
+    averageRating: 4.9,
+    reviewCount: 18,
+    lateDeliveries: 1,
+    unreadMessages: 6,
+    upcomingDeliveries: 12,
+    repeatCustomers: 7,
+  });
+
+  const { scores, recommendations } = intelligence;
+
+  return (
+    <main className="min-h-screen bg-[#fbf7f2] px-4 py-8 text-stone-950 md:px-8 lg:px-10">
+      <section className="mx-auto max-w-7xl">
+        <div className="rounded-[36px] bg-gradient-to-br from-stone-950 via-stone-900 to-pink-950 p-6 text-white shadow-xl md:p-8">
+          <div className="flex flex-wrap items-center justify-between gap-5">
+            <div>
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-black ring-1 ring-white/15">
+                <Brain size={17} />
+                FOS Intelligence
+              </div>
+              <h1 className="text-4xl font-black tracking-tight md:text-5xl">
+                FloristSocials intelligenta kontrollcenter
+              </h1>
+              <p className="mt-4 max-w-3xl text-sm leading-7 text-white/75 md:text-base">
+                FOS analyserar order, kalender, CRM, ekonomi, meddelanden och trust-data för att ge konkreta rekommendationer.
+              </p>
+            </div>
+
+            <Link
+              href="/superadmin/development"
+              className="inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-black text-stone-950"
+            >
+              Development Center
+              <ArrowRight size={16} />
+            </Link>
+          </div>
+        </div>
+
+        <div className="mt-6 grid gap-4 md:grid-cols-4">
+          <ScoreCard title="Growth Score" value={scores.growthScore} icon={<LineChart size={22} />} />
+          <ScoreCard title="Service Score" value={scores.serviceScore} icon={<CalendarDays size={22} />} />
+          <ScoreCard title="Trust Score" value={scores.trustScore} icon={<ShieldCheck size={22} />} />
+          <ScoreCard title="Business Score" value={scores.businessScore} icon={<Sparkles size={22} />} />
+        </div>
+
+        <section className="mt-8 rounded-[32px] bg-white p-5 shadow-sm ring-1 ring-stone-200/70 md:p-7">
+          <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="mb-2 text-xs font-black uppercase tracking-[0.2em] text-pink-600">
+                Rekommendationer
+              </p>
+              <h2 className="text-3xl font-black tracking-tight">
+                {recommendations.length} aktiva FOS-rekommendationer
+              </h2>
+            </div>
+          </div>
+
+          <div className="grid gap-4">
+            {recommendations.map((item) => (
+              <article
+                key={item.id}
+                className="rounded-[24px] bg-stone-50 p-5 ring-1 ring-stone-200"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div className="flex gap-4">
+                    <div className="grid h-12 w-12 place-items-center rounded-2xl bg-white text-pink-600 shadow-sm ring-1 ring-stone-200">
+                      <AlertTriangle size={22} />
+                    </div>
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="text-lg font-black">{item.title}</h3>
+                        <span className="rounded-full bg-white px-3 py-1 text-xs font-black uppercase text-stone-600 ring-1 ring-stone-200">
+                          {item.module}
+                        </span>
+                        <span className="rounded-full bg-pink-50 px-3 py-1 text-xs font-black text-pink-700">
+                          Score {item.score}
+                        </span>
+                      </div>
+                      <p className="mt-2 max-w-3xl text-sm leading-7 text-stone-600">
+                        {item.description}
+                      </p>
+                    </div>
+                  </div>
+
+                  {item.actionHref && (
+                    <Link
+                      href={item.actionHref}
+                      className="rounded-full bg-stone-950 px-5 py-3 text-sm font-black !text-white"
+                    >
+                      {item.actionLabel || "Öppna"}
+                    </Link>
+                  )}
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+      </section>
+    </main>
+  );
+}
+
+function ScoreCard({
+  title,
+  value,
+  icon,
+}: {
+  title: string;
+  value: number;
+  icon: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-[28px] bg-white p-5 shadow-sm ring-1 ring-stone-200/70">
+      <div className="mb-4 flex items-center justify-between">
+        <div className="grid h-11 w-11 place-items-center rounded-2xl bg-pink-50 text-pink-600">
+          {icon}
+        </div>
+        <span className="text-3xl font-black">{value}</span>
+      </div>
+      <p className="text-sm font-black text-stone-700">{title}</p>
+      <div className="mt-3 h-2 overflow-hidden rounded-full bg-stone-100">
+        <div className="h-full rounded-full bg-pink-600" style={{ width: `${value}%` }} />
+      </div>
+    </div>
+  );
+}

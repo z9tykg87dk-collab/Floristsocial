@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { supabase } from "@/lib/supabase";
+import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export default function ChatPage() {
+  const supabase = createSupabaseBrowserClient();
   const params = useParams();
   const conversationId = params.id as string;
 
@@ -16,18 +17,7 @@ export default function ChatPage() {
   const loadMessages = async () => {
     const { data, error } = await supabase
       .from("messages")
-      .select(
-        `
-        *,
-        florists (
-          id,
-          first_name,
-          last_name,
-          shop_name,
-          profile_image_url
-        )
-      `,
-      )
+      .select("*")
       .eq("conversation_id", conversationId)
       .order("created_at", { ascending: true });
 

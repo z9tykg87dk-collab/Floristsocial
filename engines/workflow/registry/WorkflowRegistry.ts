@@ -48,4 +48,10 @@ export const WORKFLOW_REGISTRY: Record<
   SUPPLIER_CAMPAIGN_CREATED: [],
 
   SYSTEM_EVENT: [],
+  PRODUCTION_PLANNED: [
+    {
+      targetEngine: "production",
+      handler: "CREATE_PRODUCTION_JOB",
+    },
+  ],
 };

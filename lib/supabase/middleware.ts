@@ -11,7 +11,11 @@ export async function updateSession(request: NextRequest) {
 
   const { url, anonKey } = getSupabaseEnv();
 
-  const supabase = createServerClient<Database>(url, anonKey, {
+  if (!url || !anonKey) {
+    throw new Error("Missing Supabase environment variables");
+  }
+
+  const supabase = createServerClient<Database, "public">(url, anonKey, {
     cookies: {
       getAll() {
         return request.cookies.getAll();

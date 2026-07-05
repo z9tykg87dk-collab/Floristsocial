@@ -1,8 +1,8 @@
-import { createClient } from "@/lib/supabase/server";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getFloristChatList } from "@/lib/chat/getFloristChatList";
 
 export default async function FloristChatPage() {
-  const supabase = createClient();
+  const supabase = await createSupabaseServerClient();
 
   // 🔐 Hämta user
   const {

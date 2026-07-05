@@ -1,14 +1,13 @@
 import type { WorkflowEvent } from "../types/WorkflowEvent";
 import { WORKFLOW_REGISTRY } from "../registry/WorkflowRegistry";
 import { handleCalendarWorkflowEvent } from "../handlers/CalendarHandler";
+import { createFOSEvent, publishFOSEvent } from "@/core/events/services/FOSEventBus";
 
 async function runWorkflowHandler(targetEngine: string, event: WorkflowEvent) {
   if (targetEngine === "calendar") {
     return handleCalendarWorkflowEvent(event);
   }
 
-  // TODO: Koppla fler handlers:
-  // crm, notification, economy, analytics, intelligence, trust
   return null;
 }
 
@@ -32,6 +31,19 @@ export async function dispatchWorkflowEvent(event: WorkflowEvent) {
       handler: handler.handler,
       result,
     });
+  }
+
+  if (event.type === "ORDER_CREATED") {
+    await publishFOSEvent(
+      createFOSEvent({
+        type: "PRODUCTION_PLANNED",
+        source: "workflow",
+        priority: "high",
+        actorId: event.actorId,
+        actorRole: event.actorRole,
+        payload: event.payload,
+      }),
+    );
   }
 
   return {

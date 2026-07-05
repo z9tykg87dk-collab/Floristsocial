@@ -205,7 +205,7 @@ export default function FloristsHeroSearch() {
                 Hitta florist nära dig
               </div>
 
-              <h1 className="text-4xl font-black tracking-tight md:text-6xl">
+              <h1 className="max-w-[760px] text-4xl font-black tracking-tight leading-[1.15] md:text-5xl lg:text-6xl">
                 Upptäck florister nära mottagaren
               </h1>
 

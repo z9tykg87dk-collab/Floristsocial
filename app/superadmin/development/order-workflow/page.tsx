@@ -1,0 +1,181 @@
+import Link from "next/link";
+import {
+  CalendarDays,
+  CheckCircle2,
+  Flower2,
+  GitBranch,
+  Package,
+  ShieldCheck,
+} from "lucide-react";
+import { startOrderDeliveryWorkflow } from "@/engines/order/workflow/OrderWorkflowBridge";
+
+export default async function OrderWorkflowTestPage() {
+  const result = await startOrderDeliveryWorkflow({
+    orderId: "demo-order-001",
+    floristId: "demo-florist-001",
+    customerId: "demo-customer-001",
+    deliveryDeadlineAt: new Date("2026-07-08T13:00:00+02:00").toISOString(),
+    deliveryAddressCity: "Stockholm",
+    deliveryInsideCityLimit: true,
+  });
+
+  const steps = [
+    ["Order", "Order mottagen", <Package key="order" size={26} />],
+    ["Workflow", "Workflow startad", <GitBranch key="workflow" size={26} />],
+    ["Production", "Produktion planerad", <Flower2 key="production" size={26} />],
+    ["Calendar", "Kalenderhändelser skapade", <CalendarDays key="calendar" size={26} />],
+    ["Trust", "Trust Rating planerad", <ShieldCheck key="trust" size={26} />],
+  ];
+
+  return (
+    <main className="min-h-screen bg-[#f7f2ea] px-4 py-8 text-slate-950 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl space-y-6">
+        <section className="rounded-[2.25rem] bg-white p-8 shadow-xl shadow-slate-200/70">
+          <Link href="/superadmin/development" className="text-sm font-black text-pink-700">
+            ← Tillbaka till Development Center
+          </Link>
+
+          <p className="mt-8 inline-flex rounded-full bg-pink-100 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-pink-700">
+            FOS Test
+          </p>
+
+          <h1 className="mt-4 text-4xl font-black tracking-tight">
+            Order Workflow Test
+          </h1>
+
+          <p className="mt-4 text-base font-semibold leading-7 text-slate-600">
+            Visar kedjan: Order → Event Bus → FOS State → Workflow → Calendar.
+          </p>
+
+          <div className="mt-6 inline-flex rounded-2xl bg-pink-50 px-5 py-3 text-sm font-black text-pink-700">
+            Ordernummer: {result.workflow.orderId}
+          </div>
+        </section>
+
+        <section className="rounded-[2.25rem] bg-white p-8 shadow-xl shadow-slate-200/70">
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-700">
+            Flödesstatus
+          </p>
+
+          <div className="mt-6 grid gap-5 md:grid-cols-5">
+            {steps.map(([title, text, icon]) => (
+              <a
+                key={String(title)}
+                href={`#${String(title).toLowerCase()}`}
+                className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-pink-200 hover:shadow-xl"
+              >
+                <div className="mb-4 flex items-center justify-between">
+                  <div className="grid h-12 w-12 place-items-center rounded-2xl bg-pink-50 text-pink-700">
+                    {icon}
+                  </div>
+                  <CheckCircle2 className="text-emerald-600" size={22} />
+                </div>
+
+                <h2 className="text-lg font-black">{title}</h2>
+                <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">
+                  {text}
+                </p>
+              </a>
+            ))}
+          </div>
+        </section>
+
+
+        <section className="grid gap-6 md:grid-cols-2">
+          <EngineDetail id="order" title="Order" text="Order Engine har skapat orderflödet." />
+          <EngineDetail id="workflow" title="Workflow" text="Workflow Engine har startat processen." />
+          <EngineDetail id="production" title="Production" text="Production Engine har skapat produktionsplan, produktionstid och checklista." />
+          <EngineDetail id="calendar" title="Calendar" text="Calendar Engine har planerat produktion, budhämtning och leverans." />
+          <EngineDetail id="trust" title="Trust" text="Trust Engine planerar ratingförfrågan efter leverans." />
+        </section>
+
+        <section className="grid gap-6 lg:grid-cols-3">
+          <InfoCard title="Nuvarande steg" value={result.state.currentStep || "-"} />
+          <InfoCard title="Nästa steg" value={result.state.nextStep || "-"} />
+          <InfoCard title="Status" value={result.state.status} />
+        </section>
+
+        <section className="rounded-[2.25rem] bg-white p-8 shadow-xl shadow-slate-200/70">
+          <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-700">
+            Workflow-steg
+          </p>
+
+          <div className="mt-5 space-y-3">
+            {result.workflow.steps.map((step) => (
+              <div
+                key={step.id}
+                className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h3 className="font-black">{step.title}</h3>
+                    {step.description && (
+                      <p className="mt-1 text-sm font-semibold text-slate-600">
+                        {step.description}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-full bg-pink-100 px-3 py-1 text-xs font-black text-pink-700">
+                      {step.status}
+                    </span>
+                    <button className="rounded-full bg-slate-900 px-3 py-1 text-xs font-black text-white">
+                      Visa steg
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <details className="rounded-[2.25rem] bg-white p-8 shadow-xl shadow-slate-200/70">
+          <summary className="cursor-pointer text-2xl font-black tracking-tight text-pink-700">
+            Visa Debug JSON
+          </summary>
+          <pre className="mt-5 max-h-[520px] overflow-auto rounded-2xl bg-slate-950 p-5 text-xs font-bold leading-6 text-green-200">
+            {JSON.stringify(result, null, 2)}
+          </pre>
+        </details>
+      </div>
+    </main>
+  );
+}
+
+
+function EngineDetail({
+  id,
+  title,
+  text,
+}: {
+  id: string;
+  title: string;
+  text: string;
+}) {
+  return (
+    <section
+      id={id}
+      className="scroll-mt-28 rounded-[2.25rem] bg-white p-6 shadow-xl shadow-slate-200/70"
+    >
+      <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-700">
+        Engine Detail
+      </p>
+      <h2 className="mt-2 text-2xl font-black tracking-tight">{title}</h2>
+      <p className="mt-3 text-sm font-semibold leading-6 text-slate-600">
+        {text}
+      </p>
+    </section>
+  );
+}
+
+function InfoCard({ title, value }: { title: string; value: string }) {
+  return (
+    <section className="rounded-[2.25rem] bg-white p-6 shadow-xl shadow-slate-200/70">
+      <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-700">
+        {title}
+      </p>
+      <p className="mt-3 text-2xl font-black">{value}</p>
+    </section>
+  );
+}

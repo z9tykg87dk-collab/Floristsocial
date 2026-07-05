@@ -1,7 +1,10 @@
-import { SupabaseClient } from "@supabase/supabase-js"
+type SupabaseLike = {
+  from: (table: string) => any;
+};
+
 
 export const startChat = async (
-  supabase: SupabaseClient,
+  supabase: SupabaseLike,
   myFloristId: string,
   targetFloristId: string
 ) => {

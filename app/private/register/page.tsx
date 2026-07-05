@@ -838,6 +838,7 @@ function Field({
   placeholder: string;
   icon?: ReactNode;
   type?: "text" | "email" | "tel";
+  required?: boolean;
 }) {
   return (
     <label className="block">

@@ -5,7 +5,7 @@ import { hasRequiredEnv } from "@/lib/env";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type ProductRow = Database["public"]["Tables"]["products"]["Row"];
-type FloristProfileRow = Database["public"]["Tables"]["profiles"]["Row"];
+type FloristProfileRow = Database["public"]["Tables"]["florist_profiles"]["Row"];
 export const getProductsForFlorist = cache(async (floristProfileId: string) => {
   if (!hasRequiredEnv()) {
     return [] as ProductRow[];
@@ -73,6 +73,13 @@ export const getMarketplaceProduct = cache(async (productId: string) => {
 
   console.log("PRODUCT:", product);
   console.log("PRODUCT.florist_id:", product.florist_id);
+
+  if (!product.florist_profile_id) {
+    return {
+      product: product as ProductRow,
+      floristProfile: null,
+    };
+  }
 
   const { data: floristProfile, error: floristError } = await supabase
     .from("florist_profiles")

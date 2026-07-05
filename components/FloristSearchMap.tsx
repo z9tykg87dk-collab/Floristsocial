@@ -16,6 +16,8 @@ type FloristMapItem = {
   florist_name: string | null;
   shop_name: string | null;
   city: string | null;
+  area: string | null;
+  delivery_radius_km: number | null;
   latitude: number;
   longitude: number;
   distance_km: number;
@@ -23,7 +25,7 @@ type FloristMapItem = {
   logo_url: string | null;
   rating: number | null;
   review_count: number | null;
-  opening_hours?: OpeningHour[] | null;
+  opening_hours: OpeningHour[] | null;
   standard_delivery_fee: number | null;
   same_day_cutoff_time: string | null;
   express_delivery_available: boolean | null;

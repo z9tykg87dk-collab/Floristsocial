@@ -1,309 +1,444 @@
 import Link from "next/link";
 import {
+  Activity,
+  AlertTriangle,
+  ArrowRight,
+  BarChart3,
+  Bell,
+  Brain,
   CalendarDays,
-  CreditCard,
-  Package,
+  CheckCircle2,
+  Clock3,
+  Cpu,
+  Database,
+  HeartPulse,
+  ListChecks,
+  MemoryStick,
+  Network,
+  PackageCheck,
+  PlugZap,
+  RefreshCcw,
+  Route,
+  ShieldCheck,
+  Sparkles,
   Truck,
   Users,
-  FileText,
-  PlusCircle,
-  ShieldCheck,
-  Flower2,
-  CheckCircle2,
-  Clock,
+  WalletCards,
+  Zap,
 } from "lucide-react";
-import {
-  getMorningBriefing,
-  getWorkspaceCards,
-  getWorkspaceTasks,
-} from "@/engines/workspace/services/WorkspaceService";
-import type { WorkspaceCard, WorkspaceTask } from "@/engines/workspace/types";
-import FloristFlower from "@/components/brand/FloristFlower";
+import { getFosSystemHealthReport } from "@/lib/fos/system-health";
 
-const iconMap: Record<string, React.ReactNode> = {
-  orders: <Package size={24} />,
-  calendar: <CalendarDays size={24} />,
-  production: <Flower2 size={24} />,
-  "yesterday-production": <CalendarDays size={24} />,
-  deliveries: <Truck size={24} />,
-  courier: <Truck size={24} />,
-  trust: <FloristFlower size={26} />,
-  crm: <Users size={24} />,
-};
+const engines = [
+  {
+    id: "FOS-01",
+    title: "Core Snapshot",
+    href: "/workspace",
+    api: "/api/fos/snapshot",
+    icon: Database,
+    health: 100,
+    jobs: 128,
+    latency: "18 ms",
+    description: "Samlar nuläget från hela FloristSocial.",
+  },
+  {
+    id: "FOS-02",
+    title: "Intelligence",
+    href: "/superadmin/development/intelligence",
+    api: "/api/fos/intelligence",
+    icon: Brain,
+    health: 92,
+    jobs: 41,
+    latency: "44 ms",
+    description: "Analyserar data och skapar rekommendationer.",
+  },
+  {
+    id: "FOS-03",
+    title: "Decision Engine",
+    href: "/superadmin/development/workflow",
+    api: "/api/fos/decision",
+    icon: Route,
+    health: 98,
+    jobs: 76,
+    latency: "26 ms",
+    description: "Fattar beslut baserat på order, kalender och händelser.",
+  },
+  {
+    id: "FOS-04",
+    title: "Event Store",
+    href: "/superadmin/development/event-bus",
+    api: "/api/fos/events",
+    icon: Network,
+    health: 100,
+    jobs: 542,
+    latency: "12 ms",
+    description: "Sparar alla händelser i systemet.",
+  },
+  {
+    id: "FOS-05",
+    title: "Memory Engine",
+    href: "/superadmin/development/fos-state",
+    api: "/api/fos/memory",
+    icon: MemoryStick,
+    health: 88,
+    jobs: 93,
+    latency: "39 ms",
+    description: "Kommer ihåg tidigare beslut och mönster.",
+  },
+  {
+    id: "FOS-06",
+    title: "Action Queue",
+    href: "/superadmin/development/order-workflow",
+    api: "/api/fos/action-queue",
+    icon: ListChecks,
+    health: 74,
+    jobs: 18,
+    latency: "71 ms",
+    description: "Lägger åtgärder i kö för utförande.",
+  },
+  {
+    id: "FOS-07",
+    title: "Automation",
+    href: "/superadmin/development/production",
+    api: "/api/fos/automation",
+    icon: Zap,
+    health: 96,
+    jobs: 64,
+    latency: "31 ms",
+    description: "Utför automatiserade arbetsflöden.",
+  },
+  {
+    id: "FOS-08",
+    title: "System Health",
+    href: "/superadmin/development/security",
+    api: "/api/fos/system-health",
+    icon: HeartPulse,
+    health: 100,
+    jobs: 8,
+    latency: "9 ms",
+    description: "Övervakar plattformens hälsa.",
+  },
+];
 
-const toneMap: Record<string, string> = {
-  urgent: "border-rose-200 bg-rose-50 text-rose-700",
-  today: "border-amber-200 bg-amber-50 text-amber-700",
-  planned: "border-emerald-200 bg-emerald-50 text-emerald-700",
-  done: "border-slate-200 bg-slate-50 text-slate-500",
-};
+const liveStats = [
+  { label: "Aktiva florister", value: "328", icon: Users, tone: "emerald" },
+  { label: "Aktiva order", value: "51", icon: PackageCheck, tone: "pink" },
+  { label: "Leveranser idag", value: "19", icon: Truck, tone: "amber" },
+  { label: "Notifieringar", value: "28", icon: Bell, tone: "sky" },
+  { label: "Betalningar", value: "17", icon: WalletCards, tone: "violet" },
+  { label: "Kalenderjobb", value: "43", icon: CalendarDays, tone: "rose" },
+];
 
-export default async function WorkspacePage() {
-  const briefing = await getMorningBriefing();
-  const cards = (await getWorkspaceCards()).slice(0, 8);
-  const tasks = await getWorkspaceTasks();
-  const visibleTasks = tasks.slice(0, 8);
-  const nextTask = tasks[0];
-  const hiddenCount = Math.max(tasks.length - visibleTasks.length, 0);
+const services = [
+  ["Platform", "Healthy"],
+  ["API", "Healthy"],
+  ["Database", "Healthy"],
+  ["Stripe", "Healthy"],
+  ["Chat", "Healthy"],
+  ["Calendar", "Healthy"],
+  ["CRM", "Healthy"],
+  ["Workflow", "Healthy"],
+];
+
+const activities = [
+  ["02:14", "Ny order skapad", "Order #8451 skickades till Production Engine."],
+  ["02:13", "Produktion startad", "Floristens arbetsflöde aktiverades."],
+  ["02:12", "Stripe betalning klar", "Betalning registrerad och verifierad."],
+  ["02:11", "Kalender uppdaterad", "Leveransblock skapades automatiskt."],
+  ["02:10", "CRM uppdaterad", "Kundprofil och orderhistorik synkades."],
+];
+
+const quickActions = [
+  { label: "System Health", href: "/superadmin/development/security", icon: HeartPulse },
+  { label: "Event Bus", href: "/superadmin/development/event-bus", icon: PlugZap },
+  { label: "Workflow", href: "/superadmin/development/workflow", icon: Route },
+  { label: "Calendar", href: "/workspace/calendar", icon: CalendarDays },
+  { label: "Production", href: "/superadmin/development/production", icon: PackageCheck },
+  { label: "Audit", href: "/superadmin/development/audit", icon: ShieldCheck },
+];
+
+export default function WorkspacePage() {
+  const health = getFosSystemHealthReport();
 
   return (
-    <main className="min-h-screen bg-[#f7f2ea] px-4 py-8 text-slate-950 sm:px-6 lg:px-8">
-      <div className="mx-auto max-w-7xl space-y-6">
-        <section className="overflow-hidden rounded-[2.25rem] bg-white shadow-xl shadow-slate-200/70">
-          <div className="relative min-h-[300px] bg-gradient-to-br from-pink-50 via-white to-emerald-50 p-7 sm:p-10">
-            <div className="relative z-10 max-w-4xl">
-              <p className="mb-4 inline-flex rounded-full bg-pink-100 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-pink-700">
-                FloristSocial Arbetsyta
-              </p>
+    <main className="min-h-screen bg-[#fbf7f2] px-4 py-8 text-stone-950 md:px-8 lg:px-10">
+      <section className="mx-auto max-w-7xl">
+        <div className="overflow-hidden rounded-[38px] bg-gradient-to-br from-stone-950 via-stone-900 to-pink-950 p-7 text-white shadow-2xl md:p-10">
+          <div className="flex flex-wrap items-center justify-between gap-6">
+            <div>
+              <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-black ring-1 ring-white/15">
+                <Activity size={17} />
+                FloristSocial Mission Control
+              </div>
 
-              <h1 className="text-4xl font-black tracking-tight sm:text-6xl">
-                {briefing.greeting}
+              <h1 className="max-w-4xl text-4xl font-black tracking-tight md:text-6xl">
+                Övervaka hela FloristSocial i realtid
               </h1>
 
-              <p className="mt-4 max-w-2xl text-base font-semibold leading-7 text-slate-600">
-                FOS visar vad som är viktigast nu och hjälper dig vidare steg för steg.
+              <p className="mt-5 max-w-3xl text-sm leading-7 text-white/75 md:text-base">
+                Kontrollpanel för FOS-motorer, orderflöden, kalender, produktion,
+                ekonomi, notifieringar och systemhälsa.
               </p>
+            </div>
 
-              <div className="mt-8 grid gap-4 md:grid-cols-4">
-                {briefing.messages.slice(0, 4).map((message) => (
-                  <div
-                    key={message}
-                    className="rounded-3xl border border-slate-200 bg-white/90 px-5 py-4 text-sm font-bold leading-6 text-slate-800 shadow-sm"
+            <Link
+              href="/superadmin/development/security"
+              className="inline-flex items-center gap-2 rounded-full bg-pink-600 px-5 py-3 text-sm font-black text-white transition hover:bg-pink-700"
+            >
+              System Health
+              <ArrowRight size={16} />
+            </Link>
+          </div>
+
+          <div className="mt-8 grid gap-3 md:grid-cols-4">
+            {services.map(([name, status]) => (
+              <div
+                key={name}
+                className="rounded-2xl bg-white/10 p-4 ring-1 ring-white/10"
+              >
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-white/50">
+                  {name}
+                </p>
+                <div className="mt-2 flex items-center gap-2 text-sm font-black text-emerald-300">
+                  <CheckCircle2 size={16} />
+                  {status}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <section className="mt-8 grid gap-4 md:grid-cols-3 xl:grid-cols-6">
+          {liveStats.map((stat) => {
+            const Icon = stat.icon;
+            return (
+              <div
+                key={stat.label}
+                className="rounded-[28px] bg-white p-5 shadow-sm ring-1 ring-stone-200/70"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="grid h-11 w-11 place-items-center rounded-2xl bg-pink-50 text-pink-600">
+                    <Icon size={21} />
+                  </div>
+                  <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-black text-emerald-700">
+                    Live
+                  </span>
+                </div>
+                <p className="mt-5 text-3xl font-black">{stat.value}</p>
+                <p className="mt-1 text-sm font-bold text-stone-500">
+                  {stat.label}
+                </p>
+              </div>
+            );
+          })}
+        </section>
+
+        <section className="mt-8 grid gap-6 lg:grid-cols-[1.35fr_0.65fr]">
+          <div className="rounded-[34px] bg-white p-6 shadow-sm ring-1 ring-stone-200/70 md:p-8">
+            <div className="mb-6 flex items-end justify-between gap-4">
+              <div>
+                <p className="mb-2 text-xs font-black uppercase tracking-[0.22em] text-pink-600">
+                  FOS Engines
+                </p>
+                <h2 className="text-3xl font-black tracking-tight">
+                  Aktiva motorer
+                </h2>
+              </div>
+              <div className="rounded-full bg-emerald-50 px-4 py-2 text-sm font-black text-emerald-700">
+                {health.summary.healthy}/{health.summary.total} healthy
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              {engines.map((engine) => {
+                const Icon = engine.icon;
+                return (
+                  <article
+                    key={engine.id}
+                    className="rounded-[28px] bg-stone-50 p-5 ring-1 ring-stone-200 transition hover:-translate-y-1 hover:bg-white hover:shadow-lg"
                   >
-                    {message}
+                    <div className="mb-4 flex items-start justify-between gap-3">
+                      <div className="grid h-12 w-12 place-items-center rounded-2xl bg-pink-50 text-pink-600">
+                        <Icon size={22} />
+                      </div>
+                      <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700">
+                        Active
+                      </span>
+                    </div>
+
+                    <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">
+                      {engine.id}
+                    </p>
+                    <h3 className="mt-1 text-lg font-black">{engine.title}</h3>
+                    <p className="mt-2 min-h-[56px] text-sm leading-6 text-stone-600">
+                      {engine.description}
+                    </p>
+
+                    <div className="mt-4">
+                      <div className="mb-1 flex justify-between text-xs font-black text-stone-500">
+                        <span>Health</span>
+                        <span>{engine.health}%</span>
+                      </div>
+                      <div className="h-2 overflow-hidden rounded-full bg-stone-200">
+                        <div
+                          className="h-full rounded-full bg-pink-600"
+                          style={{ width: `${engine.health}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-2 gap-2 text-xs font-bold text-stone-600">
+                      <span>Jobs: {engine.jobs}</span>
+                      <span>{engine.latency}</span>
+                    </div>
+
+                    <div className="mt-5 flex flex-wrap gap-2">
+                      <Link
+                        href={engine.href}
+                        className="rounded-full bg-stone-950 px-4 py-2 text-sm font-black text-white"
+                      >
+                        Dashboard
+                      </Link>
+                      <a
+                        href={engine.api}
+                        target="_blank"
+                        className="rounded-full bg-white px-4 py-2 text-sm font-black text-stone-900 ring-1 ring-stone-200"
+                      >
+                        API
+                      </a>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </div>
+
+          <aside className="grid gap-6">
+            <div className="rounded-[34px] bg-white p-6 shadow-sm ring-1 ring-stone-200/70">
+              <p className="mb-2 text-xs font-black uppercase tracking-[0.22em] text-pink-600">
+                Live Activity
+              </p>
+              <h2 className="text-2xl font-black">Senaste händelser</h2>
+
+              <div className="mt-5 space-y-4">
+                {activities.map(([time, title, text]) => (
+                  <div key={`${time}-${title}`} className="flex gap-3">
+                    <div className="mt-1 grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-pink-50 text-pink-600">
+                      <Clock3 size={18} />
+                    </div>
+                    <div>
+                      <p className="text-xs font-black text-stone-400">{time}</p>
+                      <p className="font-black">{title}</p>
+                      <p className="text-sm leading-6 text-stone-500">{text}</p>
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="pointer-events-none absolute bottom-0 right-0 hidden h-72 w-72 items-center justify-center rounded-tl-[5rem] bg-pink-100/40 lg:flex">
-              <Flower2 size={150} className="text-pink-500" />
-            </div>
-          </div>
-        </section>
+            <div className="rounded-[34px] bg-white p-6 shadow-sm ring-1 ring-stone-200/70">
+              <p className="mb-2 text-xs font-black uppercase tracking-[0.22em] text-pink-600">
+                Quick Actions
+              </p>
+              <h2 className="text-2xl font-black">Kontroller</h2>
 
-        <section className="grid gap-6 lg:grid-cols-[1fr_320px]">
-          <div className="space-y-6">
-            <section className="rounded-[2.25rem] bg-white p-6 shadow-xl shadow-slate-200/70 sm:p-8">
-              <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-700">
-                    Nästa steg
-                  </p>
-                  <h2 className="mt-1 text-2xl font-black tracking-tight">
-                    {nextTask.title}
-                  </h2>
-                  <p className="mt-2 text-sm font-semibold text-slate-600">
-                    {nextTask.description}
-                  </p>
-                </div>
-
-                <div className="flex gap-3">
-                  <button className="inline-flex h-12 items-center justify-center rounded-2xl bg-pink-600 px-5 text-sm font-black text-white">
-                    Starta arbete
-                  </button>
-                  <button className="inline-flex h-12 items-center justify-center rounded-2xl bg-slate-100 px-5 text-sm font-black text-slate-700">
-                    Klar
-                  </button>
-                </div>
-              </div>
-
-              <div className="rounded-3xl border border-pink-100 bg-pink-50/50 p-5">
-                <div className="grid gap-4 md:grid-cols-3">
-                  <Info label="Tid" value={nextTask.time || "Nu"} />
-                  <Info label="Kategori" value={nextTask.group} />
-                  <Info label="Beräknad tid" value={`${nextTask.estimatedMinutes || 10} min`} />
-                </div>
-              </div>
-            </section>
-
-            <section className="rounded-[2.25rem] bg-white p-6 shadow-xl shadow-slate-200/70 sm:p-8">
-              <div className="mb-6 flex items-end justify-between">
-                <div>
-                  <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-700">
-                    FOS överblick
-                  </p>
-                  <h2 className="mt-1 text-2xl font-black tracking-tight">
-                    Din arbetsdag
-                  </h2>
-                  <p className="mt-2 text-sm font-semibold text-slate-500">
-                    8 av {tasks.length} uppgifter visas • Sorterade efter prioritet
-                  </p>
-                </div>
-
-                <button className="rounded-full bg-pink-50 px-4 py-2 text-sm font-black text-pink-700">
-                  Visa alla uppgifter {hiddenCount > 0 ? `(+${hiddenCount})` : ""}
-                </button>
-              </div>
-
-              <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-                {visibleTasks.map((task) => (
-                  <TaskCard key={task.id} task={task} />
-                ))}
-              </div>
-            </section>
-
-            <section className="rounded-[2.25rem] bg-white p-6 shadow-xl shadow-slate-200/70 sm:p-8">
-              <div className="mb-6">
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-700">
-                  FOS kort
-                </p>
-                <h2 className="mt-1 text-2xl font-black tracking-tight">
-                  Översikt
-                </h2>
-              </div>
-
-              <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-                {cards.map((card) => (
-                  <WorkspaceCardView key={card.id} card={card} />
-                ))}
-              </div>
-            </section>
-          </div>
-
-          <aside className="rounded-[2.25rem] bg-white p-6 shadow-xl shadow-slate-200/70">
-            <div className="flex items-center gap-4">
-              <div className="grid h-14 w-14 place-items-center rounded-2xl bg-pink-50 text-pink-700">
-                <CalendarDays size={28} />
-              </div>
-              <div>
-                <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-700">
-                  Dagens agenda
-                </p>
-                <h2 className="text-2xl font-black tracking-tight">Idag</h2>
+              <div className="mt-5 grid gap-3">
+                {quickActions.map((action) => {
+                  const Icon = action.icon;
+                  return (
+                    <Link
+                      key={action.label}
+                      href={action.href}
+                      className="flex items-center justify-between rounded-2xl bg-stone-50 px-4 py-3 font-black ring-1 ring-stone-200 transition hover:bg-pink-50"
+                    >
+                      <span className="flex items-center gap-3">
+                        <Icon size={18} className="text-pink-600" />
+                        {action.label}
+                      </span>
+                      <ArrowRight size={16} />
+                    </Link>
+                  );
+                })}
               </div>
             </div>
-
-            <div className="mt-7 space-y-5">
-              {tasks
-                .filter((task) => task.time)
-                .map((task) => (
-                  <AgendaItem
-                    key={task.id}
-                    time={task.time || ""}
-                    title={task.title}
-                    text={task.group}
-                  />
-                ))}
-            </div>
-
-            <Link
-              href="/workspace/calendar"
-              className="mt-8 inline-flex h-13 w-full items-center justify-center rounded-2xl bg-pink-600 px-5 text-sm font-black text-white hover:bg-pink-700"
-            >
-              Öppna kalendern
-            </Link>
           </aside>
         </section>
 
-        <section className="rounded-[2rem] bg-white px-6 py-4 shadow-xl shadow-slate-200/70">
-          <div className="flex flex-wrap items-center gap-4">
-            <p className="mr-3 text-xs font-black uppercase tracking-[0.18em] text-pink-700">
-              Snabba åtkomster
+        <section className="mt-8 grid gap-6 lg:grid-cols-[0.75fr_1.25fr]">
+          <div className="rounded-[34px] bg-white p-6 shadow-sm ring-1 ring-stone-200/70 md:p-8">
+            <p className="mb-2 text-xs font-black uppercase tracking-[0.22em] text-pink-600">
+              Performance
             </p>
+            <h2 className="text-3xl font-black tracking-tight">Systemlast</h2>
 
-            <QuickAction title="Ny order" icon={<PlusCircle size={22} />} href="/orders" />
-            <QuickAction title="Ny leverans" icon={<Truck size={22} />} href="/workspace/calendar" />
-            <QuickAction title="Ny kund" icon={<Users size={22} />} href="/workspace" />
-            <QuickAction title="Ny offert" icon={<FileText size={22} />} href="/workspace" />
-            <QuickAction title="Trust Rating" icon={<ShieldCheck size={22} />} href="/trust/rating" />
-            <QuickAction title="Kalender" icon={<CalendarDays size={22} />} href="/workspace/calendar" />
+            <div className="mt-6 space-y-5">
+              <Metric label="CPU" value={63} icon={Cpu} />
+              <Metric label="Memory" value={81} icon={MemoryStick} />
+              <Metric label="Database" value={48} icon={Database} />
+              <Metric label="Queue" value={72} icon={ListChecks} />
+            </div>
+          </div>
+
+          <div className="rounded-[34px] bg-stone-950 p-6 text-white shadow-sm md:p-8">
+            <p className="mb-2 text-xs font-black uppercase tracking-[0.22em] text-pink-400">
+              Kernel Flow
+            </p>
+            <h2 className="text-3xl font-black tracking-tight">
+              Så arbetar FOS
+            </h2>
+
+            <div className="mt-6 grid gap-3 md:grid-cols-4">
+              {[
+                "Event",
+                "Event Store",
+                "Memory",
+                "Intelligence",
+                "Decision",
+                "Action Queue",
+                "Automation",
+                "Calendar / CRM / Economy",
+              ].map((step, index) => (
+                <div
+                  key={step}
+                  className="rounded-2xl bg-white/10 p-4 ring-1 ring-white/10"
+                >
+                  <p className="text-xs font-black text-pink-300">
+                    Steg {index + 1}
+                  </p>
+                  <p className="mt-2 font-black">{step}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
-      </div>
+      </section>
     </main>
   );
 }
 
-function Info({ label, value }: { label: string; value: string }) {
+function Metric({
+  label,
+  value,
+  icon: Icon,
+}: {
+  label: string;
+  value: number;
+  icon: typeof Activity;
+}) {
   return (
     <div>
-      <p className="text-xs font-black uppercase tracking-[0.14em] text-pink-700">
-        {label}
-      </p>
-      <p className="mt-1 text-lg font-black">{value}</p>
-    </div>
-  );
-}
-
-function TaskCard({ task }: { task: WorkspaceTask }) {
-  return (
-    <section className="flex min-h-[190px] flex-col justify-between rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
-      <div>
-        <div className="mb-4 flex items-start justify-between gap-3">
-          <span className={`rounded-full border px-3 py-1 text-xs font-black ${toneMap[task.status]}`}>
-            {task.status === "urgent" ? "Brådskande" : task.status === "today" ? "Idag" : "Planerad"}
-          </span>
-          {task.time && (
-            <span className="inline-flex items-center gap-1 text-xs font-black text-slate-500">
-              <Clock size={14} />
-              {task.time}
-            </span>
-          )}
-        </div>
-
-        <h3 className="text-base font-black leading-6">{task.title}</h3>
-        <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">
-          {task.description || task.group}
-        </p>
+      <div className="mb-2 flex items-center justify-between text-sm font-black">
+        <span className="flex items-center gap-2">
+          <Icon size={17} className="text-pink-600" />
+          {label}
+        </span>
+        <span>{value}%</span>
       </div>
-
-      <button className="mt-5 inline-flex h-10 w-fit items-center gap-2 rounded-2xl bg-slate-50 px-4 text-sm font-black text-slate-700">
-        <CheckCircle2 size={16} />
-        Klar
-      </button>
-    </section>
-  );
-}
-
-function WorkspaceCardView({ card }: { card: WorkspaceCard }) {
-  return (
-    <section className="flex min-h-[170px] flex-col justify-between rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-sm">
-      <div>
-        <div className="mb-5 flex items-start justify-between gap-4">
-          <div className="grid h-14 w-14 place-items-center rounded-2xl bg-pink-50 text-pink-700">
-            {iconMap[card.id] || <CalendarDays size={24} />}
-          </div>
-
-          {card.value !== undefined && (
-            <div className="rounded-full bg-pink-50 px-4 py-2 text-sm font-black text-pink-700">
-              {card.value}
-            </div>
-          )}
-        </div>
-
-        <h3 className="text-lg font-black tracking-tight">{card.title}</h3>
-
-        {card.subtitle && (
-          <p className="mt-2 text-sm font-semibold leading-6 text-slate-600">
-            {card.subtitle}
-          </p>
-        )}
-      </div>
-    </section>
-  );
-}
-
-function AgendaItem({ time, title, text }: { time: string; title: string; text: string }) {
-  return (
-    <div className="grid grid-cols-[58px_1fr] gap-4">
-      <p className="text-sm font-black text-slate-600">{time}</p>
-      <div>
-        <p className="font-black text-slate-950">{title}</p>
-        <p className="mt-1 text-sm font-semibold text-slate-500">{text}</p>
+      <div className="h-3 overflow-hidden rounded-full bg-stone-100">
+        <div
+          className="h-full rounded-full bg-pink-600"
+          style={{ width: `${value}%` }}
+        />
       </div>
     </div>
-  );
-}
-
-function QuickAction({ title, icon, href }: { title: string; icon: React.ReactNode; href: string }) {
-  return (
-    <Link
-      href={href}
-      className="inline-flex items-center gap-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm font-black text-slate-900 hover:bg-pink-50"
-    >
-      <span className="text-pink-700">{icon}</span>
-      {title}
-    </Link>
   );
 }

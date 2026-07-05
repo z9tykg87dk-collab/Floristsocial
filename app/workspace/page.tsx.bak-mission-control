@@ -1,0 +1,231 @@
+import Link from "next/link";
+import {
+  Activity,
+  ArrowRight,
+  Brain,
+  CheckCircle2,
+  Database,
+  HeartPulse,
+  ListChecks,
+  MemoryStick,
+  Network,
+  Settings2,
+  Zap,
+} from "lucide-react";
+import { getFosSystemHealthReport } from "@/lib/fos/system-health";
+
+const modules = [
+  {
+    id: "FOS-01",
+    title: "Core Snapshot",
+    href: "/workspace",
+    api: "/api/fos/snapshot",
+    icon: Database,
+    description: "Samlar nuläget från FOS.",
+  },
+  {
+    id: "FOS-02",
+    title: "Intelligence",
+    href: "/workspace/intelligence",
+    api: "/api/fos/intelligence",
+    icon: Brain,
+    description: "Analyserar data och skapar rekommendationer.",
+  },
+  {
+    id: "FOS-03",
+    title: "Decision Engine",
+    href: "/workspace/decision",
+    api: "/api/fos/decision",
+    icon: Settings2,
+    description: "Fattar beslut baserat på händelser.",
+  },
+  {
+    id: "FOS-04",
+    title: "Event Store",
+    href: "/workspace/event-store",
+    api: "/api/fos/events",
+    icon: Network,
+    description: "Sparar allt som händer i systemet.",
+  },
+  {
+    id: "FOS-05",
+    title: "Memory Engine",
+    href: "/workspace/memory",
+    api: "/api/fos/memory",
+    icon: MemoryStick,
+    description: "Sparar vad FOS har lärt sig.",
+  },
+  {
+    id: "FOS-06",
+    title: "Action Queue",
+    href: "/workspace/action-queue",
+    api: "/api/fos/action-queue",
+    icon: ListChecks,
+    description: "Lägger beslut i kö för utförande.",
+  },
+  {
+    id: "FOS-07",
+    title: "Automation",
+    href: "/workspace/automation",
+    api: "/api/fos/automation",
+    icon: Zap,
+    description: "Utför automatiserade åtgärder.",
+  },
+  {
+    id: "FOS-08",
+    title: "System Health",
+    href: "/workspace/system-health",
+    api: "/api/fos/system-health",
+    icon: HeartPulse,
+    description: "Övervakar alla FOS-motorer.",
+  },
+];
+
+export default function WorkspacePage() {
+  const health = getFosSystemHealthReport();
+
+  return (
+    <main className="min-h-screen bg-[#fbf7f2] px-4 py-8 text-stone-950 md:px-8 lg:px-10">
+      <section className="mx-auto max-w-7xl">
+        <div className="rounded-[36px] bg-gradient-to-br from-stone-950 via-stone-900 to-pink-950 p-6 text-white shadow-xl md:p-8">
+          <div className="flex flex-wrap items-center justify-between gap-5">
+            <div>
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-black ring-1 ring-white/15">
+                <Activity size={17} />
+                FOS Control Center
+              </div>
+
+              <h1 className="text-4xl font-black tracking-tight md:text-5xl">
+                Florist Operating System
+              </h1>
+
+              <p className="mt-4 max-w-3xl text-sm leading-7 text-white/75 md:text-base">
+                Här visas alla FOS-motorer, deras status, API:er och kontrollpaneler.
+              </p>
+            </div>
+
+            <Link
+              href="/workspace/system-health"
+              className="inline-flex items-center gap-2 rounded-full bg-pink-600 px-5 py-3 text-sm font-black text-white transition hover:bg-pink-700"
+            >
+              System Health
+              <ArrowRight size={16} />
+            </Link>
+          </div>
+        </div>
+
+        <section className="mt-8 grid gap-4 md:grid-cols-5">
+          <Stat title="Kernel" value="v1.0" />
+          <Stat title="Status" value={health.status} />
+          <Stat title="Motorer" value={String(health.summary.total)} />
+          <Stat title="Healthy" value={String(health.summary.healthy)} />
+          <Stat title="Critical" value={String(health.summary.critical)} />
+        </section>
+
+        <section className="mt-8 rounded-[32px] bg-white p-5 shadow-sm ring-1 ring-stone-200/70 md:p-7">
+          <div className="mb-6">
+            <p className="mb-2 text-xs font-black uppercase tracking-[0.2em] text-pink-600">
+              FOS Kernel
+            </p>
+            <h2 className="text-3xl font-black tracking-tight">
+              Alla motorer
+            </h2>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {modules.map((module) => {
+              const Icon = module.icon;
+
+              return (
+                <article
+                  key={module.id}
+                  className="rounded-[28px] bg-stone-50 p-5 ring-1 ring-stone-200 transition hover:-translate-y-1 hover:bg-white hover:shadow-lg"
+                >
+                  <div className="mb-4 flex items-start justify-between gap-3">
+                    <div className="grid h-12 w-12 place-items-center rounded-2xl bg-pink-50 text-pink-600">
+                      <Icon size={22} />
+                    </div>
+
+                    <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700">
+                      Active
+                    </span>
+                  </div>
+
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-pink-600">
+                    {module.id}
+                  </p>
+
+                  <h3 className="mt-1 text-xl font-black">{module.title}</h3>
+
+                  <p className="mt-2 min-h-[56px] text-sm leading-7 text-stone-600">
+                    {module.description}
+                  </p>
+
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    <Link
+                      href={module.href}
+                      className="rounded-full bg-stone-950 px-4 py-2 text-sm font-black !text-white"
+                    >
+                      Dashboard
+                    </Link>
+
+                    <a
+                      href={module.api}
+                      target="_blank"
+                      className="rounded-full bg-white px-4 py-2 text-sm font-black text-stone-900 ring-1 ring-stone-200"
+                    >
+                      API
+                    </a>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="mt-8 rounded-[32px] bg-white p-5 shadow-sm ring-1 ring-stone-200/70 md:p-7">
+          <p className="mb-2 text-xs font-black uppercase tracking-[0.2em] text-pink-600">
+            Kernel Flow
+          </p>
+
+          <h2 className="text-3xl font-black tracking-tight">
+            Så arbetar FOS
+          </h2>
+
+          <div className="mt-6 overflow-x-auto rounded-[28px] bg-stone-950 p-6 text-white">
+            <pre className="min-w-[760px] text-sm leading-7">
+{`Event
+  ↓
+Event Store
+  ↓
+Memory Engine
+  ↓
+Intelligence Engine
+  ↓
+Decision Engine
+  ↓
+Action Queue
+  ↓
+Automation Engine
+  ↓
+Calendar · CRM · Notification · Economy · Trust`}
+            </pre>
+          </div>
+        </section>
+      </section>
+    </main>
+  );
+}
+
+function Stat({ title, value }: { title: string; value: string }) {
+  return (
+    <div className="rounded-[28px] bg-white p-5 shadow-sm ring-1 ring-stone-200/70">
+      <p className="text-sm font-black text-stone-500">{title}</p>
+      <p className="mt-2 text-3xl font-black">{value}</p>
+      <div className="mt-4 flex items-center gap-2 text-sm font-bold text-emerald-700">
+        <CheckCircle2 size={16} />
+        OK
+      </div>
+    </div>
+  );
+}

@@ -306,10 +306,7 @@ function getCity(florist: Florist) {
 
 function getAddress(florist: Florist) {
   const street = text(
-    florist.street_address,
-    florist.address,
-    florist.company_address,
-    florist.address_line_1,
+                      florist.address_line_1,
   );
   const postal = text(florist.postal_code, florist.zip, florist.zip_code);
   const city = getCity(florist);
@@ -552,8 +549,8 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
   );
   const aboutImage = safeImage(
     text(
-      florist.shop_image_url,
-      florist.storefront_image_url,
+      florist.cover_image_url,
+      florist.cover_image_medium_url,
       portfolio[0]?.image,
     ),
     FALLBACK_SHOP,
@@ -825,9 +822,9 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
                   label="Butik"
                   value={
                     text(
-                      florist.street_address,
-                      florist.address,
-                      florist.company_address,
+                      
+                      
+                      
                       florist.address_line_1,
                     ) || getAddress(florist)
                   }
@@ -1136,7 +1133,7 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
               <PopularCard
                 icon={<UserRound size={22} />}
                 title="Följare"
-                text={`${florist.follower_count ?? 0} följare`}
+                text={`${0} följare`}
               />
               <PopularCard
                 icon={<Package size={22} />}
@@ -1146,7 +1143,7 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
               <PopularCard
                 icon={<MessageCircle size={22} />}
                 title="Kommentarer"
-                text={`${florist.comment_count ?? 0} kommentarer`}
+                text={`${0} kommentarer`}
               />
               <PopularCard
                 icon={<Heart size={22} />}
@@ -1204,25 +1201,25 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
                   href={`/marketplace?filter=delivery-fee`}
                   icon={<Truck size={17} />}
                   label="Bud avgift"
-                  value={formatPrice(florist.delivery_fee_from || 79)}
+                  value={formatPrice(florist.standard_delivery_fee || 79)}
                 />
                 <MiniMetric
                   href={`/marketplace?filter=delivery-cutoff`}
                   icon={<Clock size={17} />}
                   label="Stopptid"
-                  value={text(florist.same_day_cutoff) || "11:00"}
+                  value={text(florist.same_day_cutoff_time) || "11:00"}
                 />
                 <MiniMetric
                   href={`/marketplace?filter=express-delivery`}
                   icon={<Phone size={17} />}
                   label="Express"
-                  value={florist.express_delivery === false ? "Nej" : "Ja"}
+                  value={florist.express_delivery_available === false ? "Nej" : "Ja"}
                 />
                 <MiniMetric
                   href={`/marketplace?filter=sunday-delivery`}
                   icon={<CalendarDays size={17} />}
                   label="Söndag"
-                  value={florist.sunday_delivery === false ? "Nej" : "Ja"}
+                  value="Ja"
                 />
               </div>
               <div id="delivery" style={{ marginTop: 12, fontSize: 14 }}>

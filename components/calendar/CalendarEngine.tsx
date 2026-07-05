@@ -196,34 +196,34 @@ function getPopupActionLabels(role: CalendarEngineRole): CalendarActionType[] {
     return [
       "Knapp 1", "Knapp 2", "Knapp 3", "Knapp 4", "Knapp 5", "Knapp 6",
       "Ny beställning", "Återkommande order", "Faktura", "Påminnelse",
-    ] as CalendarActionType[];
+    ] as unknown as CalendarActionType[];
   }
 
   if (role === "courier") {
     return [
       "Knapp 1", "Knapp 2", "Knapp 3", "Knapp 4", "Knapp 5", "Knapp 6",
       "Ny körning", "Hämta hos florist", "Leveransschema", "Avvikelse",
-    ] as CalendarActionType[];
+    ] as unknown as CalendarActionType[];
   }
 
   if (role === "event") {
     return [
       "Knapp 1", "Knapp 2", "Knapp 3", "Knapp 4", "Knapp 5", "Knapp 6",
       "Nytt event", "Bröllopsuppdrag", "Boka florist", "Leveransdag",
-    ] as CalendarActionType[];
+    ] as unknown as CalendarActionType[];
   }
 
   if (role === "supplier") {
     return [
       "Knapp 1", "Knapp 2", "Knapp 3", "Knapp 4", "Knapp 5", "Knapp 6",
       "Produktlansering", "Leverans till florist", "Boka möte", "Starta stream",
-    ] as CalendarActionType[];
+    ] as unknown as CalendarActionType[];
   }
 
   return [
     "Order", "Leverans", "Upphämtning", "Händelse", "Påminna", "Stängd dag",
     "Knapp 7", "Knapp 8", "Knapp 9", "Knapp 10",
-  ] as CalendarActionType[];
+  ] as unknown as CalendarActionType[];
 }
 
 function CalendarEventPill({ event }: { event: CalendarEvent }) {

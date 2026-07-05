@@ -25,6 +25,7 @@ type FeedPost = {
   florist_logo_url?: string | null;
   title?: string | null;
   caption?: string | null;
+  description?: string | null;
   hashtags?: string[] | string | null;
   price?: number | string | null;
   image_url?: string | null;
@@ -163,7 +164,7 @@ async function loadFeedPosts(
     .limit(40);
 
   if (!feedError && feedItems) {
-    return feedItems as FeedPost[];
+    return feedItems as unknown as FeedPost[];
   }
 
   const { data: oldPosts } = await supabase
@@ -172,7 +173,7 @@ async function loadFeedPosts(
     .order("created_at", { ascending: false })
     .limit(40);
 
-  return (oldPosts || []) as FeedPost[];
+  return (oldPosts || []) as unknown as FeedPost[];
 }
 
 export default async function FeedPage() {
@@ -200,7 +201,7 @@ export default async function FeedPage() {
                 </div>
 
                 <h1 className="text-4xl font-black tracking-tight md:text-5xl">
-                  Upptäck floristinspiration
+                  Sociala Flödet
                 </h1>
 
                 <p className="mt-3 max-w-2xl text-sm leading-7 text-stone-600 md:text-base">
@@ -353,7 +354,7 @@ function PostCard({
         <div className="relative max-h-[650px] overflow-hidden bg-stone-100">
           <Image
             src={image}
-            alt={post.title || post.caption || "Floristinspiration"}
+            alt={post.title || post.caption || "Sociala Flödet"}
             width={1200}
             height={900}
             className="max-h-[650px] w-full object-cover"
@@ -375,7 +376,7 @@ function PostCard({
           {post.caption ||
             post.description ||
             post.title ||
-            "Floristinspiration från FloristSocial."}
+            "Sociala Flödet från FloristSocial."}
         </p>
 
         {hashtags.length > 0 ? (

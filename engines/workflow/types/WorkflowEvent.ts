@@ -6,6 +6,7 @@ export type WorkflowPriority =
 
 export type WorkflowEventType =
   | "ORDER_CREATED"
+  | "PRODUCTION_PLANNED"
   | "ORDER_ACCEPTED"
   | "ORDER_DECLINED"
   | "ORDER_CANCELLED"

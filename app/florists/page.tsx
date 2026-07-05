@@ -82,7 +82,7 @@ export default async function FloristsPage() {
     .select("*")
     .order("created_at", { ascending: false });
 
-  const florists = (data || []) as Florist[];
+  const florists = (data || []) as unknown as Florist[];
   const visibleFlorists = florists.length > 0 ? florists : [];
 
   return (
