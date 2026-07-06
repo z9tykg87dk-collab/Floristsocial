@@ -39,6 +39,7 @@ type Props = {
   hoveredFloristId?: string | null;
   onHoverFlorist?: (floristId: string | null) => void;
   onOrderFlorist?: (florist: FloristMapItem) => void;
+  mode?: "full" | "preview";
 };
 
 const dayNames = ["Söndag", "Måndag", "Tisdag", "Onsdag", "Torsdag", "Fredag", "Lördag"];
@@ -311,24 +312,27 @@ export default function FloristSearchMap({
   hoveredFloristId,
   onHoverFlorist,
   onOrderFlorist,
+  mode = "full",
 }: Props) {
   const center: [number, number] =
-    recipientLat && recipientLng ? [recipientLat, recipientLng] : [59.3293, 18.0686];
+    recipientLat && recipientLng
+      ? [recipientLat, recipientLng]
+      : mode === "preview"
+        ? [62.5, 14.0]
+        : [59.3293, 18.0686];
 
   const markersRef = useRef<Record<string, L.Marker>>({});
   const recipient = useMemo(() => recipientIcon(), []);
 
   useEffect(() => {
-    if (!hoveredFloristId) return;
-    const marker = markersRef.current[hoveredFloristId];
-    if (marker) marker.openPopup();
-  }, [hoveredFloristId]);
+    return;
+  }, [hoveredFloristId, mode]);
 
   return (
-    <div className="h-[620px] overflow-hidden rounded-[34px] border border-stone-200 bg-white shadow-sm">
+    <div className={mode === "preview" ? "h-full overflow-hidden bg-white" : "h-full min-h-[760px] overflow-hidden rounded-[34px] border border-stone-200 bg-white shadow-sm"}>
       <MapContainer
         center={center}
-        zoom={12}
+        zoom={mode === "preview" ? 4 : 12}
         scrollWheelZoom={false}
         className="h-full w-full"
       >
@@ -337,7 +341,9 @@ export default function FloristSearchMap({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        <FitMap recipientLat={recipientLat} recipientLng={recipientLng} florists={florists} />
+        {mode === "full" ? (
+          <FitMap recipientLat={recipientLat} recipientLng={recipientLng} florists={florists} />
+        ) : null}
 
         {recipientLat && recipientLng && (
           <Marker position={[recipientLat, recipientLng]} icon={recipient}>
@@ -367,74 +373,83 @@ export default function FloristSearchMap({
               position={[florist.latitude, florist.longitude]}
               icon={floristIcon(logo, active)}
               eventHandlers={{
-                mouseover: () => onHoverFlorist?.(florist.florist_id),
-                mouseout: () => onHoverFlorist?.(null),
+                mouseover: () => {
+                  if (mode !== "preview") onHoverFlorist?.(florist.florist_id);
+                },
+                mouseout: () => {
+                  if (mode !== "preview") onHoverFlorist?.(null);
+                },
+                click: () => {
+                  if (mode === "preview") window.location.href = "/florists/map";
+                },
               }}
             >
-              <Popup closeButton maxWidth={430} minWidth={400}>
-                <div style={{ width: 400, maxWidth: "95vw", padding: 9 }}>
-                  <div style={{ display: "flex", gap: 16 }}>
-                    <img
-                      src={image}
-                      alt={name}
-                      style={{
-                        width: 100,
-                        height: 100,
-                        borderRadius: 18,
-                        objectFit: "cover",
-                      }}
-                    />
+              {mode === "full" ? (
+                <Popup closeButton maxWidth={430} minWidth={400}>
+                  <div style={{ width: 400, maxWidth: "95vw", padding: 9 }}>
+                    <div style={{ display: "flex", gap: 16 }}>
+                      <img
+                        src={image}
+                        alt={name}
+                        style={{
+                          width: 100,
+                          height: 100,
+                          borderRadius: 18,
+                          objectFit: "cover",
+                        }}
+                      />
 
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 21, fontWeight: 900 }}>{name}</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 21, fontWeight: 900 }}>{name}</div>
 
-                      <div style={{ marginTop: 8, display: "flex", gap: 10, alignItems: "center", fontSize: 14 }}>
-                        <span>⭐ {florist.rating ?? 4.9} ({florist.review_count ?? 0})</span>
-                        <span
-                          style={{
-                            borderRadius: 999,
-                            padding: "4px 9px",
-                            fontWeight: 900,
-                            color: status.open ? "#047857" : "#b91c1c",
-                            background: status.open ? "#ecfdf5" : "#fef2f2",
-                          }}
-                        >
-                          {status.label}
-                        </span>
-                      </div>
+                        <div style={{ marginTop: 8, display: "flex", gap: 10, alignItems: "center", fontSize: 14 }}>
+                          <span>⭐ {florist.rating ?? 4.9} ({florist.review_count ?? 0})</span>
+                          <span
+                            style={{
+                              borderRadius: 999,
+                              padding: "4px 9px",
+                              fontWeight: 900,
+                              color: status.open ? "#047857" : "#b91c1c",
+                              background: status.open ? "#ecfdf5" : "#fef2f2",
+                            }}
+                          >
+                            {status.label}
+                          </span>
+                        </div>
 
-                      <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 9, fontSize: 13 }}>
-                        <div>📍 {florist.distance_km} km</div>
-                        <div>⏰ {florist.same_day_cutoff_time || "-"}</div>
-                        <div>🚚 {florist.standard_delivery_fee ?? 0} kr</div>
-                        {florist.express_delivery_available && (
-                          <div>⚡ {florist.express_delivery_fee ?? 0} kr</div>
-                        )}
+                        <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 9, fontSize: 13 }}>
+                          <div>📍 {florist.distance_km} km</div>
+                          <div>⏰ {florist.same_day_cutoff_time || "-"}</div>
+                          <div>🚚 {florist.standard_delivery_fee ?? 0} kr</div>
+                          {florist.express_delivery_available && (
+                            <div>⚡ {florist.express_delivery_fee ?? 0} kr</div>
+                          )}
+                        </div>
                       </div>
                     </div>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "0.9fr 0.9fr 1.4fr", gap: 10, marginTop: 18 }}>
+                      <a href={`/florist/${florist.florist_id}`} style={{ padding: 10, borderRadius: 12, border: "1px solid #e7e5e4", textAlign: "center", fontWeight: 800 }}>
+                        Besök butik
+                      </a>
+
+                      <a href={`/chat?floristId=${florist.florist_id}`} style={{ padding: 10, borderRadius: 12, border: "1px solid #e7e5e4", textAlign: "center", fontWeight: 800 }}>
+                        Chatta
+                      </a>
+
+                      <button
+                        type="button"
+                        onClick={() => onOrderFlorist?.(florist)}
+                        style={{ padding: 10, borderRadius: 12, border: 0, background: "#db2777", color: "white", fontWeight: 900, cursor: "pointer" }}
+                      >
+                        Beställ här
+                      </button>
+                    </div>
+
+                    <ProductCarousel florist={florist} onOrderFlorist={onOrderFlorist} />
                   </div>
-
-                  <div style={{ display: "grid", gridTemplateColumns: "0.9fr 0.9fr 1.4fr", gap: 10, marginTop: 18 }}>
-                    <a href={`/florist/${florist.florist_id}`} style={{ padding: 10, borderRadius: 12, border: "1px solid #e7e5e4", textAlign: "center", fontWeight: 800 }}>
-                      Besök butik
-                    </a>
-
-                    <a href={`/chat?floristId=${florist.florist_id}`} style={{ padding: 10, borderRadius: 12, border: "1px solid #e7e5e4", textAlign: "center", fontWeight: 800 }}>
-                      Chatta
-                    </a>
-
-                    <button
-                      type="button"
-                      onClick={() => onOrderFlorist?.(florist)}
-                      style={{ padding: 10, borderRadius: 12, border: 0, background: "#db2777", color: "white", fontWeight: 900, cursor: "pointer" }}
-                    >
-                      Beställ här
-                    </button>
-                  </div>
-
-                  <ProductCarousel florist={florist} onOrderFlorist={onOrderFlorist} />
-                </div>
-              </Popup>
+                </Popup>
+              ) : null}
             </Marker>
           );
         })}

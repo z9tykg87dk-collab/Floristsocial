@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
+import HomeFloristMap from "@/components/HomeFloristMap";
+import GuestAuthAction from "@/components/GuestAuthAction";
 import {
   ArrowRight,
   Heart,
@@ -209,19 +211,7 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="mt-8 max-w-2xl rounded-full bg-white/90 p-2 shadow-xl ring-1 ring-stone-200 backdrop-blur">
-                <div className="flex items-center gap-3 px-4">
-                  <Search size={20} className="text-pink-600" />
-                  <input
-                    className="h-12 w-full bg-transparent text-sm font-semibold outline-none placeholder:text-stone-400"
-                    placeholder="Sök florist, stad, blomma eller inspiration"
-                  />
-                  <button className="hidden rounded-full bg-stone-950 px-5 py-3 text-sm font-black !text-white text-white sm:block">
-                    Sök
-                  </button>
-                </div>
               </div>
-            </div>
 
             <div className="mt-12 grid gap-5 md:grid-cols-3">
               {heroCards.map((card, index) => (
@@ -255,53 +245,7 @@ export default function Home() {
         </div>
       </section>
 
-      <ContentSection
-        eyebrow="Dynamiskt flöde"
-        title="Populärt just nu"
-        subtitle="Här kan vi senare visa trendande inlägg, mest gillade buketter, sparade bröllopsbilder och florister som syns mycket just nu."
-      >
-        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
-          {trending.map((item) => (
-            <article
-              key={item.title}
-              className="overflow-hidden rounded-[32px] bg-white shadow-sm ring-1 ring-stone-200/70"
-            >
-              <div className="h-64">
-                <img
-                  src={item.image}
-                  alt=""
-                  className="h-full w-full object-cover"
-                />
-              </div>
-              <div className="p-5">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <h3 className="font-black">{item.title}</h3>
-                    <p className="mt-1 text-sm font-semibold text-stone-500">
-                      {item.florist} · {item.city}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1 rounded-full bg-pink-50 px-3 py-1 text-sm font-black text-pink-700">
-                    <Heart size={15} /> {item.likes}
-                  </div>
-                </div>
-
-                <div className="mt-4 flex gap-2">
-                  <button className="rounded-full bg-stone-50 px-3 py-2 text-xs font-black text-stone-700">
-                    <MessageCircle size={14} className="mr-1 inline" />
-                    Fråga
-                  </button>
-                  <button className="rounded-full bg-pink-600 px-3 py-2 text-xs font-black text-white">
-                    Beställ liknande
-                  </button>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-      </ContentSection>
-
-      <section className="mx-auto max-w-7xl px-4 py-10 md:px-8 lg:px-10">
+      <section className="mx-auto max-w-[1450px] px-4 py-10 md:px-8 lg:px-10">
         <div className="rounded-[36px] bg-white p-5 shadow-sm ring-1 ring-stone-200/70 md:p-7">
           <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
             <div>
@@ -309,7 +253,7 @@ export default function Home() {
                 Hitta florist nära dig
               </p>
               <h2 className="text-3xl font-black tracking-tight md:text-4xl">
-                Upptäck florister i ditt område
+                Hitta florist
               </h2>
               <p className="mt-3 max-w-2xl text-sm leading-7 text-stone-600 md:text-base">
                 Sök lokala florister, öppna deras profiler och gå vidare till
@@ -318,83 +262,13 @@ export default function Home() {
             </div>
             <Link
               href="/florists"
-              className="rounded-full bg-stone-950 px-5 py-3 text-sm font-black !text-white text-white"
+              className="rounded-full bg-stone-950 !text-white px-5 py-3 text-sm font-black !text-white text-white"
             >
               Se alla florister
             </Link>
           </div>
 
-          <div className="grid gap-5 lg:grid-cols-[1.05fr_1fr]">
-            <div className="relative min-h-[420px] overflow-hidden rounded-[28px] bg-gradient-to-br from-emerald-100 via-sky-100 to-amber-50 ring-1 ring-stone-200">
-              <div className="absolute inset-0 opacity-70">
-                <div className="absolute left-[12%] top-[18%] h-40 w-40 rounded-full bg-emerald-300/40 blur-3xl" />
-                <div className="absolute bottom-[10%] right-[12%] h-48 w-48 rounded-full bg-sky-300/40 blur-3xl" />
-                <div className="absolute left-[38%] top-[45%] h-52 w-52 rounded-full bg-amber-200/50 blur-3xl" />
-              </div>
-
-              <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.34)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.34)_1px,transparent_1px)] bg-[size:56px_56px]" />
-
-              {mapPins.map((pin) => (
-                <div
-                  key={pin.name}
-                  className="absolute -translate-x-1/2 -translate-y-1/2"
-                  style={{ left: pin.x, top: pin.y }}
-                >
-                  <div className="relative">
-                    <span className="absolute inset-0 animate-ping rounded-full bg-pink-500/30" />
-                    <img
-                      src={pin.img}
-                      alt=""
-                      className="relative h-16 w-16 rounded-full border-4 border-white object-cover shadow-xl"
-                    />
-                  </div>
-                </div>
-              ))}
-
-              <div className="absolute bottom-5 left-5 rounded-2xl bg-white/90 p-4 shadow-lg backdrop-blur">
-                <p className="text-sm font-black text-stone-900">
-                  Karta över florister
-                </p>
-                <p className="mt-1 text-xs font-semibold text-stone-500">
-                  Klicka på floristsökningen för att öppna den riktiga kartan och hitta florister nära mottagaren.
-                </p>
-              </div>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2">
-              {featuredFlorists.map((florist) => (
-                <article
-                  key={florist.name}
-                  className="overflow-hidden rounded-[24px] bg-stone-50 shadow-sm ring-1 ring-stone-200"
-                >
-                  <div className="h-36">
-                    <img
-                      src={florist.image}
-                      alt=""
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                  <div className="p-4">
-                    <h3 className="font-black">{florist.name}</h3>
-                    <p className="mt-1 flex items-center gap-1 text-sm font-semibold text-stone-500">
-                      <MapPin size={14} className="text-pink-600" />
-                      {florist.city}
-                    </p>
-                    <p className="mt-2 text-sm font-black text-amber-600">
-                      ★★★★★{" "}
-                      <span className="text-stone-700">{florist.rating}</span>
-                    </p>
-                    <Link
-                      href={`/public/florist/${encodeURIComponent(florist.name)}`}
-                      className="mt-4 inline-flex rounded-full bg-white px-4 py-2 text-xs font-black text-stone-900 ring-1 ring-stone-200"
-                    >
-                      Visa profil
-                    </Link>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </div>
+          <HomeFloristMap homeFlorists={featuredFlorists} />
         </div>
       </section>
 
@@ -459,7 +333,7 @@ export default function Home() {
                 </p>
                 <Link
                   href={`/public/florist/${encodeURIComponent(florist.name)}`}
-                  className="mt-4 inline-flex rounded-full bg-stone-950 px-4 py-2 text-sm font-black !text-white text-white"
+                  className="mt-4 inline-flex rounded-full bg-stone-950 !text-white px-4 py-2 text-sm font-black !text-white text-white"
                 >
                   Visa profil
                 </Link>
@@ -469,7 +343,7 @@ export default function Home() {
         </div>
       </ContentSection>
 
-      <section className="mx-auto max-w-7xl px-4 py-10 md:px-8 lg:px-10">
+      <section className="mx-auto max-w-[1450px] px-4 py-10 md:px-8 lg:px-10">
         <div className="rounded-[34px] bg-white p-7 shadow-sm ring-1 ring-stone-200/70 md:p-9">
           <div className="grid gap-8 lg:grid-cols-[1fr_2fr] lg:items-center">
             <div>
@@ -485,7 +359,7 @@ export default function Home() {
               </p>
               <Link
                 href="/florist/register"
-                className="mt-5 inline-flex rounded-full bg-pink-600 px-5 py-3 text-sm font-black text-white transition hover:bg-pink-700"
+                className="mt-5 inline-flex rounded-full bg-pink-600 !text-white px-5 py-3 text-sm font-black text-white transition hover:bg-pink-700"
               >
                 Skapa floristkonto
               </Link>
@@ -521,6 +395,56 @@ export default function Home() {
           </div>
         </div>
       </section>
+      <ContentSection
+        eyebrow="Dynamiskt flöde"
+        title="Populärt just nu"
+        subtitle="Här kan vi senare visa trendande inlägg, mest gillade buketter, sparade bröllopsbilder och florister som syns mycket just nu."
+      >
+        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+          {trending.map((item) => (
+            <article
+              key={item.title}
+              className="overflow-hidden rounded-[32px] bg-white shadow-sm ring-1 ring-stone-200/70"
+            >
+              <div className="h-64">
+                <img
+                  src={item.image}
+                  alt=""
+                  className="h-full w-full object-cover"
+                />
+              </div>
+              <div className="p-5">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="font-black">{item.title}</h3>
+                    <p className="mt-1 text-sm font-semibold text-stone-500">
+                      {item.florist} · {item.city}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1 rounded-full bg-pink-50 px-3 py-1 text-sm font-black text-pink-700">
+                    <Heart size={15} /> {item.likes}
+                  </div>
+                </div>
+
+                <div className="mt-4 flex gap-2">
+                  <GuestAuthAction
+                    icon={<MessageCircle size={14} />}
+                  >
+                    Fråga
+                  </GuestAuthAction>
+                  <Link
+                    href="/order/private/guest-v4"
+                    className="rounded-full bg-pink-600 px-3 py-2 text-xs font-black !text-white"
+                  >
+                    Beställ liknande
+                  </Link>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
+      </ContentSection>
+
     </main>
   );
 }
@@ -537,7 +461,7 @@ function ContentSection({
   children: ReactNode;
 }) {
   return (
-    <section className="mx-auto max-w-7xl px-4 py-10 md:px-8 lg:px-10">
+    <section className="mx-auto max-w-[1450px] px-4 py-10 md:px-8 lg:px-10">
       <div className="mb-7">
         <p className="mb-2 text-xs font-black uppercase tracking-[0.2em] text-pink-600">
           {eyebrow}
