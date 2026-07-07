@@ -377,7 +377,7 @@ export default function FloristsHeroSearch() {
                     )}
 
                     <div className="mt-5 grid gap-2 sm:grid-cols-3">
-                      <Link href={`/florist/${florist.florist_id}`} className="inline-flex items-center justify-center gap-1 rounded-full bg-stone-950 px-4 py-2 text-sm font-black !text-white">
+                      <Link href={`/public/florist/${florist.florist_id}`} className="inline-flex items-center justify-center gap-1 rounded-full bg-stone-950 px-4 py-2 text-sm font-black !text-white">
                         <Store size={15} />
                         Butik
                       </Link>

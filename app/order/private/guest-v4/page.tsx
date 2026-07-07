@@ -501,10 +501,50 @@ export default function GuestV42Bestallningsstudio() {
   const [pollenFree, setPollenFree] = useState(false);
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   const [message, setMessage] = useState("");
+  const [recipientStreet, setRecipientStreet] = useState("");
+  const [recipientPostalCode, setRecipientPostalCode] = useState("");
+  const [recipientCity, setRecipientCity] = useState("");
+  const [recipientCountry, setRecipientCountry] = useState("");
+  const [recipientDeliveryDate, setRecipientDeliveryDate] = useState("");
 
   useEffect(() => {
     setOrderNumber(generateOrderNumber());
     setCreatedAt(nowStamp());
+
+    setRecipientStreet(
+      localStorage.getItem("orderRecipientStreetAddress") ||
+        localStorage.getItem("recipientStreetAddress") ||
+        localStorage.getItem("deliveryStreetAddress") ||
+        ""
+    );
+
+    setRecipientPostalCode(
+      localStorage.getItem("orderRecipientPostalCode") ||
+        localStorage.getItem("recipientPostalCode") ||
+        localStorage.getItem("deliveryPostalCode") ||
+        ""
+    );
+
+    setRecipientCity(
+      localStorage.getItem("orderRecipientCity") ||
+        localStorage.getItem("recipientCity") ||
+        localStorage.getItem("deliveryCity") ||
+        ""
+    );
+
+    setRecipientCountry(
+      localStorage.getItem("orderRecipientCountry") ||
+        localStorage.getItem("recipientCountry") ||
+        localStorage.getItem("deliveryCountry") ||
+        "Sverige"
+    );
+
+    setRecipientDeliveryDate(
+      localStorage.getItem("orderRecipientDeliveryDate") ||
+        localStorage.getItem("recipientDeliveryDate") ||
+        localStorage.getItem("deliveryDate") ||
+        ""
+    );
   }, []);
 
   const isDelivery = deliveryMethod === "Leverans";
@@ -891,6 +931,8 @@ export default function GuestV42Bestallningsstudio() {
                     }
                     type="date"
                     placeholder=""
+                    value={recipientDeliveryDate}
+                    onChange={setRecipientDeliveryDate}
                   />
                   <Field
                     label={
@@ -920,16 +962,28 @@ export default function GuestV42Bestallningsstudio() {
                         required
                         label="Mottagarens gatuadress och husnummer"
                         placeholder="Gatuadress och husnummer"
+                        value={recipientStreet}
+                        onChange={setRecipientStreet}
                       />
                       <Field
                         required
                         label="Mottagarens postnummer"
                         placeholder="Ex. 113 50"
+                        value={recipientPostalCode}
+                        onChange={setRecipientPostalCode}
                       />
                       <Field
                         required
                         label="Mottagarens ort"
                         placeholder="Ex. Stockholm"
+                        value={recipientCity}
+                        onChange={setRecipientCity}
+                      />
+                      <Field
+                        label="Land"
+                        placeholder="Sverige"
+                        value={recipientCountry}
+                        onChange={setRecipientCountry}
                       />
                       <Field label="Portkod" placeholder="Ex. 1234" />
                       <Field label="Våning" placeholder="Ex. 3 tr" />

@@ -249,7 +249,7 @@ export default function FloristFinder() {
                     </div>
 
                     <div className="grid grid-cols-3 gap-3 border-t border-stone-100 p-4">
-                      <Link href={`/florist/${florist.florist_id}`} className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-3 py-3 text-xs font-black text-stone-900 ring-1 ring-stone-200">
+                      <Link href={`/public/florist/${florist.florist_id}`} className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-3 py-3 text-xs font-black text-stone-900 ring-1 ring-stone-200">
                         <Store size={15} />
                         <span className="hidden sm:inline">Besök butik</span>
                       </Link>

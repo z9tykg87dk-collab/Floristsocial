@@ -366,7 +366,7 @@ export default function TestHittaFloristPage() {
 
                     <div className="grid grid-cols-3 gap-3 border-t border-stone-100 p-4 pt-3">
                       <Link
-                        href={`/florist/${florist.florist_id}`}
+                        href={`/public/florist/${florist.florist_id}`}
                         className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-3 py-3 text-xs font-black text-stone-900 ring-1 ring-stone-200 transition hover:bg-stone-50"
                       >
                         <Store size={15} />

@@ -307,6 +307,15 @@ export default function FloristsMapView({
     );
   }
 
+  function autoMatchToOrder() {
+    saveSearch();
+    localStorage.setItem("floristSelectionMode", "auto-match");
+    localStorage.setItem("recipientSearchMode", "floristsocial-matching");
+    localStorage.setItem("selectedFloristId", "");
+    localStorage.setItem("selectedFloristName", "FloristSocial Matching");
+    window.location.href = "/order/private/guest-v4";
+  }
+
   function orderFromFlorist(florist: Florist) {
     saveSearch();
 
@@ -390,8 +399,16 @@ export default function FloristsMapView({
 
                 <button
                   type="button"
+                  onClick={autoMatchToOrder}
+                  className="mt-2 rounded-2xl bg-emerald-50 px-4 py-4 text-sm font-black text-emerald-800 ring-1 ring-emerald-200 transition hover:bg-emerald-100"
+                >
+                  Låt FloristSocial matcha florist
+                </button>
+
+                <button
+                  type="button"
                   onClick={saveSearch}
-                  className="mt-2 rounded-full bg-pink-600 px-4 py-4 text-sm font-black !text-white"
+                  className="rounded-full bg-pink-600 px-4 py-4 text-sm font-black !text-white"
                 >
                   <Search size={16} className="mr-1 inline" />
                   Sök
@@ -588,7 +605,7 @@ function FloristCard({
 
         <div className="mt-5 grid gap-2 sm:grid-cols-3">
           <a
-            href={`/florist/${florist.id}`}
+            href={`/public/florist/${florist.id}`}
             className="rounded-full bg-stone-950 px-4 py-2 text-center text-sm font-black !text-white"
           >
             Profil

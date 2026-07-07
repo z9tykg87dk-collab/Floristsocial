@@ -250,7 +250,7 @@ function FloristCard({ florist, index }: { florist: Florist; index: number }) {
 
         <div className="mt-5 grid gap-2 sm:grid-cols-3">
           <Link
-            href={`/florist/${florist.id}`}
+            href={`/public/florist/${florist.id}`}
             className="rounded-full bg-stone-950 px-4 py-2 text-center text-sm font-black !text-white"
           >
             Profil

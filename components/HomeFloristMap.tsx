@@ -262,7 +262,7 @@ export default function HomeFloristMap({
     };
   });
 
-  function saveSearch(nextPath: string, mode?: "near-me") {
+  function saveSearch(nextPath: string, mode?: "near-me" | "matching") {
     const fullAddress = [streetAddress, postalCode, city, country]
       .filter(Boolean)
       .join(", ");
@@ -289,7 +289,16 @@ export default function HomeFloristMap({
 
     localStorage.setItem(
       "recipientSearchMode",
-      mode === "near-me" ? "near-me" : "manual"
+      mode === "near-me"
+        ? "near-me"
+        : mode === "matching"
+          ? "floristsocial-matching"
+          : "manual"
+    );
+
+    localStorage.setItem(
+      "floristSelectionMode",
+      mode === "matching" ? "auto-match" : "customer-choice"
     );
 
     localStorage.setItem("purchaseMode", purchaseMode);
@@ -418,8 +427,16 @@ export default function HomeFloristMap({
 
           <button
             type="button"
+            onClick={() => saveSearch("/order/private/guest-v4", "matching")}
+            className="mt-1 inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-50 px-5 py-4 text-sm font-black text-emerald-800 ring-1 ring-emerald-200 transition hover:bg-emerald-100"
+          >
+            Låt FloristSocial matcha florist
+          </button>
+
+          <button
+            type="button"
             onClick={() => saveSearch("/florists/map", "near-me")}
-            className="mt-1 inline-flex items-center justify-center gap-2 rounded-2xl bg-stone-50 px-4 py-4 text-sm font-black text-stone-900 ring-1 ring-stone-200 transition hover:bg-pink-50"
+            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-stone-50 px-4 py-4 text-sm font-black text-stone-900 ring-1 ring-stone-200 transition hover:bg-pink-50"
           >
             <LocateFixed size={18} className="text-pink-600" />
             Nära mig
@@ -442,6 +459,8 @@ export default function HomeFloristMap({
             Full karta
             <ArrowRight size={18} />
           </button>
+
+          
         </div>
 
         <div className="mt-6 rounded-[22px] bg-[#fbf7f2] p-4 ring-1 ring-stone-200">

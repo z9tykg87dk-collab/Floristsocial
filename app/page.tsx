@@ -27,7 +27,7 @@ const heroCards = [
     icon: "📍",
     title: "Hitta florist nära dig",
     text: "Sök bland florister i ditt område, se deras arbeten, tjänster, recensioner och kontaktvägar.",
-    href: "/florists",
+    href: "/florists/map",
     cta: "Hitta florist",
   },
   {
@@ -245,7 +245,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-[1450px] px-4 py-10 md:px-8 lg:px-10">
+      <section className="mx-auto max-w-[1450px] px-1 py-10 md:px-2">
         <div className="rounded-[36px] bg-white p-5 shadow-sm ring-1 ring-stone-200/70 md:p-7">
           <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
             <div>
@@ -261,7 +261,7 @@ export default function Home() {
               </p>
             </div>
             <Link
-              href="/florists"
+              href="/florists/map"
               className="rounded-full bg-stone-950 !text-white px-5 py-3 text-sm font-black !text-white text-white"
             >
               Se alla florister
@@ -343,7 +343,7 @@ export default function Home() {
         </div>
       </ContentSection>
 
-      <section className="mx-auto max-w-[1450px] px-4 py-10 md:px-8 lg:px-10">
+      <section className="mx-auto max-w-[1450px] px-1 py-10 md:px-2">
         <div className="rounded-[34px] bg-white p-7 shadow-sm ring-1 ring-stone-200/70 md:p-9">
           <div className="grid gap-8 lg:grid-cols-[1fr_2fr] lg:items-center">
             <div>
@@ -434,7 +434,7 @@ export default function Home() {
                   </GuestAuthAction>
                   <Link
                     href="/order/private/guest-v4"
-                    className="rounded-full bg-pink-600 px-3 py-2 text-xs font-black !text-white"
+                    className="inline-flex items-center justify-center rounded-full bg-pink-600 px-3 py-2 text-center text-xs font-black !text-white"
                   >
                     Beställ liknande
                   </Link>
@@ -461,7 +461,7 @@ function ContentSection({
   children: ReactNode;
 }) {
   return (
-    <section className="mx-auto max-w-[1450px] px-4 py-10 md:px-8 lg:px-10">
+    <section className="mx-auto max-w-[1450px] px-1 py-10 md:px-2">
       <div className="mb-7">
         <p className="mb-2 text-xs font-black uppercase tracking-[0.2em] text-pink-600">
           {eyebrow}

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Heart, Mail, MapPin, MessageCircle, ShieldCheck, Sparkles, Store } from "lucide-react";
+import { Mail, MapPin, ShieldCheck, Sparkles } from "lucide-react";
 
 const footerGroups = [
   {
@@ -16,9 +16,10 @@ const footerGroups = [
   {
     title: "För kunder",
     links: [
-      { label: "Orderhistorik", href: "/orders/history" },
-      { label: "Favoriter", href: "/favorites" },
-      { label: "Företagsregistrering", href: "/company/register" },
+      { label: "Privatkund registrering", href: "/private/customer-register" },
+      { label: "Företagskund registrering", href: "/company/register" },
+      { label: "Miljö", href: "/environment" },
+      { label: "Säkerhet", href: "/security" },
       { label: "Hjälpcenter", href: "/help" },
     ],
   },

@@ -429,7 +429,7 @@ export default function FloristSearchMap({
                     </div>
 
                     <div style={{ display: "grid", gridTemplateColumns: "0.9fr 0.9fr 1.4fr", gap: 10, marginTop: 18 }}>
-                      <a href={`/florist/${florist.florist_id}`} style={{ padding: 10, borderRadius: 12, border: "1px solid #e7e5e4", textAlign: "center", fontWeight: 800 }}>
+                      <a href={`/public/florist/${florist.florist_id}`} style={{ padding: 10, borderRadius: 12, border: "1px solid #e7e5e4", textAlign: "center", fontWeight: 800 }}>
                         Besök butik
                       </a>
 
