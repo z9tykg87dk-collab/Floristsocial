@@ -235,6 +235,7 @@ export default function FloristsMapView({
   const [sortMode, setSortMode] = useState("random");
   const [purchaseMode, setPurchaseMode] = useState<"flowers" | "subscription">("flowers");
   const [hoveredFloristId, setHoveredFloristId] = useState<string | null>(null);
+  const [shuffledFlorists, setShuffledFlorists] = useState<Florist[]>(initialFlorists);
 
   useEffect(() => {
     setCountry(localStorage.getItem("deliveryCountry") || "Sverige");
@@ -247,12 +248,11 @@ export default function FloristsMapView({
         ? "subscription"
         : "flowers"
     );
-  }, []);
-
-  const shuffled = useMemo(() => shuffleFlorists(initialFlorists), [initialFlorists]);
+    setShuffledFlorists(shuffleFlorists(initialFlorists));
+  }, [initialFlorists]);
 
   const filteredFlorists = useMemo(() => {
-    const source = sortMode === "random" ? shuffled : [...initialFlorists];
+    const source = sortMode === "random" ? shuffledFlorists : [...initialFlorists];
 
     const cityNeedle = city.trim().toLowerCase();
 
@@ -267,7 +267,7 @@ export default function FloristsMapView({
     }
 
     return filtered;
-  }, [city, initialFlorists, shuffled, sortMode]);
+  }, [city, initialFlorists, shuffledFlorists, sortMode]);
 
   const mapItems = useMemo(() => toMapItems(filteredFlorists), [filteredFlorists]);
   const visibleFlorists = filteredFlorists.slice(0, visibleCount);

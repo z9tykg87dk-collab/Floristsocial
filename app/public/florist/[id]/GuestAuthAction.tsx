@@ -92,7 +92,7 @@ export default function GuestAuthAction({
               </Link>
 
               <Link
-                href="/auth/sign-in"
+                href="/login"
                 style={{
                   height: 50,
                   borderRadius: 16,

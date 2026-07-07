@@ -206,7 +206,7 @@ export default function GlobalHeader() {
           {!isPublicShop ? (
             <div className="hidden items-center gap-2 lg:flex">
               <Link
-                href="/auth/sign-in"
+                href="/login"
                 className="rounded-full bg-white px-5 py-3 text-sm font-black text-stone-900 ring-1 ring-stone-200 hover:bg-stone-50"
               >
                 Login

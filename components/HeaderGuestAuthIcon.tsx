@@ -27,10 +27,11 @@ export default function HeaderGuestAuthIcon({
       {open && (
         <div
           onClick={() => setOpen(false)}
+          className="floristsocial-modal-overlay"
           style={{
             position: "fixed",
             inset: 0,
-            zIndex: 9999,
+            zIndex: 2147483647,
             display: "grid",
             placeItems: "center",
             background: "rgba(0,0,0,0.45)",
@@ -75,7 +76,7 @@ export default function HeaderGuestAuthIcon({
               </Link>
 
               <Link
-                href="/auth/sign-in"
+                href="/login"
                 style={{
                   height: 50,
                   borderRadius: 16,

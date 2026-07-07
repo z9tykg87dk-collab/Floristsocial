@@ -46,3 +46,40 @@ h4 {
   background: #f59e0b;
   color: #1c1917;
 }
+
+/* Fix: Leaflet-kartor ska aldrig lägga sig ovanpå login-popup/modaler */
+.leaflet-container {
+  z-index: 0 !important;
+}
+
+.leaflet-pane,
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 1 !important;
+}
+
+.leaflet-popup-pane {
+  z-index: 2 !important;
+}
+
+/* HARD FIX: Leaflet får aldrig ligga ovanpå FloristSocial modal/popup */
+.leaflet-container,
+.leaflet-map-pane,
+.leaflet-tile-pane,
+.leaflet-overlay-pane,
+.leaflet-shadow-pane,
+.leaflet-marker-pane,
+.leaflet-tooltip-pane,
+.leaflet-popup-pane,
+.leaflet-control-container,
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 0 !important;
+}
+
+.floristsocial-modal-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 2147483647 !important;
+  isolation: isolate !important;
+}
