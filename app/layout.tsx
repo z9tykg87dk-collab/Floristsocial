@@ -1,3 +1,4 @@
+import { ThemeProvider } from "@/components/theme-provider";
 import type { Metadata } from "next";
 import { Fraunces, Instrument_Sans } from "next/font/google";
 
@@ -27,14 +28,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="sv">
+    <html lang="sv" suppressHydrationWarning>
       <body className={`${display.variable} ${sans.variable} antialiased`}>
+      <ThemeProvider>
         <GlobalHeader />
 
         <main>{children}</main>
 
         <FloristSocialFooter />
-      </body>
+      </ThemeProvider>
+    </body>
     </html>
   );
 }

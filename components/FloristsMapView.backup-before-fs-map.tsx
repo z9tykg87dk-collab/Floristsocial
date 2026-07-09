@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 import GuestAuthAction from "@/components/GuestAuthAction";
 
-const FSMap = dynamic(() => import("@/components/FSMap"), {
+const FloristSearchMap = dynamic(() => import("@/components/FloristSearchMap"), {
   ssr: false,
 });
 
@@ -434,7 +434,7 @@ export default function FloristsMapView({
             </aside>
 
             <div className="aspect-square min-h-[620px] overflow-hidden rounded-[32px] bg-white ring-1 ring-stone-200">
-              <FSMap
+              <FloristSearchMap
                 recipientLat={selectedCoords?.[0] || null}
                 recipientLng={selectedCoords?.[1] || null}
                 florists={mapItems}
