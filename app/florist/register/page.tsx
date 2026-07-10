@@ -1,6 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import ImportVerificationSection from "@/components/florist-registration/ImportVerificationSection";
+import SpecialtiesSection from "@/components/florist-registration/SpecialtiesSection";
+import QualitySection from "@/components/florist-registration/QualitySection";
+import SustainabilitySection from "@/components/florist-registration/SustainabilitySection";
 import {
   Building2,
   CalendarDays,
@@ -374,6 +378,17 @@ function getNextTwoMonths() {
 export default function FloristSocialRegistrationPage() {
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [selectedStyles, setSelectedStyles] = useState<string[]>([]);
+  const [selectedSpecialties, setSelectedSpecialties] = useState<string[]>([]);
+  const [selectedQualityBadges, setSelectedQualityBadges] = useState<string[]>([]);
+  const [selectedSustainability, setSelectedSustainability] = useState<string[]>([]);
+  const [sustainabilityText, setSustainabilityText] = useState("");
+  const [googleBusinessQuery, setGoogleBusinessQuery] = useState("");
+  const [consentGoogleImport, setConsentGoogleImport] = useState(false);
+  const [consentGooglePublish, setConsentGooglePublish] = useState(false);
+  const [consentInstagramConnect, setConsentInstagramConnect] = useState(false);
+  const [consentInstagramPublish, setConsentInstagramPublish] = useState(false);
+  const [consentPublicProfile, setConsentPublicProfile] = useState(false);
+  const [confirmsBusinessOwnership, setConfirmsBusinessOwnership] = useState(false);
   const [deliveryRadius, setDeliveryRadius] = useState(15);
   const [openingHours, setOpeningHours] =
     useState<OpeningHour[]>(defaultOpeningHours);
@@ -496,6 +511,30 @@ export default function FloristSocialRegistrationPage() {
       styles.includes(value)
         ? styles.filter((item) => item !== value)
         : [...styles, value],
+    );
+  }
+
+  function toggleSpecialty(value: string) {
+    setSelectedSpecialties((items) =>
+      items.includes(value)
+        ? items.filter((item) => item !== value)
+        : [...items, value],
+    );
+  }
+
+  function toggleQualityBadge(value: string) {
+    setSelectedQualityBadges((items) =>
+      items.includes(value)
+        ? items.filter((item) => item !== value)
+        : [...items, value],
+    );
+  }
+
+  function toggleSustainability(value: string) {
+    setSelectedSustainability((items) =>
+      items.includes(value)
+        ? items.filter((item) => item !== value)
+        : [...items, value],
     );
   }
 
@@ -752,6 +791,19 @@ export default function FloristSocialRegistrationPage() {
         stripeAccountId: String(formData.get("stripeAccountId") || ""),
         selectedServices,
         selectedStyles,
+        selectedSpecialties,
+        selectedQualityBadges,
+        selectedSustainability,
+        sustainabilityText,
+        importVerification: {
+          googleBusinessQuery,
+          consentGoogleImport,
+          consentGooglePublish,
+          consentInstagramConnect,
+          consentInstagramPublish,
+          consentPublicProfile,
+          confirmsBusinessOwnership,
+        },
         coverageAreas,
         servicePortfolioItems: servicePortfolioPayload,
         generalPortfolioItems: generalPortfolioPayload,
@@ -1062,6 +1114,31 @@ export default function FloristSocialRegistrationPage() {
                   />
                 </div>
               </Card>
+
+              <ImportVerificationSection
+                googleBusinessQuery={googleBusinessQuery}
+                instagramHandle={String(
+                  typeof document !== "undefined"
+                    ? document.querySelector<HTMLInputElement>("input[name='instagramHandle']")?.value || ""
+                    : ""
+                )}
+                consentGoogleImport={consentGoogleImport}
+                consentGooglePublish={consentGooglePublish}
+                consentInstagramConnect={consentInstagramConnect}
+                consentInstagramPublish={consentInstagramPublish}
+                consentPublicProfile={consentPublicProfile}
+                confirmsBusinessOwnership={confirmsBusinessOwnership}
+                onGoogleBusinessQueryChange={setGoogleBusinessQuery}
+                onInstagramHandleChange={() => {}}
+                onToggleGoogleImport={() => setConsentGoogleImport((value) => !value)}
+                onToggleGooglePublish={() => setConsentGooglePublish((value) => !value)}
+                onToggleInstagramConnect={() => setConsentInstagramConnect((value) => !value)}
+                onToggleInstagramPublish={() => setConsentInstagramPublish((value) => !value)}
+                onTogglePublicProfile={() => setConsentPublicProfile((value) => !value)}
+                onToggleBusinessOwnership={() =>
+                  setConfirmsBusinessOwnership((value) => !value)
+                }
+              />
 
               <Card>
                 <SectionHeader
@@ -1396,6 +1473,23 @@ export default function FloristSocialRegistrationPage() {
                   placeholder="Berätta om stil, erfarenhet, typiska kunder, sortiment och vad som gör floristen unik."
                 />
               </Card>
+
+              <SpecialtiesSection
+                selectedSpecialties={selectedSpecialties}
+                onToggle={toggleSpecialty}
+              />
+
+              <QualitySection
+                selectedQualityBadges={selectedQualityBadges}
+                onToggle={toggleQualityBadge}
+              />
+
+              <SustainabilitySection
+                selectedSustainability={selectedSustainability}
+                sustainabilityText={sustainabilityText}
+                onToggle={toggleSustainability}
+                onTextChange={setSustainabilityText}
+              />
 
               <Card>
                 <SectionHeader
