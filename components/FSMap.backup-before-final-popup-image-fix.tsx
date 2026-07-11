@@ -151,7 +151,7 @@ function ProductPopup({
 
   function openProfile() {
     if (typeof window === "undefined") return;
-    window.location.href = `/public/florist/${florist.florist_id}`;
+    window.location.href = `/florist/${florist.florist_id}`;
   }
 
   const deliveryRadius =
@@ -180,15 +180,7 @@ function ProductPopup({
         <img
           src={item.image}
           alt={item.title}
-          className="block w-full rounded-2xl object-cover object-center"
-          style={{
-            width: "100%",
-            height: "210px",
-            maxHeight: "210px",
-            minHeight: "210px",
-            objectFit: "cover",
-            objectPosition: "center",
-          }}
+          className="aspect-[16/6] max-h-[120px] min-h-[96px] w-full rounded-2xl object-cover object-center"
         />
 
         <button

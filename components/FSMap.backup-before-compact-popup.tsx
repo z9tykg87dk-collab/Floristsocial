@@ -149,130 +149,60 @@ function ProductPopup({
     window.location.href = getOrderPath();
   }
 
-  function openProfile() {
-    if (typeof window === "undefined") return;
-    window.location.href = `/public/florist/${florist.florist_id}`;
-  }
-
-  const deliveryRadius =
-    florist.delivery_radius_km != null
-      ? `0–${florist.delivery_radius_km} km`
-      : "Ej angivet";
-
-  const openingText = (() => {
-    const today = new Date().getDay();
-    const mondayBasedIndex = today === 0 ? 6 : today - 1;
-    const todayHours = florist.opening_hours?.[mondayBasedIndex];
-
-    if (!todayHours) return "Ej angivet";
-    if (todayHours.isClosed) return "Stängt idag";
-
-    if (todayHours.openTime && todayHours.closeTime) {
-      return `${todayHours.openTime}–${todayHours.closeTime}`;
-    }
-
-    return "Ej angivet";
-  })();
-
   return (
-    <div className="mt-2 border-t border-stone-200 pt-2">
+    <div className="mt-3 border-t border-stone-200 pt-3">
+      <div className="mb-2 text-sm font-black text-stone-950">
+        Inspiration från butiken
+      </div>
+
       <div className="relative overflow-hidden rounded-2xl border border-stone-100">
         <img
           src={item.image}
           alt={item.title}
-          className="block w-full rounded-2xl object-cover object-center"
-          style={{
-            width: "100%",
-            height: "210px",
-            maxHeight: "210px",
-            minHeight: "210px",
-            objectFit: "cover",
-            objectPosition: "center",
-          }}
+          className="h-[120px] w-full object-cover"
         />
 
         <button
           type="button"
-          aria-label="Föregående produkt"
           onClick={() =>
             setIndex((current) =>
               current === 0 ? demoProducts.length - 1 : current - 1,
             )
           }
-          className="absolute left-2 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-full bg-white/95 text-base font-black shadow"
+          className="absolute left-2 top-10 grid h-8 w-8 place-items-center rounded-full bg-white/95 text-lg font-black shadow"
         >
           ‹
         </button>
 
         <button
           type="button"
-          aria-label="Nästa produkt"
           onClick={() =>
             setIndex((current) =>
               current === demoProducts.length - 1 ? 0 : current + 1,
             )
           }
-          className="absolute right-2 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-full bg-white/95 text-base font-black shadow"
+          className="absolute right-2 top-10 grid h-8 w-8 place-items-center rounded-full bg-white/95 text-lg font-black shadow"
         >
           ›
         </button>
       </div>
 
-      <div className="mt-2 text-sm font-black text-stone-950">
-        Inspiration från butiken
-      </div>
-
-      <div className="mt-1.5 flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <div className="truncate text-sm font-black text-stone-950">
-            {item.title}
-          </div>
-
+      <div className="mt-2 flex items-center justify-between gap-3">
+        <div>
+          <div className="text-sm font-black text-stone-950">{item.title}</div>
           <div className="text-xs font-semibold text-stone-500">
-            Från{" "}
-            <span className="font-black text-pink-600">
-              {item.price} kr
-            </span>
+            Från {item.price} kr
           </div>
         </div>
 
         <button
           type="button"
           onClick={buyProduct}
-          className="shrink-0 rounded-full bg-pink-600 px-4 py-2 text-xs font-black text-white hover:bg-pink-700"
+          className="rounded-full bg-pink-600 px-4 py-2 text-xs font-black text-white hover:bg-pink-700"
         >
           Beställ
         </button>
       </div>
-
-      <div className="mt-3 grid grid-cols-2 gap-2 border-t border-stone-200 pt-3">
-        <div className="rounded-xl bg-stone-50 px-3 py-2">
-          <div className="text-[11px] font-black uppercase tracking-wide text-stone-500">
-            Leveransområde
-          </div>
-          <div className="mt-1 text-sm font-bold text-stone-900">
-            {deliveryRadius}
-          </div>
-        </div>
-
-        <div className="rounded-xl bg-stone-50 px-3 py-2">
-          <div className="text-[11px] font-black uppercase tracking-wide text-stone-500">
-            Öppettider
-          </div>
-          <div className="mt-1 text-sm font-bold text-stone-900">
-            {openingText}
-          </div>
-        </div>
-      </div>
-
-      <button
-        type="button"
-        onClick={openProfile}
-        className="mt-3 flex w-full items-center justify-between border-t border-stone-200 pt-3 text-left text-sm font-black text-pink-600 hover:text-pink-700"
-      >
-        <span>Visa floristens profil</span>
-        <span aria-hidden="true">›</span>
-      </button>
     </div>
   );
 }

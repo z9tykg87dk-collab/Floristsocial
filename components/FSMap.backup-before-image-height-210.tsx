@@ -183,9 +183,9 @@ function ProductPopup({
           className="block w-full rounded-2xl object-cover object-center"
           style={{
             width: "100%",
-            height: "210px",
-            maxHeight: "210px",
-            minHeight: "210px",
+            height: "105px",
+            maxHeight: "105px",
+            minHeight: "105px",
             objectFit: "cover",
             objectPosition: "center",
           }}
