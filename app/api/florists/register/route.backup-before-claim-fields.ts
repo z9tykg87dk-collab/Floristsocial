@@ -376,15 +376,6 @@ export async function POST(request: NextRequest) {
         maskOrgNumber(organizationNumber),
       ),
       role: "florist",
-      external_place_id:
-        getPayloadString(payload, [
-          "externalPlaceId",
-          "external_place_id",
-          "googlePlaceId",
-          "google_place_id",
-        ]) || null,
-      claim_status: "CLAIM_PENDING",
-      verification_level: "NONE",
       profile_name: slug,
       slug,
       florist_name: shopName,

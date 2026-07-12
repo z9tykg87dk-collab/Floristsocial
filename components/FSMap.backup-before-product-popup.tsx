@@ -52,7 +52,7 @@ const approvedDetailedFlorists = [
   "melanders blommor",
 ];
 
-function cleanName(value: string | null) {
+function cleanName(value: string | null | undefined) {
   return (value || "").trim();
 }
 

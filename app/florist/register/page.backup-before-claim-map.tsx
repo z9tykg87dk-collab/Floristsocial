@@ -5,9 +5,6 @@ import ImportVerificationSection from "@/components/florist-registration/ImportV
 import SpecialtiesSection from "@/components/florist-registration/SpecialtiesSection";
 import QualitySection from "@/components/florist-registration/QualitySection";
 import SustainabilitySection from "@/components/florist-registration/SustainabilitySection";
-import FloristClaimMap, {
-  type FloristClaimPlace,
-} from "@/components/FloristClaimMap";
 import {
   Building2,
   CalendarDays,
@@ -425,8 +422,6 @@ export default function FloristSocialRegistrationPage() {
   const [submitSuccess, setSubmitSuccess] = useState("");
   const [generatedPassword, setGeneratedPassword] = useState("");
   const [showInterestForm, setShowInterestForm] = useState(false);
-  const [selectedClaimPlace, setSelectedClaimPlace] =
-    useState<FloristClaimPlace | null>(null);
   const [coverageAreas, setCoverageAreas] = useState<CoverageArea[]>([
     {
       id: 1,
@@ -481,59 +476,6 @@ export default function FloristSocialRegistrationPage() {
     calendarEvents,
     seasonalClosures,
   ]);
-
-  function selectClaimPlace(place: FloristClaimPlace) {
-    setSelectedClaimPlace(place);
-    setGoogleBusinessQuery(place.shop_name);
-    setConfirmsBusinessOwnership(true);
-
-    const values: Record<string, string> = {
-      shopName: place.shop_name || "",
-      streetAddress: place.street_address || "",
-      postalCode: place.postal_code || "",
-      city: place.city || "",
-      shopPhone: place.phone || "",
-      websiteUrl: place.website || "",
-    };
-
-    Object.entries(values).forEach(([name, value]) => {
-      const input = document.querySelector<
-        HTMLInputElement | HTMLSelectElement
-      >(`[name="${name}"]`);
-
-      if (!input) return;
-
-      const nativeSetter = Object.getOwnPropertyDescriptor(
-        Object.getPrototypeOf(input),
-        "value",
-      )?.set;
-
-      if (nativeSetter) {
-        nativeSetter.call(input, value);
-      } else {
-        input.value = value;
-      }
-
-      input.dispatchEvent(
-        new Event("input", {
-          bubbles: true,
-        }),
-      );
-
-      input.dispatchEvent(
-        new Event("change", {
-          bubbles: true,
-        }),
-      );
-    });
-
-    document
-      .querySelector("[name='shopName']")
-      ?.scrollIntoView({
-        behavior: "smooth",
-        block: "center",
-      });
-  }
 
   function saveDraft() {
     const form = document.querySelector<HTMLFormElement>(
@@ -808,11 +750,6 @@ export default function FloristSocialRegistrationPage() {
 
       const payload = {
         country: "Sverige",
-        externalPlaceId:
-          selectedClaimPlace?.external_place_id || "",
-        googlePlaceId:
-          selectedClaimPlace?.google_place_id || "",
-        claimPlace: selectedClaimPlace,
         firstName: String(formData.get("firstName") || ""),
         lastName: String(formData.get("lastName") || ""),
         ownerEmail,
@@ -1067,21 +1004,6 @@ export default function FloristSocialRegistrationPage() {
               className="space-y-6"
               onSubmit={handleSubmit}
             >
-              <FloristClaimMap
-                selectedExternalPlaceId={
-                  selectedClaimPlace?.external_place_id || null
-                }
-                onClaimPlace={selectClaimPlace}
-              />
-
-              <input
-                type="hidden"
-                name="externalPlaceId"
-                value={
-                  selectedClaimPlace?.external_place_id || ""
-                }
-              />
-
               <Card>
                 <SectionHeader
                   icon={<User size={20} />}

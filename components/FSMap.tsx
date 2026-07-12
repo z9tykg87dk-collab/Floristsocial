@@ -36,7 +36,13 @@ type FloristMapItem = {
   express_delivery_available: boolean | null;
   express_delivery_fee: number | null;
   fs_map_status?: string | null;
+  verification_level?: "BASIC" | "BUSINESS" | "FULL" | string | null;
   google_place_id?: string | null;
+  address?: string | null;
+  formatted_address?: string | null;
+  street_address?: string | null;
+  address_line_1?: string | null;
+  postal_code?: string | null;
 };
 
 type FSMapProps = {
@@ -80,7 +86,7 @@ const approvedDetailedFlorists = [
   "melanders blommor",
 ];
 
-function cleanName(value: string | null) {
+function cleanName(value: string | null | undefined) {
   return (value || "").trim();
 }
 
@@ -92,9 +98,57 @@ function displayName(florist: FloristMapItem) {
   );
 }
 
+function displayAddress(florist: FloristMapItem) {
+  const completeAddress =
+    cleanName(florist.formatted_address) ||
+    cleanName(florist.address);
+
+  if (completeAddress) {
+    return completeAddress;
+  }
+
+  const street =
+    cleanName(florist.street_address) ||
+    cleanName(florist.address_line_1);
+
+  const postalAndCity = [
+    cleanName(florist.postal_code),
+    cleanName(florist.city),
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const addressParts = [street, postalAndCity].filter(Boolean);
+
+  if (addressParts.length > 0) {
+    return addressParts.join(", ");
+  }
+
+  return (
+    cleanName(florist.area) ||
+    cleanName(florist.city) ||
+    "Adress saknas"
+  );
+}
+
 function isDetailedFlorist(florist: FloristMapItem) {
   const name = displayName(florist).toLowerCase();
   return approvedDetailedFlorists.some((item) => name.includes(item));
+}
+
+function verificationLabel(
+  level: FloristMapItem["verification_level"],
+) {
+  switch ((level || "").toUpperCase()) {
+    case "BASIC":
+      return "🟢 Grundverifierad";
+    case "BUSINESS":
+      return "🟢🟢 Företagsverifierad";
+    case "FULL":
+      return "🟢🟢🟢 Fullständigt verifierad";
+    default:
+      return null;
+  }
 }
 
 function getOrderPath() {
@@ -380,7 +434,29 @@ export default function FSMap({
               onMouseEnter={() => onHoverFlorist?.(florist.florist_id)}
               onMouseLeave={() => onHoverFlorist?.(null)}
             >
-              {detailed ? (
+              {detailed && florist.logo_url ? (
+                <div
+                  className={[
+                    "relative grid place-items-center overflow-hidden rounded-full",
+                    "border-[3px] border-white bg-white shadow-lg",
+                    "transition-transform duration-150",
+                    isHovered ? "scale-125" : "scale-100",
+                  ].join(" ")}
+                  style={{
+                    width: "52px",
+                    height: "52px",
+                    boxShadow:
+                      "0 6px 18px rgba(0, 0, 0, 0.22), 0 0 0 2px rgba(219, 39, 119, 0.75)",
+                  }}
+                  title={displayName(florist)}
+                >
+                  <img
+                    src={florist.logo_url}
+                    alt={`${displayName(florist)} logotyp`}
+                    className="block h-full w-full object-cover object-center"
+                  />
+                </div>
+              ) : detailed ? (
                 <Pin
                   background={isHovered ? "#be185d" : "#db2777"}
                   borderColor="#831843"
@@ -411,11 +487,13 @@ export default function FSMap({
           >
             <div className="w-[280px] p-2">
               <h3 className="text-base font-black text-stone-950">
-                {isDetailedFlorist(selected) ? displayName(selected) : "Blomsterbutik"}
+                {displayName(selected)}
               </h3>
 
               <p className="mt-1 text-sm font-semibold text-stone-600">
-                {selected.area || selected.city || "Stockholm"}
+                {isDetailedFlorist(selected)
+                  ? selected.area || selected.city || "Stockholm"
+                  : displayAddress(selected)}
               </p>
 
               {selected.rating ? (
@@ -427,9 +505,12 @@ export default function FSMap({
 
               {isDetailedFlorist(selected) ? (
                 <>
-                  <p className="mt-2 rounded-full bg-pink-50 px-3 py-2 text-xs font-black text-pink-700">
-                    Visningsflorist på FS Maps
-                  </p>
+                  {verificationLabel(selected.verification_level) ? (
+                    <p className="mt-2 rounded-full bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-700">
+                      {verificationLabel(selected.verification_level)}
+                    </p>
+                  ) : null}
+
                   <ProductPopup
                     florist={selected}
                     onOrderFlorist={onOrderFlorist}

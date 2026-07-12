@@ -380,7 +380,29 @@ export default function FSMap({
               onMouseEnter={() => onHoverFlorist?.(florist.florist_id)}
               onMouseLeave={() => onHoverFlorist?.(null)}
             >
-              {detailed ? (
+              {detailed && florist.logo_url ? (
+                <div
+                  className={[
+                    "relative grid place-items-center overflow-hidden rounded-full",
+                    "border-[3px] border-white bg-white shadow-lg",
+                    "transition-transform duration-150",
+                    isHovered ? "scale-125" : "scale-100",
+                  ].join(" ")}
+                  style={{
+                    width: "52px",
+                    height: "52px",
+                    boxShadow:
+                      "0 6px 18px rgba(0, 0, 0, 0.22), 0 0 0 2px rgba(219, 39, 119, 0.75)",
+                  }}
+                  title={displayName(florist)}
+                >
+                  <img
+                    src={florist.logo_url}
+                    alt={`${displayName(florist)} logotyp`}
+                    className="block h-full w-full object-cover object-center"
+                  />
+                </div>
+              ) : detailed ? (
                 <Pin
                   background={isHovered ? "#be185d" : "#db2777"}
                   borderColor="#831843"

@@ -492,8 +492,6 @@ export default function FloristSocialRegistrationPage() {
       streetAddress: place.street_address || "",
       postalCode: place.postal_code || "",
       city: place.city || "",
-      shopPhone: place.phone || "",
-      websiteUrl: place.website || "",
     };
 
     Object.entries(values).forEach(([name, value]) => {
