@@ -522,6 +522,14 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
   const deliveryAreas = asArray(florist.delivery_areas);
   const deliveryList = deliveryAreas.length ? deliveryAreas : FALLBACK_DELIVERY;
 
+  const longestDeliveryRadiusKm = Math.max(
+    Number(florist.delivery_radius_km) || 0,
+    ...deliveryAreas.map((area) => Number(area?.radius) || 0),
+  );
+
+  const deliveryModel =
+    text(florist.delivery_model) || "Lokal leverans";
+
   const logo = text(florist.logo_url, florist.profile_image_url);
   const firstPostWithImage = imagePosts.find((post) => postImage(post));
   const cover = safeImage(
@@ -805,13 +813,13 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
                 />
                 <InfoCard
                   icon={<Truck size={25} />}
-                  label="Leveransradie"
-                  value={`${florist.delivery_radius_km || 15} km`}
+                  label="Längsta leveransavstånd"
+                  value={`${longestDeliveryRadiusKm || 15} km`}
                 />
                 <InfoCard
                   icon={<Clock size={25} />}
-                  label="Svarar snabbt"
-                  value="Vanligtvis inom några minuter"
+                  label="Leveransmodell"
+                  value={deliveryModel}
                 />
                 <InfoCard
                   icon={<ShoppingBag size={25} />}

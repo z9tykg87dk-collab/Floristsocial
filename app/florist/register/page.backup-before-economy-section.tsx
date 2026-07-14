@@ -26,6 +26,7 @@ import {
   Plus,
   Save,
   Send,
+  ShieldCheck,
   Store,
   Trash2,
   Truck,
@@ -166,7 +167,14 @@ const deliveryTypes = [
   "Endast upphämtning",
   "Ingen leverans",
 ];
-
+const statusOptions = [
+  "Ny ansökan",
+  "Under granskning",
+  "Godkänd",
+  "Behöver kompletteras",
+  "Pausad",
+];
+const planOptions = ["Free", "Starter", "Pro", "Premium", "Partner"];
 
 const defaultOpeningHours = [
   {
@@ -419,8 +427,6 @@ export default function FloristSocialRegistrationPage() {
   const [showInterestForm, setShowInterestForm] = useState(false);
   const [selectedClaimPlace, setSelectedClaimPlace] =
     useState<FloristClaimPlace | null>(null);
-  const [claimInformationImported, setClaimInformationImported] =
-    useState(false);
   const [coverageAreas, setCoverageAreas] = useState<CoverageArea[]>([
     {
       id: 1,
@@ -476,155 +482,57 @@ export default function FloristSocialRegistrationPage() {
     seasonalClosures,
   ]);
 
-  function setRegistrationField(name: string, value: string) {
-    const field = document.querySelector<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >(`[name="${name}"]`);
-
-    if (!field) return;
-
-    const prototype =
-      field instanceof HTMLInputElement
-        ? HTMLInputElement.prototype
-        : field instanceof HTMLSelectElement
-          ? HTMLSelectElement.prototype
-          : HTMLTextAreaElement.prototype;
-
-    const nativeSetter = Object.getOwnPropertyDescriptor(
-      prototype,
-      "value",
-    )?.set;
-
-    if (nativeSetter) {
-      nativeSetter.call(field, value);
-    } else {
-      field.value = value;
-    }
-
-    field.dispatchEvent(
-      new Event("input", {
-        bubbles: true,
-      }),
-    );
-
-    field.dispatchEvent(
-      new Event("change", {
-        bubbles: true,
-      }),
-    );
-  }
-
-  function clearPreviousRegistrationInformation() {
-    const fieldsToClear = [
-      // Kontaktperson och tidigare testuppgifter
-      "firstName",
-      "lastName",
-      "ownerEmail",
-      "ownerPhone",
-      "contactRole",
-
-      // Företagsinformation
-      "shopName",
-      "legalBusinessName",
-      "organizationNumber",
-      "shopEmail",
-      "shopPhone",
-      "websiteUrl",
-      "instagramHandle",
-
-      // Adress
-      "streetAddress",
-      "addressLine2",
-      "postalCode",
-      "city",
-      "municipality",
-      "county",
-
-      // Importerade externa uppgifter
-      "portfolioUrl",
-      "googleBusinessProfile",
-    ];
-
-    fieldsToClear.forEach((name) => {
-      setRegistrationField(name, "");
-    });
-  }
-
   function selectClaimPlace(place: FloristClaimPlace) {
-    // Den nya butiken väljs men importeras inte automatiskt.
-    clearPreviousRegistrationInformation();
-
     setSelectedClaimPlace(place);
-    setClaimInformationImported(false);
-    setGoogleBusinessQuery(place.shop_name || "");
+    setGoogleBusinessQuery(place.shop_name);
     setConfirmsBusinessOwnership(true);
-    setConsentGoogleImport(false);
-    setConsentGooglePublish(false);
 
-    setSubmitError("");
-    setSubmitSuccess(
-      "Butiken är vald. Kontrollera uppgifterna och klicka på Importera företagsuppgifter.",
-    );
-
-    requestAnimationFrame(() => {
-      document
-        .querySelector("[data-claim-import-card='true']")
-        ?.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-        });
-    });
-  }
-
-  function importSelectedClaimPlace() {
-    if (!selectedClaimPlace) {
-      setSubmitError("Välj först en butik på kartan.");
-      return;
-    }
-
-    // Säkerställ att inga värden från en tidigare butik följer med.
-    clearPreviousRegistrationInformation();
-
-    const importedValues: Record<string, string> = {
-      shopName: selectedClaimPlace.shop_name || "",
-      streetAddress: selectedClaimPlace.street_address || "",
-      postalCode: selectedClaimPlace.postal_code || "",
-      city: selectedClaimPlace.city || "",
-      shopPhone: selectedClaimPlace.phone || "",
-      websiteUrl: selectedClaimPlace.website || "",
-      googleBusinessProfile: selectedClaimPlace.google_place_id
-        ? `https://www.google.com/maps/place/?q=place_id:${selectedClaimPlace.google_place_id}`
-        : "",
+    const values: Record<string, string> = {
+      shopName: place.shop_name || "",
+      streetAddress: place.street_address || "",
+      postalCode: place.postal_code || "",
+      city: place.city || "",
+      shopPhone: place.phone || "",
+      websiteUrl: place.website || "",
     };
 
-    Object.entries(importedValues).forEach(([name, value]) => {
-      setRegistrationField(name, value);
+    Object.entries(values).forEach(([name, value]) => {
+      const input = document.querySelector<
+        HTMLInputElement | HTMLSelectElement
+      >(`[name="${name}"]`);
+
+      if (!input) return;
+
+      const nativeSetter = Object.getOwnPropertyDescriptor(
+        Object.getPrototypeOf(input),
+        "value",
+      )?.set;
+
+      if (nativeSetter) {
+        nativeSetter.call(input, value);
+      } else {
+        input.value = value;
+      }
+
+      input.dispatchEvent(
+        new Event("input", {
+          bubbles: true,
+        }),
+      );
+
+      input.dispatchEvent(
+        new Event("change", {
+          bubbles: true,
+        }),
+      );
     });
 
-    // Dessa ska aldrig ärvas från en tidigare butik.
-    // Google saknar dem ofta och floristen måste kunna kontrollera dem.
-    setRegistrationField("legalBusinessName", "");
-    setRegistrationField("organizationNumber", "");
-    setRegistrationField("shopEmail", "");
-    setRegistrationField("instagramHandle", "");
-    setRegistrationField("municipality", "");
-    setRegistrationField("county", "");
-
-    setConsentGoogleImport(true);
-    setClaimInformationImported(true);
-    setSubmitError("");
-    setSubmitSuccess(
-      "Google-informationen är importerad. Kontrollera och komplettera juridiskt namn, organisationsnummer och övriga uppgifter.",
-    );
-
-    requestAnimationFrame(() => {
-      document
-        .querySelector("[name='shopName']")
-        ?.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-        });
-    });
+    document
+      .querySelector("[name='shopName']")
+      ?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
   }
 
   function saveDraft() {
@@ -898,11 +806,6 @@ export default function FloristSocialRegistrationPage() {
         return;
       }
 
-      const longestDeliveryRadiusKm = Math.max(
-        deliveryRadius,
-        ...coverageAreas.map((area) => Number(area.radius) || 0),
-      );
-
       const payload = {
         country: "Sverige",
         externalPlaceId:
@@ -943,62 +846,12 @@ export default function FloristSocialRegistrationPage() {
         deliveryModel: String(
           formData.get("deliveryModel") || "Lokal leverans",
         ),
-        deliveryRadiusKm: longestDeliveryRadiusKm,
-        standardDeliveryRadiusKm: deliveryRadius,
-        longestDeliveryRadiusKm,
+        deliveryRadiusKm: deliveryRadius,
         priceLevel: String(formData.get("priceLevel") || ""),
         minimumBookingValue: String(formData.get("minimumBookingValue") || ""),
         yearsInBusiness: String(formData.get("yearsInBusiness") || ""),
         teamSize: String(formData.get("teamSize") || ""),
         stripeAccountId: String(formData.get("stripeAccountId") || ""),
-        economySettings: {
-          accountingEmail: String(
-            formData.get("accountingEmail") || "",
-          ),
-          accountingSystem: String(
-            formData.get("accountingSystem") || "",
-          ),
-          vatNumber: String(
-            formData.get("vatNumber") || "",
-          ),
-          payoutSchedule: String(
-            formData.get("payoutSchedule") || "Veckovis",
-          ),
-          payoutCurrency: String(
-            formData.get("payoutCurrency") || "SEK",
-          ),
-          invoiceReference: String(
-            formData.get("invoiceReference") || "",
-          ),
-          expenseTrackingEnabled:
-            formData.get("expenseTrackingEnabled") === "yes",
-          receiptUploadRequired:
-            formData.get("receiptUploadRequired") === "yes",
-          materialCostMethod: String(
-            formData.get("materialCostMethod") ||
-              "Registreras per order",
-          ),
-          stripeFeePolicy:
-            "Stripeavgiften redovisas separat från provisionerna",
-          b2bSplit: {
-            platformPercent: 10,
-            referringPartnerPercent: 10,
-            executorPercent: 80,
-            eligibleReferringPartnerTypes: [
-              "florist",
-              "event_company",
-              "courier_company",
-            ],
-          },
-          expenseCategories: [
-            "Blommor och växter",
-            "Emballage",
-            "Kort och band",
-            "Transport och leverans",
-            "Underleverantörer",
-            "Övriga orderkostnader",
-          ],
-        },
         selectedServices,
         selectedStyles,
         selectedSpecialties,
@@ -1229,93 +1082,6 @@ export default function FloristSocialRegistrationPage() {
                 }
               />
 
-              {selectedClaimPlace ? (
-                <section
-                  data-claim-import-card="true"
-                  className="rounded-3xl border border-sky-200 bg-white p-6 shadow-sm"
-                >
-                  <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-                    <div>
-                      <div className="inline-flex items-center gap-2 rounded-full bg-sky-50 px-3 py-2 text-xs font-black text-sky-700">
-                        <MapPin size={15} />
-                        Vald butik från Google Places
-                      </div>
-
-                      <h2 className="mt-4 text-2xl font-black text-stone-950">
-                        {selectedClaimPlace.shop_name}
-                      </h2>
-
-                      <p className="mt-2 max-w-2xl text-sm font-semibold leading-6 text-stone-600">
-                        {selectedClaimPlace.formatted_address ||
-                          [
-                            selectedClaimPlace.street_address,
-                            selectedClaimPlace.postal_code,
-                            selectedClaimPlace.city,
-                          ]
-                            .filter(Boolean)
-                            .join(", ")}
-                      </p>
-
-                      <div className="mt-4 grid gap-2 text-sm sm:grid-cols-2">
-                        <div className="rounded-2xl bg-stone-50 px-4 py-3">
-                          <span className="font-black text-stone-900">
-                            Telefon:
-                          </span>{" "}
-                          {selectedClaimPlace.phone || "Saknas hos Google"}
-                        </div>
-
-                        <div className="rounded-2xl bg-stone-50 px-4 py-3">
-                          <span className="font-black text-stone-900">
-                            Webbplats:
-                          </span>{" "}
-                          {selectedClaimPlace.website || "Saknas hos Google"}
-                        </div>
-
-                        <div className="rounded-2xl bg-stone-50 px-4 py-3 sm:col-span-2">
-                          <span className="font-black text-stone-900">
-                            External Place ID:
-                          </span>{" "}
-                          <span className="break-all">
-                            {selectedClaimPlace.external_place_id}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
-                        Juridiskt företagsnamn, organisationsnummer,
-                        företags-e-post och Instagram måste kontrolleras och
-                        kompletteras av floristen. Tidigare värden återanvänds
-                        inte.
-                      </div>
-                    </div>
-
-                    <div className="w-full shrink-0 lg:w-72">
-                      <button
-                        type="button"
-                        onClick={importSelectedClaimPlace}
-                        className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-sky-700 px-5 py-3 text-sm font-black text-white transition hover:bg-sky-800"
-                      >
-                        <Check size={17} />
-                        Importera företagsuppgifter
-                      </button>
-
-                      <div
-                        className={[
-                          "mt-3 rounded-2xl px-4 py-3 text-sm font-bold",
-                          claimInformationImported
-                            ? "bg-emerald-50 text-emerald-700"
-                            : "bg-stone-50 text-stone-500",
-                        ].join(" ")}
-                      >
-                        {claimInformationImported
-                          ? "✓ Uppgifterna är importerade"
-                          : "Uppgifterna har ännu inte importerats"}
-                      </div>
-                    </div>
-                  </div>
-                </section>
-              ) : null}
-
               <Card>
                 <SectionHeader
                   icon={<User size={20} />}
@@ -1455,7 +1221,7 @@ export default function FloristSocialRegistrationPage() {
               <Card>
                 <SectionHeader
                   icon={<MapPin size={20} />}
-                  title="4. Butiksadress"
+                  title="3. Butiksadress"
                   description="Sverige sätts automatiskt. Leveransradie räknas senare från butikens adress."
                 />
                 <div className="grid gap-4 md:grid-cols-2">
@@ -1507,7 +1273,7 @@ export default function FloristSocialRegistrationPage() {
               <Card>
                 <SectionHeader
                   icon={<Clock size={20} />}
-                  title="5. Veckoöppettider"
+                  title="4. Veckoöppettider"
                   description="Ordinarie öppettider måndag–söndag. Detta påverkar butikens grundschema."
                 />
                 <OpeningHoursEditor
@@ -1519,7 +1285,7 @@ export default function FloristSocialRegistrationPage() {
               <Card>
                 <SectionHeader
                   icon={<CalendarDays size={20} />}
-                  title="6. Helgdagar, floristkalender och specialstängt"
+                  title="5. Helgdagar, floristkalender och specialstängt"
                   description="Här anges svenska helgdagar, avvikande datum, aktiviteter och längre stängda perioder som sommarstängt."
                 />
                 <HolidayOverrideEditor
@@ -1544,7 +1310,7 @@ export default function FloristSocialRegistrationPage() {
               <Card>
                 <SectionHeader
                   icon={<Truck size={20} />}
-                  title="7. Leveransradie & täckningsområden"
+                  title="6. Leveransradie & täckningsområden"
                   description="Det viktigaste är stad, pris och radie. Område är valfritt och står som Annat område som standard."
                 />
                 <div className="grid gap-4 md:grid-cols-2">
@@ -1717,7 +1483,7 @@ export default function FloristSocialRegistrationPage() {
               <Card>
                 <SectionHeader
                   icon={<Flower2 size={20} />}
-                  title="8. Tjänster & specialiteter"
+                  title="7. Tjänster & specialiteter"
                   description="Välj tjänster och lägg till bilder med titel, pris, beskrivning och hashtags per tjänst."
                 />
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -1806,7 +1572,7 @@ export default function FloristSocialRegistrationPage() {
               <Card>
                 <SectionHeader
                   icon={<ImagePlus size={20} />}
-                  title="12. Bilder, logotyp & portfolio"
+                  title="8. Bilder, logotyp & portfolio"
                   description="Profilbild, logotyp och omslagsbild är valfria. Portfolio kan få titel, beskrivning, pris och hashtags."
                 />
                 <div className="grid gap-4 md:grid-cols-2">
@@ -1850,7 +1616,7 @@ export default function FloristSocialRegistrationPage() {
               <Card>
                 <SectionHeader
                   icon={<Eye size={20} />}
-                  title="13. Stil, profil & synlighet"
+                  title="9. Stil, profil & synlighet"
                   description="Dessa stilar visas senare på floristprofilen och hjälper kunder att välja rätt florist."
                 />
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -1869,189 +1635,8 @@ export default function FloristSocialRegistrationPage() {
 
               <Card>
                 <SectionHeader
-                  icon={<Building2 size={20} />}
-                  title="14. Ekonomi & avräkning"
-                  description="Grundinställningar för provisioner, inköp, kostnader, bokföring, moms och utbetalningar."
-                />
-
-                <div className="rounded-3xl border border-pink-200 bg-pink-50 p-5">
-                  <h3 className="text-base font-black text-pink-950">
-                    B2B – beställning förmedlas till utförande florist
-                  </h3>
-
-                  <p className="mt-2 text-sm leading-6 text-pink-900">
-                    Den förmedlande partnern kan vara en florist, ett
-                    eventbolag eller ett budföretag som använder
-                    FloristSocial för en beställning till sin kund.
-                  </p>
-
-                  <div className="mt-4 space-y-3 text-sm text-pink-950">
-                    <div className="flex items-center justify-between rounded-2xl bg-white px-4 py-3">
-                      <span>FloristSocial</span>
-                      <strong>10 %</strong>
-                    </div>
-
-                    <div className="flex items-center justify-between rounded-2xl bg-white px-4 py-3">
-                      <span>
-                        Förmedlande florist, eventbolag eller budföretag
-                      </span>
-                      <strong>10 %</strong>
-                    </div>
-
-                    <div className="flex items-center justify-between rounded-2xl bg-white px-4 py-3">
-                      <span>Utförande florist</span>
-                      <strong>80 %</strong>
-                    </div>
-                  </div>
-
-                  <div className="mt-4 rounded-2xl border border-pink-200 bg-white/80 px-4 py-3 text-sm leading-6 text-pink-950">
-                    I floristens ekonomiska översikt visas endast floristens
-                    egna belopp, kostnader, avgifter, utbetalningar och
-                    resultat. Andra företags interna ekonomi visas inte.
-                  </div>
-
-                  <p className="mt-4 text-xs leading-5 text-pink-900">
-                    Stripeavgiften redovisas separat på varje order och
-                    avräkning.
-                  </p>
-                </div>
-
-                <div className="mt-6 rounded-3xl bg-stone-50 p-5">
-                  <h3 className="font-semibold text-stone-950">
-                    Varje order får en ekonomisk ögonblicksbild
-                  </h3>
-
-                  <p className="mt-2 text-sm leading-6 text-stone-600">
-                    Ordervärde, leverans, tillval, rabatt, återbetalning,
-                    Stripeavgift, provisioner, inköp och floristens netto
-                    sparas med de regler som gällde när ordern skapades.
-                  </p>
-                </div>
-
-                <div className="mt-6 grid gap-4 md:grid-cols-2">
-                  <Field
-                    required
-                    name="accountingEmail"
-                    label="E-post för ekonomi och bokföring"
-                    placeholder="ekonomi@dinbutik.se"
-                    type="email"
-                    icon={<Mail size={18} />}
-                  />
-
-                  <SelectField
-                    required
-                    name="accountingSystem"
-                    label="Bokföringssystem"
-                    options={[
-                      "Ej valt",
-                      "Fortnox",
-                      "Visma",
-                      "Bokio",
-                      "SpeedLedger",
-                      "Annat system",
-                    ]}
-                  />
-
-                  <Field
-                    name="vatNumber"
-                    label="Momsregistreringsnummer"
-                    placeholder="Ex. SE556677889901"
-                  />
-
-                  <SelectField
-                    required
-                    name="payoutSchedule"
-                    label="Önskad utbetalningsöversikt"
-                    options={[
-                      "Dagligen",
-                      "Veckovis",
-                      "Varannan vecka",
-                      "Månadsvis",
-                    ]}
-                  />
-
-                  <SelectField
-                    required
-                    name="payoutCurrency"
-                    label="Redovisningsvaluta"
-                    options={["SEK", "EUR", "NOK", "DKK"]}
-                  />
-
-                  <Field
-                    name="invoiceReference"
-                    label="Standardreferens på avräkningar"
-                    placeholder="Ex. Butiksnummer eller kostnadsställe"
-                  />
-
-                  <SelectField
-                    required
-                    name="materialCostMethod"
-                    label="Hantering av materialinköp"
-                    options={[
-                      "Registreras per order",
-                      "Registreras dagligen",
-                      "Registreras veckovis",
-                      "Importeras från bokföringssystem",
-                    ]}
-                  />
-
-                  <SelectField
-                    required
-                    name="expenseTrackingEnabled"
-                    label="Registrera inköp och kostnader per order"
-                    options={["yes", "no"]}
-                  />
-
-                  <SelectField
-                    required
-                    name="receiptUploadRequired"
-                    label="Kvitto eller bilaga för orderkostnader"
-                    options={["yes", "no"]}
-                  />
-                </div>
-
-                <div className="mt-6 rounded-3xl border border-stone-200 bg-white p-5">
-                  <h3 className="font-semibold text-stone-950">
-                    Kostnader som kan kopplas till varje order
-                  </h3>
-
-                  <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
-                    {[
-                      "Blommor och växter",
-                      "Emballage",
-                      "Kort och band",
-                      "Transport och leverans",
-                      "Underleverantörer",
-                      "Övriga orderkostnader",
-                    ].map((category) => (
-                      <div
-                        key={category}
-                        className="rounded-2xl bg-stone-50 px-4 py-3 font-medium text-stone-700"
-                      >
-                        {category}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="mt-6 rounded-3xl border border-amber-200 bg-amber-50 p-5">
-                  <h3 className="font-semibold text-amber-950">
-                    Ekonomisk information i floristens operativsystem
-                  </h3>
-
-                  <p className="mt-2 text-sm leading-6 text-amber-900">
-                    Floristen kommer att kunna se omsättning, kommande
-                    utbetalningar, Stripeavgifter, provisioner, materialinköp,
-                    återbetalningar, marginal, nettoresultat och full
-                    avräkningshistorik.
-                  </p>
-                </div>
-              </Card>
-
-              <Card>
-                <SectionHeader
                   icon={<CreditCard size={20} />}
-                  title="15. Stripe & utbetalningar"
+                  title="10. Stripe & utbetalningar"
                   description="Stripe-kontonummer sparas men ändring senare kräver adminbegäran."
                 />
                 <div className="grid gap-4 md:grid-cols-2">
@@ -2081,6 +1666,60 @@ export default function FloristSocialRegistrationPage() {
                     </div>
                   </div>
                 </div>
+              </Card>
+
+              <Card>
+                <SectionHeader
+                  icon={<ShieldCheck size={20} />}
+                  title="11. Admin & godkännande"
+                  description="Intern information för granskning innan publicering."
+                />
+                <div className="grid gap-4 md:grid-cols-2">
+                  <SelectField
+                    required
+                    name="status"
+                    label="Status"
+                    options={statusOptions}
+                  />
+                  <SelectField
+                    required
+                    name="plan"
+                    label="Plan"
+                    options={planOptions}
+                  />
+                  <Field
+                    required
+                    name="adminOwner"
+                    label="Ansvarig admin"
+                    placeholder="Ex. Nick"
+                  />
+                  <SelectField
+                    required
+                    name="priority"
+                    label="Prioritet"
+                    options={["Låg", "Normal", "Hög"]}
+                  />
+                  <div className="md:col-span-2">
+                    <Textarea
+                      required
+                      name="adminNote"
+                      label="Intern anteckning"
+                      placeholder="Anteckningar för FloristSocial-teamet."
+                    />
+                  </div>
+                </div>
+                <label className="mt-6 flex items-start gap-3 rounded-2xl bg-stone-50 p-4 text-sm text-stone-700">
+                  <input
+                    required
+                    type="checkbox"
+                    className="mt-1 h-4 w-4 accent-stone-900"
+                  />
+                  <span>
+                    Floristen godkänner att FloristSocial lagrar uppgifterna och
+                    kontaktar företaget för verifiering innan profilen
+                    publiceras.
+                  </span>
+                </label>
               </Card>
 
               {submitError && (

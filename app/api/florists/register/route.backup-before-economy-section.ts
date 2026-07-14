@@ -423,7 +423,6 @@ export async function POST(request: NextRequest) {
       general_portfolio_items: generalPortfolioItems,
       portfolio_images: portfolioImages,
       stripe_account_id: getPayloadString(payload, ["stripeAccountId"]),
-      economy_settings: asObject(payload.economySettings),
       status: getPayloadString(payload, ["status"], "Ny ansökan"),
       plan: getPayloadString(payload, ["plan"], "Free"),
       admin_owner: getPayloadString(payload, ["adminOwner"]),

@@ -20,7 +20,7 @@ export default function QualitySection({
         </div>
         <div>
           <h2 className="text-xl font-black text-stone-950">
-            10. Kvalitetsmärken
+            Kvalitetsmärken
           </h2>
           <p className="mt-1 text-sm leading-6 text-stone-600">
             Välj kvalitetsmärken som passar er butik. Bara valda märken visas

@@ -20,7 +20,7 @@ export default function SpecialtiesSection({
         </div>
         <div>
           <h2 className="text-xl font-black text-stone-950">
-            9. Specialiteter
+            Specialiteter
           </h2>
           <p className="mt-1 text-sm leading-6 text-stone-600">
             Välj endast de specialiteter som stämmer för er butik. Dessa kan visas

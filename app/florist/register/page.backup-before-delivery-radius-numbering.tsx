@@ -898,11 +898,6 @@ export default function FloristSocialRegistrationPage() {
         return;
       }
 
-      const longestDeliveryRadiusKm = Math.max(
-        deliveryRadius,
-        ...coverageAreas.map((area) => Number(area.radius) || 0),
-      );
-
       const payload = {
         country: "Sverige",
         externalPlaceId:
@@ -943,9 +938,7 @@ export default function FloristSocialRegistrationPage() {
         deliveryModel: String(
           formData.get("deliveryModel") || "Lokal leverans",
         ),
-        deliveryRadiusKm: longestDeliveryRadiusKm,
-        standardDeliveryRadiusKm: deliveryRadius,
-        longestDeliveryRadiusKm,
+        deliveryRadiusKm: deliveryRadius,
         priceLevel: String(formData.get("priceLevel") || ""),
         minimumBookingValue: String(formData.get("minimumBookingValue") || ""),
         yearsInBusiness: String(formData.get("yearsInBusiness") || ""),
@@ -1455,7 +1448,7 @@ export default function FloristSocialRegistrationPage() {
               <Card>
                 <SectionHeader
                   icon={<MapPin size={20} />}
-                  title="4. Butiksadress"
+                  title="3. Butiksadress"
                   description="Sverige sätts automatiskt. Leveransradie räknas senare från butikens adress."
                 />
                 <div className="grid gap-4 md:grid-cols-2">
@@ -1507,7 +1500,7 @@ export default function FloristSocialRegistrationPage() {
               <Card>
                 <SectionHeader
                   icon={<Clock size={20} />}
-                  title="5. Veckoöppettider"
+                  title="4. Veckoöppettider"
                   description="Ordinarie öppettider måndag–söndag. Detta påverkar butikens grundschema."
                 />
                 <OpeningHoursEditor
@@ -1519,7 +1512,7 @@ export default function FloristSocialRegistrationPage() {
               <Card>
                 <SectionHeader
                   icon={<CalendarDays size={20} />}
-                  title="6. Helgdagar, floristkalender och specialstängt"
+                  title="5. Helgdagar, floristkalender och specialstängt"
                   description="Här anges svenska helgdagar, avvikande datum, aktiviteter och längre stängda perioder som sommarstängt."
                 />
                 <HolidayOverrideEditor
@@ -1544,7 +1537,7 @@ export default function FloristSocialRegistrationPage() {
               <Card>
                 <SectionHeader
                   icon={<Truck size={20} />}
-                  title="7. Leveransradie & täckningsområden"
+                  title="6. Leveransradie & täckningsområden"
                   description="Det viktigaste är stad, pris och radie. Område är valfritt och står som Annat område som standard."
                 />
                 <div className="grid gap-4 md:grid-cols-2">
@@ -1717,7 +1710,7 @@ export default function FloristSocialRegistrationPage() {
               <Card>
                 <SectionHeader
                   icon={<Flower2 size={20} />}
-                  title="8. Tjänster & specialiteter"
+                  title="7. Tjänster & specialiteter"
                   description="Välj tjänster och lägg till bilder med titel, pris, beskrivning och hashtags per tjänst."
                 />
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -1806,7 +1799,7 @@ export default function FloristSocialRegistrationPage() {
               <Card>
                 <SectionHeader
                   icon={<ImagePlus size={20} />}
-                  title="12. Bilder, logotyp & portfolio"
+                  title="8. Bilder, logotyp & portfolio"
                   description="Profilbild, logotyp och omslagsbild är valfria. Portfolio kan få titel, beskrivning, pris och hashtags."
                 />
                 <div className="grid gap-4 md:grid-cols-2">
@@ -1850,7 +1843,7 @@ export default function FloristSocialRegistrationPage() {
               <Card>
                 <SectionHeader
                   icon={<Eye size={20} />}
-                  title="13. Stil, profil & synlighet"
+                  title="9. Stil, profil & synlighet"
                   description="Dessa stilar visas senare på floristprofilen och hjälper kunder att välja rätt florist."
                 />
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -1870,7 +1863,7 @@ export default function FloristSocialRegistrationPage() {
               <Card>
                 <SectionHeader
                   icon={<Building2 size={20} />}
-                  title="14. Ekonomi & avräkning"
+                  title="10. Ekonomi & avräkning"
                   description="Grundinställningar för provisioner, inköp, kostnader, bokföring, moms och utbetalningar."
                 />
 
@@ -2051,7 +2044,7 @@ export default function FloristSocialRegistrationPage() {
               <Card>
                 <SectionHeader
                   icon={<CreditCard size={20} />}
-                  title="15. Stripe & utbetalningar"
+                  title="11. Stripe & utbetalningar"
                   description="Stripe-kontonummer sparas men ändring senare kräver adminbegäran."
                 />
                 <div className="grid gap-4 md:grid-cols-2">

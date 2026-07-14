@@ -26,6 +26,7 @@ import {
   Plus,
   Save,
   Send,
+  ShieldCheck,
   Store,
   Trash2,
   Truck,
@@ -166,7 +167,14 @@ const deliveryTypes = [
   "Endast upphämtning",
   "Ingen leverans",
 ];
-
+const statusOptions = [
+  "Ny ansökan",
+  "Under granskning",
+  "Godkänd",
+  "Behöver kompletteras",
+  "Pausad",
+];
+const planOptions = ["Free", "Starter", "Pro", "Premium", "Partner"];
 
 const defaultOpeningHours = [
   {
@@ -898,11 +906,6 @@ export default function FloristSocialRegistrationPage() {
         return;
       }
 
-      const longestDeliveryRadiusKm = Math.max(
-        deliveryRadius,
-        ...coverageAreas.map((area) => Number(area.radius) || 0),
-      );
-
       const payload = {
         country: "Sverige",
         externalPlaceId:
@@ -943,9 +946,7 @@ export default function FloristSocialRegistrationPage() {
         deliveryModel: String(
           formData.get("deliveryModel") || "Lokal leverans",
         ),
-        deliveryRadiusKm: longestDeliveryRadiusKm,
-        standardDeliveryRadiusKm: deliveryRadius,
-        longestDeliveryRadiusKm,
+        deliveryRadiusKm: deliveryRadius,
         priceLevel: String(formData.get("priceLevel") || ""),
         minimumBookingValue: String(formData.get("minimumBookingValue") || ""),
         yearsInBusiness: String(formData.get("yearsInBusiness") || ""),
@@ -982,13 +983,12 @@ export default function FloristSocialRegistrationPage() {
             "Stripeavgiften redovisas separat från provisionerna",
           b2bSplit: {
             platformPercent: 10,
-            referringPartnerPercent: 10,
+            sellerPercent: 10,
             executorPercent: 80,
-            eligibleReferringPartnerTypes: [
-              "florist",
-              "event_company",
-              "courier_company",
-            ],
+          },
+          b2cSplit: {
+            platformPercent: 20,
+            floristPercent: 80,
           },
           expenseCategories: [
             "Blommor och växter",
@@ -1455,7 +1455,7 @@ export default function FloristSocialRegistrationPage() {
               <Card>
                 <SectionHeader
                   icon={<MapPin size={20} />}
-                  title="4. Butiksadress"
+                  title="3. Butiksadress"
                   description="Sverige sätts automatiskt. Leveransradie räknas senare från butikens adress."
                 />
                 <div className="grid gap-4 md:grid-cols-2">
@@ -1507,7 +1507,7 @@ export default function FloristSocialRegistrationPage() {
               <Card>
                 <SectionHeader
                   icon={<Clock size={20} />}
-                  title="5. Veckoöppettider"
+                  title="4. Veckoöppettider"
                   description="Ordinarie öppettider måndag–söndag. Detta påverkar butikens grundschema."
                 />
                 <OpeningHoursEditor
@@ -1519,7 +1519,7 @@ export default function FloristSocialRegistrationPage() {
               <Card>
                 <SectionHeader
                   icon={<CalendarDays size={20} />}
-                  title="6. Helgdagar, floristkalender och specialstängt"
+                  title="5. Helgdagar, floristkalender och specialstängt"
                   description="Här anges svenska helgdagar, avvikande datum, aktiviteter och längre stängda perioder som sommarstängt."
                 />
                 <HolidayOverrideEditor
@@ -1544,7 +1544,7 @@ export default function FloristSocialRegistrationPage() {
               <Card>
                 <SectionHeader
                   icon={<Truck size={20} />}
-                  title="7. Leveransradie & täckningsområden"
+                  title="6. Leveransradie & täckningsområden"
                   description="Det viktigaste är stad, pris och radie. Område är valfritt och står som Annat område som standard."
                 />
                 <div className="grid gap-4 md:grid-cols-2">
@@ -1717,7 +1717,7 @@ export default function FloristSocialRegistrationPage() {
               <Card>
                 <SectionHeader
                   icon={<Flower2 size={20} />}
-                  title="8. Tjänster & specialiteter"
+                  title="7. Tjänster & specialiteter"
                   description="Välj tjänster och lägg till bilder med titel, pris, beskrivning och hashtags per tjänst."
                 />
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -1806,7 +1806,7 @@ export default function FloristSocialRegistrationPage() {
               <Card>
                 <SectionHeader
                   icon={<ImagePlus size={20} />}
-                  title="12. Bilder, logotyp & portfolio"
+                  title="8. Bilder, logotyp & portfolio"
                   description="Profilbild, logotyp och omslagsbild är valfria. Portfolio kan få titel, beskrivning, pris och hashtags."
                 />
                 <div className="grid gap-4 md:grid-cols-2">
@@ -1850,7 +1850,7 @@ export default function FloristSocialRegistrationPage() {
               <Card>
                 <SectionHeader
                   icon={<Eye size={20} />}
-                  title="13. Stil, profil & synlighet"
+                  title="9. Stil, profil & synlighet"
                   description="Dessa stilar visas senare på floristprofilen och hjälper kunder att välja rätt florist."
                 />
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -1870,50 +1870,56 @@ export default function FloristSocialRegistrationPage() {
               <Card>
                 <SectionHeader
                   icon={<Building2 size={20} />}
-                  title="14. Ekonomi & avräkning"
+                  title="10. Ekonomi & avräkning"
                   description="Grundinställningar för provisioner, inköp, kostnader, bokföring, moms och utbetalningar."
                 />
 
-                <div className="rounded-3xl border border-pink-200 bg-pink-50 p-5">
-                  <h3 className="text-base font-black text-pink-950">
-                    B2B – beställning förmedlas till utförande florist
-                  </h3>
+                <div className="grid gap-4 lg:grid-cols-2">
+                  <div className="rounded-3xl border border-pink-200 bg-pink-50 p-5">
+                    <h3 className="text-base font-black text-pink-950">
+                      B2B – florist förmedlar till florist
+                    </h3>
 
-                  <p className="mt-2 text-sm leading-6 text-pink-900">
-                    Den förmedlande partnern kan vara en florist, ett
-                    eventbolag eller ett budföretag som använder
-                    FloristSocial för en beställning till sin kund.
-                  </p>
+                    <div className="mt-4 space-y-3 text-sm text-pink-950">
+                      <div className="flex items-center justify-between rounded-2xl bg-white px-4 py-3">
+                        <span>FloristSocial</span>
+                        <strong>10 %</strong>
+                      </div>
 
-                  <div className="mt-4 space-y-3 text-sm text-pink-950">
-                    <div className="flex items-center justify-between rounded-2xl bg-white px-4 py-3">
-                      <span>FloristSocial</span>
-                      <strong>10 %</strong>
-                    </div>
+                      <div className="flex items-center justify-between rounded-2xl bg-white px-4 py-3">
+                        <span>Säljande florist / förmedlare</span>
+                        <strong>10 %</strong>
+                      </div>
 
-                    <div className="flex items-center justify-between rounded-2xl bg-white px-4 py-3">
-                      <span>
-                        Förmedlande florist, eventbolag eller budföretag
-                      </span>
-                      <strong>10 %</strong>
-                    </div>
-
-                    <div className="flex items-center justify-between rounded-2xl bg-white px-4 py-3">
-                      <span>Utförande florist</span>
-                      <strong>80 %</strong>
+                      <div className="flex items-center justify-between rounded-2xl bg-white px-4 py-3">
+                        <span>Utförande florist</span>
+                        <strong>80 %</strong>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="mt-4 rounded-2xl border border-pink-200 bg-white/80 px-4 py-3 text-sm leading-6 text-pink-950">
-                    I floristens ekonomiska översikt visas endast floristens
-                    egna belopp, kostnader, avgifter, utbetalningar och
-                    resultat. Andra företags interna ekonomi visas inte.
-                  </div>
+                  <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-5">
+                    <h3 className="text-base font-black text-emerald-950">
+                      B2C – direktbeställning till florist
+                    </h3>
 
-                  <p className="mt-4 text-xs leading-5 text-pink-900">
-                    Stripeavgiften redovisas separat på varje order och
-                    avräkning.
-                  </p>
+                    <div className="mt-4 space-y-3 text-sm text-emerald-950">
+                      <div className="flex items-center justify-between rounded-2xl bg-white px-4 py-3">
+                        <span>FloristSocial</span>
+                        <strong>20 %</strong>
+                      </div>
+
+                      <div className="flex items-center justify-between rounded-2xl bg-white px-4 py-3">
+                        <span>Utförande florist</span>
+                        <strong>80 %</strong>
+                      </div>
+                    </div>
+
+                    <p className="mt-4 text-xs leading-5 text-emerald-900">
+                      Stripeavgiften redovisas separat på varje order och
+                      avräkning.
+                    </p>
+                  </div>
                 </div>
 
                 <div className="mt-6 rounded-3xl bg-stone-50 p-5">
@@ -2051,7 +2057,7 @@ export default function FloristSocialRegistrationPage() {
               <Card>
                 <SectionHeader
                   icon={<CreditCard size={20} />}
-                  title="15. Stripe & utbetalningar"
+                  title="11. Stripe & utbetalningar"
                   description="Stripe-kontonummer sparas men ändring senare kräver adminbegäran."
                 />
                 <div className="grid gap-4 md:grid-cols-2">
@@ -2081,6 +2087,60 @@ export default function FloristSocialRegistrationPage() {
                     </div>
                   </div>
                 </div>
+              </Card>
+
+              <Card>
+                <SectionHeader
+                  icon={<ShieldCheck size={20} />}
+                  title="12. Admin & godkännande"
+                  description="Intern information för granskning innan publicering."
+                />
+                <div className="grid gap-4 md:grid-cols-2">
+                  <SelectField
+                    required
+                    name="status"
+                    label="Status"
+                    options={statusOptions}
+                  />
+                  <SelectField
+                    required
+                    name="plan"
+                    label="Plan"
+                    options={planOptions}
+                  />
+                  <Field
+                    required
+                    name="adminOwner"
+                    label="Ansvarig admin"
+                    placeholder="Ex. Nick"
+                  />
+                  <SelectField
+                    required
+                    name="priority"
+                    label="Prioritet"
+                    options={["Låg", "Normal", "Hög"]}
+                  />
+                  <div className="md:col-span-2">
+                    <Textarea
+                      required
+                      name="adminNote"
+                      label="Intern anteckning"
+                      placeholder="Anteckningar för FloristSocial-teamet."
+                    />
+                  </div>
+                </div>
+                <label className="mt-6 flex items-start gap-3 rounded-2xl bg-stone-50 p-4 text-sm text-stone-700">
+                  <input
+                    required
+                    type="checkbox"
+                    className="mt-1 h-4 w-4 accent-stone-900"
+                  />
+                  <span>
+                    Floristen godkänner att FloristSocial lagrar uppgifterna och
+                    kontaktar företaget för verifiering innan profilen
+                    publiceras.
+                  </span>
+                </label>
               </Card>
 
               {submitError && (

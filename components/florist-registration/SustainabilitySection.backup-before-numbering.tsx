@@ -24,7 +24,7 @@ export default function SustainabilitySection({
         </div>
         <div>
           <h2 className="text-xl font-black text-stone-950">
-            11. Hållbarhetsarbete
+            Hållbarhetsarbete
           </h2>
           <p className="mt-1 text-sm leading-6 text-stone-600">
             Berätta vilka hållbarhetsåtgärder ni arbetar med. Endast valda

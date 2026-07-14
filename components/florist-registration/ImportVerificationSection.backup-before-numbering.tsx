@@ -91,7 +91,7 @@ export default function ImportVerificationSection({
         </div>
         <div>
           <h2 className="text-xl font-black text-stone-950">
-            3. Import & verifiering
+            Import & Verifiering
           </h2>
           <p className="mt-1 text-sm leading-6 text-stone-600">
             Förenkla registreringen med Google Places och Instagram, men publicera
