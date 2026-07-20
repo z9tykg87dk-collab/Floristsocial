@@ -1,8 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { CompanyPassportService } from "@/lib/core/company-passport";
-import { FloristRegistrationService } from "@/lib/core/registration";
-import { createSupabaseCompanyPassportRepository } from "@/lib/core/company-passport/repository/supabase/repository";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -32,21 +29,6 @@ const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
     persistSession: false,
   },
 });
-
-/**
- * FloristOS registration integration – Etapp 1.
- *
- * Company Passport skapas, normaliseras och valideras diagnostiskt.
- * Den befintliga databasskrivningen används fortfarande oförändrad.
- */
-const companyPassportRepository =
-  createSupabaseCompanyPassportRepository();
-
-const companyPassportService =
-  new CompanyPassportService(companyPassportRepository);
-
-const floristRegistrationService =
-  new FloristRegistrationService(companyPassportService);
 
 function asString(value: unknown) {
   if (typeof value === "string") return value.trim();
@@ -369,31 +351,6 @@ export async function POST(request: NextRequest) {
     }
 
     authUserId = authUser.user.id;
-
-    /**
-     * FloristOS registration integration – Etapp 1.
-     *
-     * Skapa och förbered ett Company Passport från den befintliga
-     * registreringsdatan. Resultatet används ännu inte för att skapa
-     * floristPayload eller skriva till databasen.
-     */
-    const preparedRegistration =
-      floristRegistrationService.prepareRegistration(payload, {
-        authUserId,
-      });
-
-    const companyPassportValidationErrors =
-      companyPassportService.validate(preparedRegistration.passport);
-
-    console.info("FLORISTOS COMPANY PASSPORT PREPARED:", {
-      passportId: preparedRegistration.passport.id,
-      version: preparedRegistration.passport.version,
-      valid: companyPassportValidationErrors.length === 0,
-      validationErrors: companyPassportValidationErrors.map((error) => ({
-        path: error.path,
-        message: error.message,
-      })),
-    });
 
     const organizationNumber = getPayloadString(payload, [
       "organizationNumber",
