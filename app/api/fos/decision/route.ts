@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { runFosDecisionEngine } from "@/lib/fos/decision";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const enqueueToActionQueue = searchParams.get("enqueue") === "true";
+
   const decision = runFosDecisionEngine({
     eventType: "ORDER_CREATED",
     module: "order",
@@ -9,6 +12,7 @@ export async function GET() {
       orderId: "demo-order",
       floristId: "demo-florist",
     },
+    ...(enqueueToActionQueue ? { enqueueToActionQueue: true } : {}),
   });
 
   return NextResponse.json({
