@@ -172,6 +172,55 @@ export default function PriorityCenterPage() {
                       <span className={`rounded-full px-2.5 py-1 text-[11px] font-black ${priorityStyles[action.priority]}`}>{priorityLabels[action.priority]}</span>
                     </div>
                     <p className="mt-1 text-sm leading-6 text-stone-600">{action.description}</p>
+
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {action.category && (
+                        <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-black uppercase text-stone-600 ring-1 ring-stone-200">
+                          Kategori: {action.category}
+                        </span>
+                      )}
+                      {action.severity && (
+                        <span className="rounded-full bg-red-50 px-2.5 py-1 text-[11px] font-black uppercase text-red-700 ring-1 ring-red-100">
+                          Severity: {action.severity}
+                        </span>
+                      )}
+                      {typeof action.impactScore === "number" && (
+                        <span className="rounded-full bg-amber-50 px-2.5 py-1 text-[11px] font-black text-amber-700 ring-1 ring-amber-100">
+                          Impact: {action.impactScore}
+                        </span>
+                      )}
+                      {action.source && (
+                        <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-black text-stone-600 ring-1 ring-stone-200">
+                          Källa: {action.source}
+                        </span>
+                      )}
+                    </div>
+
+                    {(action.ownerName || action.ownerId || action.eta || action.slaDeadline || action.relatedOrderId || action.relatedFloristId) && (
+                      <div className="mt-3 grid gap-1 text-xs font-semibold text-stone-500">
+                        {(action.ownerName || action.ownerId) && (
+                          <p>
+                            Ansvarig: {action.ownerName || action.ownerId}
+                          </p>
+                        )}
+                        {action.eta && <p>ETA: {formatTime(action.eta)}</p>}
+                        {action.slaDeadline && <p>SLA deadline: {formatTime(action.slaDeadline)}</p>}
+                        {action.relatedOrderId && <p>Relaterad order: {action.relatedOrderId}</p>}
+                        {action.relatedFloristId && <p>Relaterad florist: {action.relatedFloristId}</p>}
+                      </div>
+                    )}
+
+                    {action.runbookUrl && (
+                      <a
+                        href={action.runbookUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-3 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-xs font-black text-stone-700 ring-1 ring-stone-200 transition hover:bg-stone-100"
+                      >
+                        Runbook
+                        <ArrowRight size={14} />
+                      </a>
+                    )}
                   </div>
                 </div>
                 <span className="inline-flex shrink-0 items-center gap-2 text-xs font-black text-emerald-700"><CheckCircle2 size={16} /> {action.status === "queued" ? "I kö" : action.status}</span>
@@ -182,6 +231,18 @@ export default function PriorityCenterPage() {
       </section>
     </main>
   );
+}
+
+function formatTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString("sv-SE", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function priorityRank(priority: FosActionPriority) {
