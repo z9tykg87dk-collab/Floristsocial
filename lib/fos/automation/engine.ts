@@ -43,6 +43,9 @@ export function createAutomationJob(input: {
 }
 
 export function startAutomation(job: AutomationJob): AutomationJob {
+  if (job.status !== "queued") {
+    return job;
+  }
 
   job.status = "running";
   job.startedAt = new Date().toISOString();
@@ -53,6 +56,9 @@ export function startAutomation(job: AutomationJob): AutomationJob {
 }
 
 export function completeAutomation(job: AutomationJob): AutomationJob {
+  if (job.status !== "running") {
+    return job;
+  }
 
   job.status = "completed";
   job.finishedAt = new Date().toISOString();
@@ -66,6 +72,9 @@ export function failAutomation(
   job: AutomationJob,
   error: string
 ): AutomationJob {
+  if (job.status !== "running") {
+    return job;
+  }
 
   job.status = "failed";
   job.finishedAt = new Date().toISOString();
