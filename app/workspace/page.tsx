@@ -164,6 +164,7 @@ const quickActions = [
   { label: "Intelligence", href: "/workspace/intelligence", icon: Brain },
   { label: "Decision", href: "/workspace/decision", icon: Route },
   { label: "Action Queue", href: "/workspace/action-queue", icon: ListChecks },
+  { label: "Prioritetscenter", href: "/workspace/priority-center", icon: AlertTriangle },
   { label: "Automation", href: "/workspace/automation", icon: Zap },
   { label: "Workflow", href: "/superadmin/development/workflow", icon: PlugZap },
   { label: "Audit", href: "/superadmin/development/audit", icon: ShieldCheck },
@@ -175,44 +176,6 @@ const missionPanels = [
   { label: "Geosökning", value: "Förbereds", icon: MapPinned },
   { label: "FOS AI", value: "Redo", icon: Sparkles },
 ];
-
-const priorities = [
-  {
-    title: "2 order väntar på florist",
-    description: "Order som ännu inte har accepterats av en utförande florist.",
-    status: "Kritisk",
-    href: "/orders",
-    tone: "critical",
-  },
-  {
-    title: "1 leverans riskerar försening",
-    description: "Leveransen behöver följas upp före nästa planerade tidsfönster.",
-    status: "Varning",
-    href: "/workspace/calendar",
-    tone: "warning",
-  },
-  {
-    title: "3 floristregistreringar väntar",
-    description: "Nya registreringar behöver granskas och verifieras.",
-    status: "Granska",
-    href: "/florists",
-    tone: "review",
-  },
-  {
-    title: "1 Stripe-utbetalning kräver kontroll",
-    description: "En ekonomisk händelse behöver administrativ uppföljning.",
-    status: "Kontroll",
-    href: "/superadmin/development/economy",
-    tone: "critical",
-  },
-  {
-    title: "Alla FOS-motorer rapporterar",
-    description: "Systemets kärnflöden är tillgängliga och svarar normalt.",
-    status: "Stabil",
-    href: "/workspace/system-health",
-    tone: "healthy",
-  },
-] as const;
 
 export default function WorkspacePage() {
   const health = getFosSystemHealthReport();
@@ -252,6 +215,14 @@ export default function WorkspacePage() {
                 className="inline-flex items-center gap-2 rounded-full bg-white/10 px-5 py-3 text-sm font-black !text-white ring-1 ring-white/15 transition hover:bg-white/15"
               >
                 Action Queue
+                <ArrowRight size={16} />
+              </Link>
+
+              <Link
+                href="/workspace/priority-center"
+                className="inline-flex items-center gap-2 rounded-full bg-red-600 px-5 py-3 text-sm font-black !text-white transition hover:bg-red-700"
+              >
+                Prioritetscenter
                 <ArrowRight size={16} />
               </Link>
             </div>
@@ -300,92 +271,6 @@ export default function WorkspacePage() {
             ))}
           </div>
         </div>
-
-        <section className="mt-8 rounded-[34px] bg-white p-6 shadow-sm ring-1 ring-stone-200/70 md:p-8">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-red-50 px-3 py-1.5 text-xs font-black uppercase tracking-[0.18em] text-red-700 ring-1 ring-red-100">
-                <AlertTriangle size={15} />
-                Prioritetscenter
-              </div>
-              <h2 className="text-3xl font-black tracking-tight">
-                Kräver uppmärksamhet
-              </h2>
-              <p className="mt-3 max-w-3xl text-sm leading-7 text-stone-500">
-                Samlad överblick över order, leveranser, registreringar, ekonomi
-                och systemhändelser som behöver följas upp.
-              </p>
-            </div>
-
-            <div className="rounded-full bg-red-50 px-4 py-2 text-sm font-black text-red-700 ring-1 ring-red-100">
-              4 åtgärder
-            </div>
-          </div>
-
-          <div className="mt-6 grid gap-3">
-            {priorities.map((priority) => {
-              const toneClasses = {
-                critical: {
-                  card: "bg-red-50/70 ring-red-100 hover:bg-red-50",
-                  icon: "bg-red-100 text-red-700",
-                  badge: "bg-red-100 text-red-700",
-                },
-                warning: {
-                  card: "bg-amber-50/70 ring-amber-100 hover:bg-amber-50",
-                  icon: "bg-amber-100 text-amber-700",
-                  badge: "bg-amber-100 text-amber-700",
-                },
-                review: {
-                  card: "bg-sky-50/70 ring-sky-100 hover:bg-sky-50",
-                  icon: "bg-sky-100 text-sky-700",
-                  badge: "bg-sky-100 text-sky-700",
-                },
-                healthy: {
-                  card: "bg-emerald-50/70 ring-emerald-100 hover:bg-emerald-50",
-                  icon: "bg-emerald-100 text-emerald-700",
-                  badge: "bg-emerald-100 text-emerald-700",
-                },
-              }[priority.tone];
-
-              return (
-                <Link
-                  key={priority.title}
-                  href={priority.href}
-                  className={`group flex flex-col gap-4 rounded-3xl p-5 ring-1 transition sm:flex-row sm:items-center sm:justify-between ${toneClasses.card}`}
-                >
-                  <div className="flex min-w-0 items-start gap-4">
-                    <div
-                      className={`grid h-11 w-11 shrink-0 place-items-center rounded-2xl ${toneClasses.icon}`}
-                    >
-                      <AlertTriangle size={20} />
-                    </div>
-
-                    <div className="min-w-0">
-                      <p className="font-black text-stone-950">
-                        {priority.title}
-                      </p>
-                      <p className="mt-1 text-sm leading-6 text-stone-600">
-                        {priority.description}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex shrink-0 items-center justify-between gap-3 sm:justify-end">
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-black ${toneClasses.badge}`}
-                    >
-                      {priority.status}
-                    </span>
-                    <ArrowRight
-                      size={18}
-                      className="text-stone-400 transition group-hover:translate-x-1 group-hover:text-stone-950"
-                    />
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </section>
 
         <section className="mt-8 grid gap-4 md:grid-cols-3 xl:grid-cols-6">
           {liveStats.map((stat) => {
