@@ -12,6 +12,7 @@ export type FosDecisionInput = {
   eventType: string;
   module: "order" | "calendar" | "crm" | "economy" | "notification" | "trust" | "intelligence";
   payload?: Record<string, any>;
+  enqueueToActionQueue?: boolean;
 };
 
 export type FosDecisionAction = {
@@ -23,4 +24,13 @@ export type FosDecisionAction = {
   targetModule: string;
   href?: string;
   createdAt: string;
+};
+
+export type FosDecisionResult = {
+  input: FosDecisionInput;
+  actions: FosDecisionAction[];
+  actionCount: number;
+  generatedAt: string;
+  enqueuedCount?: number;
+  queuedActionIds?: string[];
 };
