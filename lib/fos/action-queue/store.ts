@@ -47,6 +47,22 @@ export function listFosActions() {
   }));
 }
 
+export function claimNextFosAction() {
+  const action = actions.find((item) => item.status === "queued");
+
+  if (!action) {
+    return null;
+  }
+
+  action.status = "in_progress";
+  action.updatedAt = now();
+
+  return {
+    ...action,
+    payload: { ...action.payload },
+  };
+}
+
 export function seedDemoFosActions() {
   if (!canSeedDemoActions()) return listFosActions();
 
