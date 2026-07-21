@@ -2,6 +2,11 @@ import type { FosActionPriority, FosQueuedAction } from "./types";
 
 const actions: FosQueuedAction[] = [];
 
+function canSeedDemoActions() {
+  if (actions.length > 0) return false;
+  return process.env.NODE_ENV === "development";
+}
+
 function now() {
   return new Date().toISOString();
 }
@@ -36,11 +41,14 @@ export function createFosAction(input: {
 }
 
 export function listFosActions() {
-  return actions;
+  return actions.map((action) => ({
+    ...action,
+    payload: { ...action.payload },
+  }));
 }
 
 export function seedDemoFosActions() {
-  if (actions.length > 0) return actions;
+  if (!canSeedDemoActions()) return listFosActions();
 
   createFosAction({
     title: "Skapa kalenderpost",
@@ -66,5 +74,5 @@ export function seedDemoFosActions() {
     source: "memory-engine",
   });
 
-  return actions;
+  return listFosActions();
 }
