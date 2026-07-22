@@ -174,11 +174,14 @@ export default function WorkspacePage() {
     .slice(0, 8);
 
   return (
-    <main className="min-h-screen bg-[#fbf7f2] px-4 py-8 text-stone-950 md:px-8 lg:px-10">
+    <main className="min-h-screen bg-[#fbf7f2] px-4 py-10 text-stone-950 md:px-8 lg:px-10">
       <section className="mx-auto max-w-7xl">
-        <div className="overflow-hidden rounded-[38px] bg-gradient-to-br from-stone-950 via-stone-900 to-pink-950 p-7 text-white shadow-2xl md:p-10">
+        <div className="relative overflow-hidden rounded-[40px] bg-gradient-to-br from-stone-950 via-stone-900 to-pink-950 p-8 text-white shadow-2xl ring-1 ring-white/10 md:p-11">
+          <div className="pointer-events-none absolute -left-10 -top-10 h-40 w-40 rounded-full bg-pink-400/15 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-12 right-8 h-44 w-44 rounded-full bg-sky-300/10 blur-3xl" />
           <div className="flex flex-wrap items-start justify-between gap-6">
             <div>
+                        <div className="mt-9 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
               <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-black ring-1 ring-white/15">
                 <Activity size={17} />
                 FloristSocial Operating System
@@ -192,6 +195,7 @@ export default function WorkspacePage() {
                 Kontrollrum för orderflöden, florister, leveranser, kalender,
                 produktion, ekonomi, notifieringar och FOS-motorer.
               </p>
+            </div>
             </div>
 
             <div className="flex flex-wrap gap-3">
@@ -228,7 +232,7 @@ export default function WorkspacePage() {
               return (
                 <div
                   key={panel.label}
-                  className="rounded-3xl bg-white/10 p-5 ring-1 ring-white/10"
+                  className="rounded-3xl bg-white/[0.11] p-5 shadow-lg shadow-black/10 ring-1 ring-white/15"
                 >
                   <div className="flex items-center justify-between gap-4">
                     <div className="grid h-11 w-11 place-items-center rounded-2xl bg-white/10 text-pink-200">
@@ -247,11 +251,11 @@ export default function WorkspacePage() {
             })}
           </div>
 
-          <div className="mt-8 grid gap-3 md:grid-cols-4">
+          <div className="mt-9 grid gap-3 md:grid-cols-4">
             {services.map((name) => (
               <div
                 key={name}
-                className="rounded-2xl bg-white/10 p-4 ring-1 ring-white/10"
+                className="rounded-2xl bg-white/[0.09] p-4 shadow-md shadow-black/10 ring-1 ring-white/15"
               >
                 <p className="text-xs font-black uppercase tracking-[0.18em] text-white/50">
                   {name}
@@ -272,7 +276,7 @@ export default function WorkspacePage() {
             return (
               <div
                 key={stat.label}
-                className="rounded-[28px] bg-white p-5 shadow-sm ring-1 ring-stone-200/70"
+                className="rounded-[28px] bg-white p-5 shadow-md shadow-stone-200/60 ring-1 ring-stone-200/80 transition hover:-translate-y-0.5 hover:shadow-lg"
               >
                 <div className="flex items-center justify-between">
                   <div className="grid h-11 w-11 place-items-center rounded-2xl bg-pink-50 text-pink-600">
@@ -291,8 +295,8 @@ export default function WorkspacePage() {
           })}
         </section>
 
-        <section className="mt-8 grid gap-6 lg:grid-cols-[1.35fr_0.65fr]">
-          <div className="rounded-[34px] bg-white p-6 shadow-sm ring-1 ring-stone-200/70 md:p-8">
+        <section className="mt-9 grid gap-6 lg:grid-cols-[1.35fr_0.65fr]">
+          <div className="rounded-[34px] bg-white p-6 shadow-md shadow-stone-200/60 ring-1 ring-stone-200/80 md:p-8">
             <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
               <div>
                 <p className="mb-2 text-xs font-black uppercase tracking-[0.22em] text-pink-600">
@@ -315,7 +319,7 @@ export default function WorkspacePage() {
                 return (
                   <article
                     key={engine.id}
-                    className="rounded-[28px] bg-stone-50 p-5 ring-1 ring-stone-200 transition hover:-translate-y-1 hover:bg-white hover:shadow-lg"
+                    className="rounded-[28px] bg-stone-50 p-5 shadow-sm shadow-stone-200/40 ring-1 ring-stone-200 transition hover:-translate-y-1 hover:bg-white hover:shadow-lg"
                   >
                     <div className="mb-4 flex items-start justify-between gap-3">
                       <div className="grid h-12 w-12 place-items-center rounded-2xl bg-pink-50 text-pink-600">
@@ -377,7 +381,7 @@ export default function WorkspacePage() {
           </div>
 
           <aside className="grid gap-6">
-            <div id="fos-timeline" className="rounded-[34px] bg-white p-6 shadow-sm ring-1 ring-stone-200/70">
+            <div id="fos-timeline" className="rounded-[34px] bg-white p-6 shadow-md shadow-stone-200/60 ring-1 ring-stone-200/80">
               <p className="mb-2 text-xs font-black uppercase tracking-[0.22em] text-pink-600">
                 FOS Timeline
               </p>
@@ -390,16 +394,16 @@ export default function WorkspacePage() {
               ) : (
                 <div className="mt-5 space-y-0">
                   {recentEvents.map((event, index) => (
-                    <div key={event.id} className="relative flex gap-3 pb-5 last:pb-0">
+                    <div key={event.id} className="relative rounded-2xl px-2 py-1.5 transition hover:bg-stone-50/80">
                       {index < recentEvents.length - 1 ? (
-                        <div className="absolute left-5 top-11 h-[calc(100%-2.75rem)] w-px bg-stone-200" />
+                        <div className="absolute left-7 top-12 h-[calc(100%-2.85rem)] w-px bg-stone-200" />
                       ) : null}
 
                       <div className="z-10 mt-1 grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-pink-50 text-pink-600 ring-4 ring-white">
                         <Clock3 size={18} />
                       </div>
 
-                      <div className="min-w-0">
+                      <div className="min-w-0 pt-0.5">
                         <p className="text-xs font-black text-stone-400">
                           {new Date(event.createdAt).toLocaleString("sv-SE")}
                         </p>
@@ -414,7 +418,7 @@ export default function WorkspacePage() {
               )}
             </div>
 
-            <div className="rounded-[34px] bg-white p-6 shadow-sm ring-1 ring-stone-200/70">
+            <div className="rounded-[34px] bg-stone-50/70 p-6 shadow-md shadow-stone-200/60 ring-1 ring-stone-200/80 backdrop-blur-sm">
               <p className="mb-2 text-xs font-black uppercase tracking-[0.22em] text-pink-600">
                 FOS Launchpad
               </p>
@@ -428,7 +432,7 @@ export default function WorkspacePage() {
                     <Link
                       key={action.label}
                       href={action.href}
-                      className="flex items-center justify-between rounded-2xl bg-stone-50 px-4 py-3 font-black ring-1 ring-stone-200 transition hover:bg-pink-50"
+                      className="flex items-center justify-between rounded-2xl bg-white px-4 py-3 font-black shadow-sm shadow-stone-200/40 ring-1 ring-stone-200 transition hover:-translate-y-0.5 hover:bg-pink-50 hover:shadow-md"
                     >
                       <span className="flex items-center gap-3">
                         <Icon size={18} className="text-pink-600" />
@@ -443,8 +447,8 @@ export default function WorkspacePage() {
           </aside>
         </section>
 
-        <section className="mt-8 grid gap-6 lg:grid-cols-[0.75fr_1.25fr]">
-          <div className="rounded-[34px] bg-white p-6 shadow-sm ring-1 ring-stone-200/70 md:p-8">
+        <section className="mt-9 grid gap-6 lg:grid-cols-[0.75fr_1.25fr]">
+          <div className="rounded-[34px] bg-stone-950 p-6 text-white shadow-md shadow-stone-300/40 ring-1 ring-white/10 md:p-8">
             <p className="mb-2 text-xs font-black uppercase tracking-[0.22em] text-pink-600">
               FOS Monitor
             </p>
@@ -483,7 +487,7 @@ export default function WorkspacePage() {
               ].map((step, index) => (
                 <div
                   key={step}
-                  className="rounded-2xl bg-white/10 p-4 ring-1 ring-white/10"
+                  className="rounded-2xl bg-white/[0.12] p-4 shadow-md shadow-black/15 ring-1 ring-white/15"
                 >
                   <p className="text-xs font-black text-pink-300">
                     Steg {index + 1}
@@ -554,7 +558,7 @@ export default function WorkspacePage() {
               ].map(([title, description]) => (
                 <div
                   key={title}
-                  className="rounded-3xl bg-stone-50 p-5 ring-1 ring-stone-200"
+                  className="rounded-3xl bg-stone-50 p-5 shadow-sm shadow-stone-200/40 ring-1 ring-stone-200"
                 >
                   <div className="flex items-start gap-3">
                     <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-pink-50 text-pink-600">
