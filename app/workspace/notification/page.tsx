@@ -21,11 +21,11 @@ export default async function NotificationPage({
       : "all";
   const filteredNotifications = sortedNotifications.filter((notification) => {
     if (filter === "unread") {
-      return notification.read === false;
+      return !Boolean(notification.read);
     }
 
     if (filter === "read") {
-      return notification.read === true;
+      return Boolean(notification.read);
     }
 
     return true;
