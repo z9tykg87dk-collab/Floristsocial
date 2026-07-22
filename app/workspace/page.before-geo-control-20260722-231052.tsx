@@ -28,8 +28,6 @@ import {
 } from "lucide-react";
 import { listFosEvents } from "@/lib/fos/event-store";
 import { getFosSystemHealthReport } from "@/lib/fos/system-health";
-import WorkspaceGeoControl from "@/components/workspace/WorkspaceGeoControl";
-import WorkspaceHero from "@/components/workspace/WorkspaceHero";
 
 const engines = [
   {
@@ -178,10 +176,98 @@ export default function WorkspacePage() {
   return (
     <main className="min-h-screen bg-[#fbf7f2] px-4 py-10 text-stone-950 md:px-8 lg:px-10">
       <section className="mx-auto max-w-7xl">
-        <WorkspaceHero
-              missionPanels={missionPanels}
-              services={services}
-            />
+        <div className="relative overflow-hidden rounded-[40px] bg-gradient-to-br from-stone-950 via-stone-900 to-pink-950 p-8 text-white shadow-2xl ring-1 ring-white/10 md:p-11">
+          <div className="pointer-events-none absolute -left-10 -top-10 h-40 w-40 rounded-full bg-pink-400/15 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-12 right-8 h-44 w-44 rounded-full bg-sky-300/10 blur-3xl" />
+          <div className="flex flex-wrap items-start justify-between gap-6">
+            <div>
+                        <div className="mt-9 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-black ring-1 ring-white/15">
+                <Activity size={17} />
+                FloristSocial Operating System
+              </div>
+
+              <h1 className="max-w-4xl text-4xl font-black tracking-tight md:text-6xl">
+                FOS-Aktivitetskontroll
+              </h1>
+
+              <p className="mt-5 max-w-3xl text-sm leading-7 text-white/75 md:text-base">
+                Kontrollrum för orderflöden, florister, leveranser, kalender,
+                produktion, ekonomi, notifieringar och FOS-motorer.
+              </p>
+            </div>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href="/superadmin/development/security"
+                className="inline-flex items-center gap-2 rounded-full bg-pink-600 px-5 py-3 text-sm font-black !text-white transition hover:bg-pink-700"
+              >
+                System Health
+                <ArrowRight size={16} />
+              </Link>
+
+              <Link
+                href="/workspace/action-queue"
+                className="inline-flex items-center gap-2 rounded-full bg-white/10 px-5 py-3 text-sm font-black !text-white ring-1 ring-white/15 transition hover:bg-white/15"
+              >
+                Action Queue
+                <ArrowRight size={16} />
+              </Link>
+
+              <Link
+                href="/workspace/priority-center"
+                className="inline-flex items-center gap-2 rounded-full bg-red-600 px-5 py-3 text-sm font-black !text-white transition hover:bg-red-700"
+              >
+                Prioritetscenter
+                <ArrowRight size={16} />
+              </Link>
+            </div>
+          </div>
+
+          <div className="mt-8 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+            {missionPanels.map((panel) => {
+              const Icon = panel.icon;
+
+              return (
+                <div
+                  key={panel.label}
+                  className="rounded-3xl bg-white/[0.11] p-5 shadow-lg shadow-black/10 ring-1 ring-white/15"
+                >
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="grid h-11 w-11 place-items-center rounded-2xl bg-white/10 text-pink-200">
+                      <Icon size={21} />
+                    </div>
+                    <span className="rounded-full bg-emerald-400/15 px-3 py-1 text-xs font-black text-emerald-200 ring-1 ring-emerald-300/20">
+                      Live
+                    </span>
+                  </div>
+                  <p className="mt-5 text-xs font-black uppercase tracking-[0.18em] text-white/45">
+                    {panel.label}
+                  </p>
+                  <p className="mt-1 text-2xl font-black">{panel.value}</p>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="mt-9 grid gap-3 md:grid-cols-4">
+            {services.map((name) => (
+              <div
+                key={name}
+                className="rounded-2xl bg-white/[0.09] p-4 shadow-md shadow-black/10 ring-1 ring-white/15"
+              >
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-white/50">
+                  {name}
+                </p>
+                <div className="mt-2 flex items-center gap-2 text-sm font-black text-emerald-300">
+                  <CheckCircle2 size={16} />
+                  Healthy
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
 
         <section className="mt-8 grid gap-4 md:grid-cols-3 xl:grid-cols-6">
           {liveStats.map((stat) => {
@@ -413,8 +499,82 @@ export default function WorkspacePage() {
           </div>
         </section>
 
-        <section className="mt-8">
-          <WorkspaceGeoControl initialFlorists={[]} />
+        <section className="mt-8 rounded-[34px] bg-white p-6 shadow-sm ring-1 ring-stone-200/70 md:p-8">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="mb-2 text-xs font-black uppercase tracking-[0.22em] text-pink-600">
+                Geo Control
+              </p>
+              <h2 className="text-3xl font-black tracking-tight">
+                Karta & floristmatchning
+              </h2>
+              <p className="mt-3 max-w-3xl text-sm leading-7 text-stone-500">
+                Förberedande kontrollpanel för florist nära mottagare,
+                postnummer, adressökning, leveransområde och framtida live-karta.
+              </p>
+            </div>
+
+            <Link
+              href="/florists/map"
+              className="inline-flex items-center gap-2 rounded-full bg-stone-950 px-5 py-3 text-sm font-black !text-white transition hover:bg-stone-800"
+            >
+              Öppna karta
+              <ArrowRight size={16} />
+            </Link>
+          </div>
+
+          <div className="mt-7 grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+            <div className="relative min-h-[320px] overflow-hidden rounded-[30px] bg-gradient-to-br from-emerald-50 via-sky-50 to-pink-50 p-6 ring-1 ring-stone-200">
+              <div className="absolute inset-0 opacity-50">
+                <div className="absolute left-10 top-10 h-32 w-32 rounded-full bg-pink-200 blur-3xl" />
+                <div className="absolute bottom-8 right-12 h-40 w-40 rounded-full bg-emerald-200 blur-3xl" />
+                <div className="absolute left-1/2 top-1/2 h-44 w-44 -translate-x-1/2 -translate-y-1/2 rounded-full bg-sky-200 blur-3xl" />
+              </div>
+
+              <div className="relative grid h-full min-h-[270px] place-items-center rounded-[24px] border border-dashed border-stone-300 bg-white/45 p-6 text-center">
+                <div>
+                  <div className="mx-auto grid h-16 w-16 place-items-center rounded-3xl bg-pink-600 text-white shadow-lg">
+                    <MapPinned size={30} />
+                  </div>
+                  <h3 className="mt-5 text-2xl font-black">
+                    Live-karta kommer här
+                  </h3>
+                  <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-stone-600">
+                    Nästa geo-steg blir att koppla postnummer, adress,
+                    stadsdel, nära mig och floristens leveransradie till samma
+                    sökflöde.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid gap-4">
+              {[
+                ["Postnummer", "Sökning via svenskt postnummer"],
+                ["Adress + nr", "Exakt mottagaradress"],
+                ["Stadsdel", "Matchning inom område"],
+                ["Nära mig", "IP/geolocation-knapp"],
+                ["Land", "Val för internationell leverans"],
+              ].map(([title, description]) => (
+                <div
+                  key={title}
+                  className="rounded-3xl bg-stone-50 p-5 shadow-sm shadow-stone-200/40 ring-1 ring-stone-200"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-pink-50 text-pink-600">
+                      <MapPinned size={18} />
+                    </div>
+                    <div>
+                      <p className="font-black">{title}</p>
+                      <p className="mt-1 text-sm leading-6 text-stone-500">
+                        {description}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </section>
       </section>
     </main>
