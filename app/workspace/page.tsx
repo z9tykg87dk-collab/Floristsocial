@@ -141,7 +141,7 @@ const services = [
 ];
 
 const quickActions = [
-  { label: "Workspace", href: "/workspace", icon: Activity },
+  { label: "Workspace", href: "/workspace#fos-timeline", icon: Activity },
   { label: "System Health", href: "/workspace/system-health", icon: HeartPulse },
   { label: "Orders", href: "/orders", icon: PackageCheck },
   { label: "Calendar", href: "/workspace/calendar", icon: CalendarDays },
@@ -377,7 +377,7 @@ export default function WorkspacePage() {
           </div>
 
           <aside className="grid gap-6">
-            <div className="rounded-[34px] bg-white p-6 shadow-sm ring-1 ring-stone-200/70">
+            <div id="fos-timeline" className="rounded-[34px] bg-white p-6 shadow-sm ring-1 ring-stone-200/70">
               <p className="mb-2 text-xs font-black uppercase tracking-[0.22em] text-pink-600">
                 FOS Timeline
               </p>
