@@ -1,6 +1,13 @@
 import { listNotifications } from "@/lib/fos/notification/store";
 
-export default function NotificationPage() {
+export default async function NotificationPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{
+    filter?: string;
+  }>;
+}) {
+  const params = await searchParams;
   const notifications = listNotifications();
   const unreadNotifications = notifications.filter((notification) => !notification.read).length;
   const sortedNotifications = [...notifications].sort(
@@ -8,6 +15,21 @@ export default function NotificationPage() {
       new Date(b.createdAt).getTime() -
       new Date(a.createdAt).getTime()
   );
+  const filter =
+    params?.filter === "unread" || params?.filter === "read"
+      ? params.filter
+      : "all";
+  const filteredNotifications = sortedNotifications.filter((notification) => {
+    if (filter === "unread") {
+      return notification.read === false;
+    }
+
+    if (filter === "read") {
+      return notification.read === true;
+    }
+
+    return true;
+  });
 
   return (
     <main className="mx-auto max-w-7xl p-8">
@@ -24,11 +46,16 @@ export default function NotificationPage() {
       <section className="mt-8 rounded-3xl border bg-white p-6 shadow-sm">
         <h2 className="text-xl font-black">Notifications</h2>
 
-        {notifications.length === 0 ? (
+        <p className="mt-3 text-sm text-stone-600">Current filter: {filter}</p>
+        <p className="mt-1 text-sm text-stone-600">
+          Showing {filteredNotifications.length} of {notifications.length} notifications
+        </p>
+
+        {filteredNotifications.length === 0 ? (
           <p className="mt-3 text-sm text-stone-600">No notifications available.</p>
         ) : (
           <div className="mt-5 grid gap-3">
-            {sortedNotifications.map((notification) => (
+            {filteredNotifications.map((notification) => (
               <div
                 key={notification.id}
                 className="rounded-2xl bg-stone-50 p-4 ring-1 ring-stone-200"
