@@ -3,6 +3,11 @@ import { listNotifications } from "@/lib/fos/notification/store";
 export default function NotificationPage() {
   const notifications = listNotifications();
   const unreadNotifications = notifications.filter((notification) => !notification.read).length;
+  const sortedNotifications = [...notifications].sort(
+    (a, b) =>
+      new Date(b.createdAt).getTime() -
+      new Date(a.createdAt).getTime()
+  );
 
   return (
     <main className="mx-auto max-w-7xl p-8">
@@ -23,7 +28,7 @@ export default function NotificationPage() {
           <p className="mt-3 text-sm text-stone-600">No notifications available.</p>
         ) : (
           <div className="mt-5 grid gap-3">
-            {notifications.map((notification) => (
+            {sortedNotifications.map((notification) => (
               <div
                 key={notification.id}
                 className="rounded-2xl bg-stone-50 p-4 ring-1 ring-stone-200"
