@@ -141,7 +141,7 @@ const services = [
 ];
 
 const quickActions = [
-  { label: "FOS Timeline", href: "/workspace#fos-timeline", icon: Activity },
+  { label: "FOS Timeline", href: "/workspace/event-store", icon: Activity },
   { label: "System Health", href: "/workspace/system-health", icon: HeartPulse },
   { label: "Orders", href: "/orders", icon: PackageCheck },
   { label: "Calendar", href: "/workspace/calendar", icon: CalendarDays },
