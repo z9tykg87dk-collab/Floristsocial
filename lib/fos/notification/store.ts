@@ -57,3 +57,39 @@ export function getNotification(id: string): Notification | null {
 export function listNotifications(): Notification[] {
   return notifications.map((notification) => toNotificationCopy(notification));
 }
+
+export function markNotificationRead(id: string): Notification | null {
+  const notification = notifications.find((item) => item.id === id);
+
+  if (!notification) {
+    return null;
+  }
+
+  (notification as unknown as { read: boolean }).read = true;
+
+  return toNotificationCopy(notification);
+}
+
+export function markNotificationUnread(id: string): Notification | null {
+  const notification = notifications.find((item) => item.id === id);
+
+  if (!notification) {
+    return null;
+  }
+
+  (notification as unknown as { read: boolean }).read = false;
+
+  return toNotificationCopy(notification);
+}
+
+export function deleteNotification(id: string): boolean {
+  const index = notifications.findIndex((item) => item.id === id);
+
+  if (index === -1) {
+    return false;
+  }
+
+  notifications.splice(index, 1);
+
+  return true;
+}
