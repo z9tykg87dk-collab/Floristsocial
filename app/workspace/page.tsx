@@ -26,6 +26,7 @@ import {
   WalletCards,
   Zap,
 } from "lucide-react";
+import { listFosEvents } from "@/lib/fos/event-store";
 import { getFosSystemHealthReport } from "@/lib/fos/system-health";
 
 const engines = [
@@ -139,17 +140,6 @@ const services = [
   "Workflow",
 ];
 
-const activities = [
-  ["02:14", "Order skapad", "Kundorder registrerades i FloristSocial."],
-  ["02:14", "Event Store", "ORDER_CREATED sparades som systemhändelse."],
-  ["02:14", "Decision Engine", "FOS valde nästa rekommenderade arbetsflöde."],
-  ["02:15", "Action Queue", "Produktionsuppgift lades i floristens kö."],
-  ["02:15", "Automation", "Kalender, CRM och notifieringar synkades."],
-  ["02:16", "Stripe", "Betalning verifierades och kopplades till ordern."],
-  ["02:16", "Production", "Floristen kan nu påbörja produktion."],
-  ["02:17", "Analytics", "Orderdata skickades till rapportering."],
-];
-
 const quickActions = [
   { label: "Workspace", href: "/workspace", icon: Activity },
   { label: "System Health", href: "/workspace/system-health", icon: HeartPulse },
@@ -179,6 +169,9 @@ const missionPanels = [
 
 export default function WorkspacePage() {
   const health = getFosSystemHealthReport();
+  const recentEvents = [...listFosEvents()]
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 8);
 
   return (
     <main className="min-h-screen bg-[#fbf7f2] px-4 py-8 text-stone-950 md:px-8 lg:px-10">
@@ -390,25 +383,35 @@ export default function WorkspacePage() {
               </p>
               <h2 className="text-2xl font-black">Orderns väg genom FOS</h2>
 
-              <div className="mt-5 space-y-0">
-                {activities.map(([time, title, text], index) => (
-                  <div key={`${time}-${title}`} className="relative flex gap-3 pb-5 last:pb-0">
-                    {index < activities.length - 1 ? (
-                      <div className="absolute left-5 top-11 h-[calc(100%-2.75rem)] w-px bg-stone-200" />
-                    ) : null}
+              {recentEvents.length === 0 ? (
+                <p className="mt-5 text-sm leading-6 text-stone-500">
+                  Inga händelser i Event Store ännu.
+                </p>
+              ) : (
+                <div className="mt-5 space-y-0">
+                  {recentEvents.map((event, index) => (
+                    <div key={event.id} className="relative flex gap-3 pb-5 last:pb-0">
+                      {index < recentEvents.length - 1 ? (
+                        <div className="absolute left-5 top-11 h-[calc(100%-2.75rem)] w-px bg-stone-200" />
+                      ) : null}
 
-                    <div className="z-10 mt-1 grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-pink-50 text-pink-600 ring-4 ring-white">
-                      <Clock3 size={18} />
-                    </div>
+                      <div className="z-10 mt-1 grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-pink-50 text-pink-600 ring-4 ring-white">
+                        <Clock3 size={18} />
+                      </div>
 
-                    <div className="min-w-0">
-                      <p className="text-xs font-black text-stone-400">{time}</p>
-                      <p className="font-black">{title}</p>
-                      <p className="text-sm leading-6 text-stone-500">{text}</p>
+                      <div className="min-w-0">
+                        <p className="text-xs font-black text-stone-400">
+                          {new Date(event.createdAt).toLocaleString("sv-SE")}
+                        </p>
+                        <p className="font-black">{event.type}</p>
+                        <p className="text-sm leading-6 text-stone-500">
+                          {describeEvent(event.sourceModule, event.status, event.payload)}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="rounded-[34px] bg-white p-6 shadow-sm ring-1 ring-stone-200/70">
@@ -572,6 +575,22 @@ export default function WorkspacePage() {
       </section>
     </main>
   );
+}
+
+function describeEvent(sourceModule: string, status: string, payload: Record<string, any>) {
+  if (typeof payload.orderId === "string") {
+    return `${sourceModule}: Order ${payload.orderId} (${status}).`;
+  }
+
+  if (typeof payload.conversationId === "string") {
+    return `${sourceModule}: Konversation ${payload.conversationId} (${status}).`;
+  }
+
+  if (typeof payload.rating === "number") {
+    return `${sourceModule}: Ny rating ${payload.rating} (${status}).`;
+  }
+
+  return `${sourceModule}: Händelse registrerad (${status}).`;
 }
 
 function Metric({
