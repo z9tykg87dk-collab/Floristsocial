@@ -6,7 +6,7 @@ export type Notification = {
   metadata?: Record<string, unknown>;
   status: "pending";
   createdAt: string;
-  read: false;
+  read: boolean;
 };
 
 const notifications: Notification[] = [];
