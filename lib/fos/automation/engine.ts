@@ -8,6 +8,7 @@ import {
   saveAutomationJob,
 } from "./store";
 import { claimNextFosAction } from "@/lib/fos/action-queue";
+import { handleNotification } from "@/engines/workflow/handlers/NotificationHandler";
 
 function createId(): string {
   return (
@@ -152,5 +153,18 @@ export function executeAutomationJob(jobId: string): AutomationJob | null {
   }
 
   const startedJob = startAutomation(job);
+
+  if (startedJob.targetModule === "notification") {
+    handleNotification({
+      title: startedJob.title,
+      message: startedJob.payload
+        ? JSON.stringify(startedJob.payload)
+        : "Automation notification",
+      metadata: {
+        jobId: startedJob.id,
+      },
+    });
+  }
+
   return completeAutomation(startedJob);
 }
