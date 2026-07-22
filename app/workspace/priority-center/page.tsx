@@ -196,13 +196,14 @@ export default function PriorityCenterPage() {
                       )}
                     </div>
 
-                    {(action.ownerName || action.ownerId || action.eta || action.slaDeadline || action.relatedOrderId || action.relatedFloristId) && (
+                    {(action.ownerName || action.ownerId || action.createdAt || action.eta || action.slaDeadline || action.relatedOrderId || action.relatedFloristId) && (
                       <div className="mt-3 grid gap-1 text-xs font-semibold text-stone-500">
                         {(action.ownerName || action.ownerId) && (
                           <p>
                             Ansvarig: {action.ownerName || action.ownerId}
                           </p>
                         )}
+                        {action.createdAt && <p>Skapad: {formatTime(action.createdAt)}</p>}
                         {action.eta && <p>ETA: {formatTime(action.eta)}</p>}
                         {action.slaDeadline && <p>SLA deadline: {formatTime(action.slaDeadline)}</p>}
                         {action.relatedOrderId && <p>Relaterad order: {action.relatedOrderId}</p>}
