@@ -11,9 +11,7 @@ export type NotificationHandlerResult = {
   createdAt: string;
 };
 
-function createNotificationId() {
-  return `notif_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-}
+import { createNotification } from "@/lib/fos/notification/store";
 
 export function handleNotification(
   input: NotificationHandlerInput
@@ -26,9 +24,16 @@ export function handleNotification(
     throw new Error("Notification message is required.");
   }
 
+  const notification = createNotification({
+    title: input.title,
+    message: input.message,
+    recipientId: input.recipientId,
+    metadata: input.metadata,
+  });
+
   return {
     accepted: true,
-    notificationId: createNotificationId(),
-    createdAt: new Date().toISOString(),
+    notificationId: notification.id,
+    createdAt: notification.createdAt,
   };
 }
