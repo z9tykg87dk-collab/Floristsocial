@@ -6,6 +6,7 @@ import {
 import {
   saveAutomationJob,
 } from "./store";
+import { claimNextFosAction } from "@/lib/fos/action-queue";
 
 function createId(): string {
   return (
@@ -109,4 +110,28 @@ export function seedAutomationJobs() {
     targetModule: "CRM",
   });
 
+}
+
+export function consumeNextQueuedAction(): AutomationJob | null {
+  const claimedAction = claimNextFosAction();
+
+  if (!claimedAction) {
+    return null;
+  }
+
+  const priority: AutomationPriority =
+    claimedAction.priority === "urgent"
+      ? "critical"
+      : claimedAction.priority;
+
+  return createAutomationJob({
+    title: claimedAction.title,
+    description: claimedAction.description,
+    sourceEngine: claimedAction.source,
+    targetModule: claimedAction.targetModule,
+    priority,
+    payload: {
+      ...claimedAction.payload,
+    },
+  });
 }
