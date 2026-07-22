@@ -4,6 +4,7 @@ import {
 } from "./types";
 
 import {
+  getAutomationJob,
   saveAutomationJob,
 } from "./store";
 import { claimNextFosAction } from "@/lib/fos/action-queue";
@@ -134,4 +135,22 @@ export function consumeNextQueuedAction(): AutomationJob | null {
       ...claimedAction.payload,
     },
   });
+}
+
+export function executeAutomationJob(jobId: string): AutomationJob | null {
+  const job = getAutomationJob(jobId);
+
+  if (!job) {
+    return null;
+  }
+
+  if (job.status !== "queued") {
+    return {
+      ...job,
+      payload: { ...job.payload },
+    };
+  }
+
+  const startedJob = startAutomation(job);
+  return completeAutomation(startedJob);
 }
