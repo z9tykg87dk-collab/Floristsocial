@@ -3,6 +3,9 @@
 import dynamic from "next/dynamic";
 import { useMemo, useState } from "react";
 import {
+  createWorkspaceMapItems,
+} from "@/lib/workspace/createWorkspaceMapItems";
+import {
   Activity,
   CheckCircle2,
   CircleOff,
@@ -33,83 +36,41 @@ export type WorkspaceFlorist = {
   first_name?: string | null;
   last_name?: string | null;
   email?: string | null;
+
   city?: string | null;
   municipality?: string | null;
   county?: string | null;
+
+  address_line_1?: string | null;
+  postal_code?: string | null;
+
+  latitude?: number | null;
+  longitude?: number | null;
+
+  delivery_radius_km?: number | null;
+
+  rating?: number | null;
+  review_count?: number | null;
+  verification_level?: string | null;
+
+  opening_hours?: unknown;
+
   bio?: string | null;
   description?: string | null;
+
   logo_url?: string | null;
   profile_image_url?: string | null;
+
+  is_active?: boolean | null;
   created_at?: string | null;
 };
 
-type OpeningHour = {
-  dayLabel?: string;
-  isClosed?: boolean;
-  openTime?: string;
-  closeTime?: string;
-};
-
-type FloristMapItem = {
-  florist_id: string;
-  florist_name: string | null;
-  shop_name: string | null;
-  city: string | null;
-  area: string | null;
-  delivery_radius_km: number | null;
-  latitude: number;
-  longitude: number;
-  distance_km: number;
-  profile_image_url: string | null;
-  logo_url: string | null;
-  rating: number | null;
-  review_count: number | null;
-  opening_hours: OpeningHour[] | null;
-  same_day_cutoff_time: string | null;
-  standard_delivery_fee: number | null;
-  express_delivery_available: boolean | null;
-  express_delivery_fee: number | null;
-  fs_map_status?: string | null;
-  verification_level?: "BASIC" | "BUSINESS" | "FULL" | string | null;
-  google_place_id?: string | null;
-  address?: string | null;
-  formatted_address?: string | null;
-  street_address?: string | null;
-  address_line_1?: string | null;
-  postal_code?: string | null;
-};
 
 type WorkspaceGeoControlProps = {
   initialFlorists: WorkspaceFlorist[];
 };
 
-const STOCKHOLM = {
-  lat: 59.3293,
-  lng: 18.0686,
-};
 
-const cityCoordinates: Record<string, [number, number]> = {
-  Stockholm: [59.3293, 18.0686],
-  Göteborg: [57.7089, 11.9746],
-  Malmö: [55.605, 13.0038],
-  Uppsala: [59.8586, 17.6389],
-  Västerås: [59.6099, 16.5448],
-  Örebro: [59.2753, 15.2134],
-  Linköping: [58.4108, 15.6214],
-  Helsingborg: [56.0465, 12.6945],
-  Jönköping: [57.7826, 14.1618],
-  Norrköping: [58.5877, 16.1924],
-  Lund: [55.7047, 13.191],
-  Umeå: [63.8258, 20.263],
-  Gävle: [60.6749, 17.1413],
-  Borås: [57.721, 12.9401],
-  Södertälje: [59.1955, 17.6253],
-  Eskilstuna: [59.3712, 16.5098],
-  Halmstad: [56.6745, 12.8578],
-  Växjö: [56.879, 14.8059],
-  Karlstad: [59.3793, 13.5036],
-  Sundsvall: [62.3908, 17.3069],
-};
 
 function getFloristName(florist: WorkspaceFlorist) {
   return (
@@ -122,50 +83,6 @@ function getFloristName(florist: WorkspaceFlorist) {
 
 function getFloristCity(florist: WorkspaceFlorist) {
   return florist.city || florist.municipality || florist.county || "Stockholm";
-}
-
-function createMapItems(florists: WorkspaceFlorist[]): FloristMapItem[] {
-  const cityCounters = new Map<string, number>();
-
-  return florists.map((florist) => {
-    const city = getFloristCity(florist);
-    const coordinates = cityCoordinates[city] || [
-      STOCKHOLM.lat,
-      STOCKHOLM.lng,
-    ];
-
-    const cityIndex = cityCounters.get(city) || 0;
-    cityCounters.set(city, cityIndex + 1);
-
-    const row = Math.floor(cityIndex / 5);
-    const column = cityIndex % 5;
-
-    const latitudeOffset = row * 0.008;
-    const longitudeOffset = column * 0.012;
-
-    return {
-      florist_id: florist.id,
-      florist_name: getFloristName(florist),
-      shop_name: florist.shop_name || getFloristName(florist),
-      city,
-      area: florist.municipality || florist.county || null,
-      delivery_radius_km: 15,
-      latitude: coordinates[0] + latitudeOffset,
-      longitude: coordinates[1] + longitudeOffset,
-      distance_km: 0,
-      profile_image_url: florist.profile_image_url || null,
-      logo_url: florist.logo_url || florist.profile_image_url || null,
-      rating: null,
-      review_count: null,
-      opening_hours: null,
-      same_day_cutoff_time: null,
-      standard_delivery_fee: null,
-      express_delivery_available: null,
-      express_delivery_fee: null,
-      fs_map_status: "REGISTERED",
-      verification_level: null,
-    };
-  });
 }
 
 export default function WorkspaceGeoControl({
@@ -209,14 +126,31 @@ export default function WorkspaceGeoControl({
   }, [initialFlorists, search, selectedCity]);
 
   const mapItems = useMemo(
-    () => createMapItems(filteredFlorists),
+    () => createWorkspaceMapItems(filteredFlorists),
     [filteredFlorists],
   );
 
-  const selectedCoordinates =
-    selectedCity && cityCoordinates[selectedCity]
-      ? cityCoordinates[selectedCity]
-      : null;
+  const mapCenter = useMemo<[number, number] | null>(() => {
+    if (mapItems.length === 0) {
+      return null;
+    }
+
+    const totals = mapItems.reduce(
+      (result, florist) => ({
+        latitude: result.latitude + florist.latitude,
+        longitude: result.longitude + florist.longitude,
+      }),
+      {
+        latitude: 0,
+        longitude: 0,
+      },
+    );
+
+    return [
+      totals.latitude / mapItems.length,
+      totals.longitude / mapItems.length,
+    ];
+  }, [mapItems]);
 
   const floristsWithLogo = initialFlorists.filter(
     (florist) => Boolean(florist.logo_url),
@@ -380,7 +314,7 @@ export default function WorkspaceGeoControl({
                   </div>
 
                   <span className="text-2xl font-black">
-                    {filteredFlorists.length}
+                    {mapItems.length}
                   </span>
                 </div>
 
@@ -407,8 +341,8 @@ export default function WorkspaceGeoControl({
         <div className="min-h-[620px] bg-stone-100">
           {mapItems.length > 0 ? (
             <FSMap
-              recipientLat={selectedCoordinates?.[0] || null}
-              recipientLng={selectedCoordinates?.[1] || null}
+              recipientLat={mapCenter?.[0] ?? null}
+              recipientLng={mapCenter?.[1] ?? null}
               florists={mapItems}
               hoveredFloristId={hoveredFloristId}
               onHoverFlorist={setHoveredFloristId}

@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowRight,
   CalendarDays,
@@ -17,6 +17,12 @@ import {
   Truck,
 } from "lucide-react";
 import GuestAuthAction from "@/components/GuestAuthAction";
+import type {
+  FSMapViewport,
+} from "@/components/FSMap";
+import type {
+  FloristMapItem as FSMapsSearchItem,
+} from "@/lib/fs-maps/types";
 
 const FSMap = dynamic(() => import("@/components/FSMap"), {
   ssr: false,
@@ -49,21 +55,55 @@ type FloristMapItem = {
   florist_id: string;
   florist_name: string | null;
   shop_name: string | null;
+
   city: string | null;
   area: string | null;
+
   delivery_radius_km: number | null;
+
   latitude: number;
   longitude: number;
   distance_km: number;
+
   profile_image_url: string | null;
   logo_url: string | null;
+
   rating: number | null;
   review_count: number | null;
+
   opening_hours: OpeningHour[] | null;
+
   same_day_cutoff_time: string | null;
   standard_delivery_fee: number | null;
+
   express_delivery_available: boolean | null;
   express_delivery_fee: number | null;
+
+  fs_map_status?: string | null;
+  verification_level?:
+    | "NONE"
+    | "BASIC"
+    | "BUSINESS"
+    | "FULL"
+    | string
+    | null;
+
+  google_place_id?: string | null;
+
+  address?: string | null;
+  formatted_address?: string | null;
+  street_address?: string | null;
+  address_line_1?: string | null;
+  postal_code?: string | null;
+};
+
+type FSMapsSearchResponse = {
+  results?: FSMapsSearchItem[];
+  total?: number;
+  cached?: boolean;
+  searchedAt?: string;
+  error?: string;
+  message?: string;
 };
 
 const countries = [
@@ -100,6 +140,82 @@ const countries = [
   "Sydafrika",
 ];
 
+const countryCodes: Record<string, string> = {
+  Sverige: "SE",
+  Norge: "NO",
+  Danmark: "DK",
+  Finland: "FI",
+  Island: "IS",
+
+  Frankrike: "FR",
+  Tyskland: "DE",
+  Spanien: "ES",
+  Italien: "IT",
+  Portugal: "PT",
+  Nederländerna: "NL",
+  Belgien: "BE",
+  Schweiz: "CH",
+  Österrike: "AT",
+  Polen: "PL",
+  Storbritannien: "GB",
+  Irland: "IE",
+
+  USA: "US",
+  Kanada: "CA",
+  Australien: "AU",
+  "Nya Zeeland": "NZ",
+
+  Japan: "JP",
+  Sydkorea: "KR",
+  Kina: "CN",
+  Indien: "IN",
+  Thailand: "TH",
+  Turkiet: "TR",
+  "Förenade Arabemiraten": "AE",
+
+  Brasilien: "BR",
+  Mexiko: "MX",
+  Sydafrika: "ZA",
+};
+
+const countryLanguageCodes: Record<string, string> = {
+  Sverige: "sv",
+  Norge: "no",
+  Danmark: "da",
+  Finland: "fi",
+  Island: "is",
+
+  Frankrike: "fr",
+  Tyskland: "de",
+  Spanien: "es",
+  Italien: "it",
+  Portugal: "pt",
+  Nederländerna: "nl",
+  Belgien: "fr",
+  Schweiz: "de",
+  Österrike: "de",
+  Polen: "pl",
+  Storbritannien: "en",
+  Irland: "en",
+
+  USA: "en",
+  Kanada: "en",
+  Australien: "en",
+  "Nya Zeeland": "en",
+
+  Japan: "ja",
+  Sydkorea: "ko",
+  Kina: "zh",
+  Indien: "en",
+  Thailand: "th",
+  Turkiet: "tr",
+  "Förenade Arabemiraten": "en",
+
+  Brasilien: "pt",
+  Mexiko: "es",
+  Sydafrika: "en",
+};
+
 const citiesByCountry: Record<string, string[]> = {
   Sverige: [
     "Stockholm",
@@ -128,7 +244,44 @@ const citiesByCountry: Record<string, string[]> = {
   Finland: ["Helsingfors", "Esbo", "Tammerfors", "Vanda", "Åbo", "Uleåborg"],
   Frankrike: ["Paris", "Marseille", "Lyon", "Toulouse", "Nice", "Nantes"],
   Tyskland: ["Berlin", "Hamburg", "München", "Köln", "Frankfurt", "Stuttgart"],
+  Spanien: ["Madrid", "Barcelona", "Valencia", "Sevilla", "Málaga", "Bilbao"],
+  Storbritannien: ["London", "Manchester", "Birmingham", "Liverpool", "Edinburgh", "Glasgow"],
 };
+
+
+function normalizeCitySearchValue(value: string): string {
+  return value
+    .trim()
+    .toLocaleLowerCase("sv");
+}
+
+function findCountryForCity(
+  cityValue: string,
+): string | null {
+  const normalizedCity =
+    normalizeCitySearchValue(cityValue);
+
+  if (!normalizedCity) {
+    return null;
+  }
+
+  for (
+    const [candidateCountry, candidateCities]
+    of Object.entries(citiesByCountry)
+  ) {
+    const matches = candidateCities.some(
+      (candidateCity) =>
+        normalizeCitySearchValue(candidateCity) ===
+        normalizedCity,
+    );
+
+    if (matches) {
+      return candidateCountry;
+    }
+  }
+
+  return null;
+}
 
 const cityCoordinates: Record<string, [number, number]> = {
   Stockholm: [59.3293, 18.0686],
@@ -148,7 +301,32 @@ const cityCoordinates: Record<string, [number, number]> = {
   Helsingfors: [60.1699, 24.9384],
   Paris: [48.8566, 2.3522],
   Berlin: [52.52, 13.405],
+  Madrid: [40.4168, -3.7038],
+  London: [51.5072, -0.1276],
 };
+
+
+function findCityCoordinates(
+  cityValue: string,
+): [number, number] | undefined {
+  const normalizedCity =
+    normalizeCitySearchValue(cityValue);
+
+  if (!normalizedCity) {
+    return undefined;
+  }
+
+  const match = Object.entries(
+    cityCoordinates,
+  ).find(
+    ([candidateCity]) =>
+      normalizeCitySearchValue(
+        candidateCity,
+      ) === normalizedCity,
+  );
+
+  return match?.[1];
+}
 
 const fallbackImages = [
   "/design-preview/buketter/bukett-romantisk-rosa-1000.jpg",
@@ -185,40 +363,222 @@ function shuffleFlorists(items: Florist[]) {
     .map(({ item }) => item);
 }
 
-function toMapItems(florists: Florist[]): FloristMapItem[] {
-  return florists.map((florist, index) => {
-    const city = floristCity(florist);
-    const base = cityCoordinates[city] || cityCoordinates.Stockholm;
-    const offset = index * 0.015;
+
+
+
+function getMapItemIdentity(
+  item: FloristMapItem,
+): string {
+  const placeId =
+    item.google_place_id?.trim();
+
+  if (placeId) {
+    return `google:${placeId}`;
+  }
+
+  const floristId =
+    item.florist_id?.trim();
+
+  if (floristId) {
+    return `florist:${floristId}`;
+  }
+
+  const name = (
+    item.shop_name ||
+    item.florist_name ||
+    "florist"
+  )
+    .trim()
+    .toLocaleLowerCase("sv");
+
+  return [
+    "position",
+    name,
+    Number(item.latitude).toFixed(5),
+    Number(item.longitude).toFixed(5),
+  ].join(":");
+}
+
+function mergeMapItems(
+  currentItems: FloristMapItem[],
+  incomingItems: FloristMapItem[],
+): FloristMapItem[] {
+  const merged =
+    new Map<string, FloristMapItem>();
+
+  /*
+   * Behåll alla florister som redan har hittats
+   * under den aktuella platssökningen.
+   */
+  for (const item of currentItems) {
+    merged.set(
+      getMapItemIdentity(item),
+      item,
+    );
+  }
+
+  /*
+   * Lägg till nya träffar och uppdatera tidigare
+   * träffar med färskare information.
+   */
+  for (const item of incomingItems) {
+    const identity =
+      getMapItemIdentity(item);
+
+    const existing =
+      merged.get(identity);
+
+    merged.set(
+      identity,
+      existing
+        ? {
+            ...existing,
+            ...item,
+
+            /*
+             * Behåll befintliga bilder och detaljer
+             * när en senare Google-sida saknar dem.
+             */
+            logo_url:
+              item.logo_url ||
+              existing.logo_url,
+
+            profile_image_url:
+              item.profile_image_url ||
+              existing.profile_image_url,
+
+            opening_hours:
+              item.opening_hours ||
+              existing.opening_hours,
+          }
+        : item,
+    );
+  }
+
+  /*
+   * Skydd mot obegränsad minnesökning om någon
+   * drar kartan genom väldigt många områden.
+   */
+  return Array.from(
+    merged.values(),
+  ).slice(-500);
+}
+
+function normalizeApiOpeningHours(
+  descriptions: string[] | null,
+): OpeningHour[] | null {
+  if (!descriptions?.length) {
+    return null;
+  }
+
+  const closedPattern =
+    /stängt|closed|fermé|ferme|cerrado|geschlossen|chiuso/i;
+
+  return descriptions.map((description) => {
+    const separatorIndex = description.indexOf(":");
+
+    const dayLabel =
+      separatorIndex >= 0
+        ? description.slice(0, separatorIndex).trim()
+        : description.trim();
+
+    const hours =
+      separatorIndex >= 0
+        ? description.slice(separatorIndex + 1).trim()
+        : "";
+
+    if (closedPattern.test(hours)) {
+      return {
+        dayLabel,
+        isClosed: true,
+      };
+    }
+
+    const timeMatch = hours.match(
+      /(\d{1,2}[:.]\d{2})\s*[–—-]\s*(\d{1,2}[:.]\d{2})/,
+    );
 
     return {
-      florist_id: florist.id,
-      florist_name: floristName(florist),
-      shop_name: florist.shop_name || floristName(florist),
-      city,
-      area: florist.municipality || florist.county || null,
-      delivery_radius_km: 15,
-      latitude: base[0] + offset,
-      longitude: base[1] + offset,
-      distance_km: Number((1.2 + index * 0.7).toFixed(1)),
-      profile_image_url: florist.profile_image_url || floristImage(florist, index),
-      logo_url: florist.logo_url || florist.profile_image_url || null,
-      rating: 4.9,
-      review_count: 0,
-      opening_hours: [
-        {
-          dayLabel: "Måndag",
-          isClosed: false,
-          openTime: "10:00",
-          closeTime: "18:00",
-        },
-      ],
-      same_day_cutoff_time: "13:00",
-      standard_delivery_fee: 149,
-      express_delivery_available: true,
-      express_delivery_fee: 249,
+      dayLabel,
+      isClosed: false,
+      openTime:
+        timeMatch?.[1]?.replace(".", ":"),
+      closeTime:
+        timeMatch?.[2]?.replace(".", ":"),
     };
   });
+}
+
+function toDynamicMapItem(
+  item: FSMapsSearchItem,
+): FloristMapItem | null {
+  const latitude = Number(item.latitude);
+  const longitude = Number(item.longitude);
+
+  if (
+    !Number.isFinite(latitude) ||
+    !Number.isFinite(longitude)
+  ) {
+    return null;
+  }
+
+  const address = item.address || null;
+
+  return {
+    florist_id: item.florist_id,
+    florist_name:
+      item.florist_name || item.shop_name,
+    shop_name:
+      item.shop_name || item.florist_name,
+
+    city: item.city || null,
+    area: address || item.city || null,
+
+    delivery_radius_km:
+      item.delivery_radius_km ?? null,
+
+    latitude,
+    longitude,
+    distance_km: item.distance_km ?? 0,
+
+    profile_image_url:
+      item.profile_image_url || null,
+    logo_url: item.logo_url || null,
+
+    rating: item.rating ?? null,
+    review_count: item.review_count ?? null,
+
+    opening_hours:
+      normalizeApiOpeningHours(
+        item.opening_hours,
+      ),
+
+    same_day_cutoff_time: null,
+
+    standard_delivery_fee:
+      item.standard_delivery_fee ?? null,
+
+    express_delivery_available:
+      item.express_delivery_available ?? false,
+
+    express_delivery_fee:
+      item.express_delivery_fee ?? null,
+
+    fs_map_status:
+      item.fs_map_status || null,
+
+    verification_level:
+      item.verification_level || "NONE",
+
+    google_place_id:
+      item.google_place_id || null,
+
+    address,
+    formatted_address: address,
+    street_address: address,
+    address_line_1: address,
+    postal_code: item.postcode || null,
+  };
 }
 
 export default function FloristsMapView({
@@ -227,7 +587,7 @@ export default function FloristsMapView({
   initialFlorists: Florist[];
 }) {
   const [country, setCountry] = useState("Sverige");
-  const [city, setCity] = useState("");
+  const [city, setCity] = useState("Stockholm");
   const [streetAddress, setStreetAddress] = useState("");
   const [postalCode, setPostalCode] = useState("");
   const [deliveryDate, setDeliveryDate] = useState("");
@@ -236,10 +596,58 @@ export default function FloristsMapView({
   const [purchaseMode, setPurchaseMode] = useState<"flowers" | "subscription">("flowers");
   const [hoveredFloristId, setHoveredFloristId] = useState<string | null>(null);
   const [shuffledFlorists, setShuffledFlorists] = useState<Florist[]>(initialFlorists);
+  const [
+    dynamicMapItems,
+    setDynamicMapItems,
+  ] = useState<FloristMapItem[]>([]);
+  const [
+    mapTarget,
+    setMapTarget,
+  ] = useState<[number, number] | null>(null);
+
+  const [
+    mapAction,
+    setMapAction,
+  ] = useState<
+    "idle" |
+    "searching" |
+    "locating" |
+    "success" |
+    "error"
+  >("idle");
+
+  const [
+    mapActionMessage,
+    setMapActionMessage,
+  ] = useState("");
+
+  const lastViewportKeyRef = useRef("");
+  const activeMapRequestRef =
+    useRef<AbortController | null>(null);
 
   useEffect(() => {
-    setCountry(localStorage.getItem("deliveryCountry") || "Sverige");
-    setCity(localStorage.getItem("deliveryCity") || "");
+    return () => {
+      activeMapRequestRef.current?.abort();
+    };
+  }, []);
+
+  useEffect(() => {
+    const savedCountry =
+      localStorage.getItem("deliveryCountry") ||
+      "Sverige";
+
+    const savedCity =
+      localStorage.getItem("deliveryCity") ||
+      "Stockholm";
+
+    const inferredCountry =
+      findCountryForCity(savedCity);
+
+    setCountry(
+      inferredCountry || savedCountry,
+    );
+
+    setCity(savedCity);
     setStreetAddress(localStorage.getItem("deliveryStreetAddress") || "");
     setPostalCode(localStorage.getItem("deliveryPostalCode") || "");
     setDeliveryDate(localStorage.getItem("deliveryDate") || "");
@@ -269,12 +677,637 @@ export default function FloristsMapView({
     return filtered;
   }, [city, initialFlorists, shuffledFlorists, sortMode]);
 
-  const mapItems = useMemo(() => toMapItems(filteredFlorists), [filteredFlorists]);
+  const mapItems = dynamicMapItems;
   const visibleFlorists = filteredFlorists.slice(0, visibleCount);
   const citySuggestions = citiesByCountry[country] || [];
 
   const selectedCoords =
-    city && cityCoordinates[city] ? cityCoordinates[city] : null;
+    mapTarget ??
+    (
+      city && cityCoordinates[city]
+        ? cityCoordinates[city]
+        : null
+    );
+
+
+
+
+  const focusMapAt = useCallback(
+    (
+      latitude: number,
+      longitude: number,
+    ) => {
+      if (
+        !Number.isFinite(latitude) ||
+        !Number.isFinite(longitude)
+      ) {
+        return;
+      }
+
+      activeMapRequestRef.current?.abort();
+      activeMapRequestRef.current = null;
+
+      lastViewportKeyRef.current = "";
+      setDynamicMapItems([]);
+
+      /*
+       * Null följt av ett nytt värde gör att även samma
+       * stad kan sökas igen efter att kartan har flyttats.
+       */
+      setMapTarget(null);
+
+      window.requestAnimationFrame(() => {
+        setMapTarget([
+          latitude,
+          longitude,
+        ]);
+      });
+    },
+    [],
+  );
+
+  const searchMapLocation = useCallback(
+    async () => {
+      saveSearch();
+
+      setMapAction("searching");
+      setMapActionMessage("Söker plats och florister…");
+
+      const normalizedStreet =
+        streetAddress.trim();
+
+      const normalizedPostalCode =
+        postalCode.trim();
+
+      const normalizedCity =
+        city.trim();
+
+      const normalizedCountry =
+        country.trim();
+
+      const knownCityCoordinates =
+        findCityCoordinates(
+          normalizedCity,
+        );
+
+      /*
+       * En ren stadssökning använder den kända
+       * stadspositionen direkt.
+       */
+      if (
+        knownCityCoordinates &&
+        !normalizedStreet &&
+        !normalizedPostalCode
+      ) {
+        const inferredCountry =
+          findCountryForCity(normalizedCity);
+
+        if (
+          inferredCountry &&
+          inferredCountry !== country
+        ) {
+          setCountry(inferredCountry);
+        }
+
+        focusMapAt(
+          knownCityCoordinates[0],
+          knownCityCoordinates[1],
+        );
+
+        localStorage.setItem(
+          "recipientLat",
+          String(knownCityCoordinates[0]),
+        );
+
+        localStorage.setItem(
+          "recipientLng",
+          String(knownCityCoordinates[1]),
+        );
+
+        localStorage.setItem(
+          "recipientSearchMode",
+          "address-search",
+        );
+
+        setMapAction("success");
+        setMapActionMessage(
+          `Visar florister i ${normalizedCity}.`,
+        );
+
+        return;
+      }
+
+      const fullAddress = [
+        normalizedStreet,
+        normalizedPostalCode,
+        normalizedCity,
+        normalizedCountry,
+      ]
+        .filter(Boolean)
+        .join(", ");
+
+      if (!fullAddress) {
+        setMapAction("error");
+        setMapActionMessage(
+          "Skriv en stad, adress eller ett postnummer.",
+        );
+
+        return;
+      }
+
+      try {
+        let foundCoordinates:
+          | [number, number]
+          | null = null;
+
+        /*
+         * Projektets geocode-route använder normalt
+         * "address". Fallback till "q" gör klienten
+         * tolerant om route-kontraktet senare ändras.
+         */
+        for (const parameterName of [
+          "address",
+          "q",
+        ]) {
+          const selectedCountryCode =
+            countryCodes[
+              findCountryForCity(
+                normalizedCity,
+              ) || normalizedCountry
+            ] || "SE";
+
+          const params = new URLSearchParams({
+            [parameterName]: fullAddress,
+            countryCode:
+              selectedCountryCode,
+          });
+
+          const response = await fetch(
+            `/api/geocode?${params.toString()}`,
+            {
+              method: "GET",
+              cache: "no-store",
+            },
+          );
+
+          const payload = await response
+            .json()
+            .catch(() => null);
+
+          if (
+            !response.ok ||
+            !payload ||
+            typeof payload !== "object"
+          ) {
+            continue;
+          }
+
+          const record =
+            payload as Record<string, unknown>;
+
+          const location =
+            record.location &&
+            typeof record.location === "object"
+              ? record.location as Record<
+                  string,
+                  unknown
+                >
+              : null;
+
+          const latitude = Number(
+            record.latitude ??
+            record.lat ??
+            location?.lat,
+          );
+
+          const longitude = Number(
+            record.longitude ??
+            record.lng ??
+            record.lon ??
+            location?.lng,
+          );
+
+          if (
+            Number.isFinite(latitude) &&
+            Number.isFinite(longitude)
+          ) {
+            foundCoordinates = [
+              latitude,
+              longitude,
+            ];
+
+            break;
+          }
+        }
+
+        /*
+         * Om en fullständig adress inte hittas exakt
+         * visar vi åtminstone den valda staden.
+         */
+        if (
+          !foundCoordinates &&
+          knownCityCoordinates
+        ) {
+          foundCoordinates = [
+            knownCityCoordinates[0],
+            knownCityCoordinates[1],
+          ];
+        }
+
+        if (!foundCoordinates) {
+          throw new Error(
+            "Platsen kunde inte hittas.",
+          );
+        }
+
+        const [
+          latitude,
+          longitude,
+        ] = foundCoordinates;
+
+        focusMapAt(latitude, longitude);
+
+        localStorage.setItem(
+          "recipientLat",
+          String(latitude),
+        );
+
+        localStorage.setItem(
+          "recipientLng",
+          String(longitude),
+        );
+
+        localStorage.setItem(
+          "recipientSearchMode",
+          "address-search",
+        );
+
+        setMapAction("success");
+
+        setMapActionMessage(
+          normalizedCity
+            ? `Visar florister nära ${normalizedCity}.`
+            : "Visar florister nära den sökta platsen.",
+        );
+      } catch (error) {
+        console.warn(
+          "[FloristsMapView] Platssökningen misslyckades:",
+          error instanceof Error
+            ? error.message
+            : error,
+        );
+
+        setMapAction("error");
+
+        setMapActionMessage(
+          error instanceof Error
+            ? error.message
+            : "Platsen kunde inte hittas.",
+        );
+      }
+    },
+    [
+      city,
+      country,
+      focusMapAt,
+      postalCode,
+      streetAddress,
+    ],
+  );
+
+  const useCurrentLocation = useCallback(
+    () => {
+      if (!navigator.geolocation) {
+        setMapAction("error");
+
+        setMapActionMessage(
+          "Din webbläsare stöder inte platsdelning.",
+        );
+
+        return;
+      }
+
+      setMapAction("locating");
+
+      setMapActionMessage(
+        "Hämtar din nuvarande position…",
+      );
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const latitude =
+            position.coords.latitude;
+
+          const longitude =
+            position.coords.longitude;
+
+          /*
+           * Använd enhetens språk/region som
+           * rimlig landsgissning för Nära mig.
+           */
+          const localeCountryCode = Array.from(
+            new Set([
+              ...navigator.languages,
+              navigator.language,
+            ]),
+          )
+            .map((locale) => {
+              const match = locale.match(
+                /[-_]([A-Za-z]{2})$/,
+              );
+
+              return match?.[1]?.toUpperCase();
+            })
+            .find(Boolean);
+
+          const inferredCountry =
+            Object.entries(countryCodes)
+              .find(
+                ([, countryCode]) =>
+                  countryCode === localeCountryCode,
+              )?.[0];
+
+          if (inferredCountry) {
+            setCountry(inferredCountry);
+
+            localStorage.setItem(
+              "deliveryCountry",
+              inferredCountry,
+            );
+
+            localStorage.setItem(
+              "recipientCountry",
+              inferredCountry,
+            );
+          }
+
+          setCity("");
+          setStreetAddress("");
+          setPostalCode("");
+
+          localStorage.setItem(
+            "deliveryCity",
+            "",
+          );
+
+          localStorage.setItem(
+            "recipientCity",
+            "",
+          );
+
+          localStorage.setItem(
+            "recipientLat",
+            String(latitude),
+          );
+
+          localStorage.setItem(
+            "recipientLng",
+            String(longitude),
+          );
+
+          localStorage.setItem(
+            "recipientSearchMode",
+            "near-me",
+          );
+
+          localStorage.setItem(
+            "recipientAddress",
+            "Min nuvarande position",
+          );
+
+          focusMapAt(
+            latitude,
+            longitude,
+          );
+
+          setMapAction("success");
+
+          setMapActionMessage(
+            "Visar florister nära din position.",
+          );
+        },
+        (error) => {
+          console.error(
+            "[FloristsMapView] Platsdelning misslyckades:",
+            error,
+          );
+
+          const message =
+            error.code ===
+            error.PERMISSION_DENIED
+              ? "Tillåt platsåtkomst i webbläsaren för att använda Nära mig."
+              : error.code ===
+                  error.POSITION_UNAVAILABLE
+                ? "Din position kunde inte fastställas."
+                : error.code ===
+                    error.TIMEOUT
+                  ? "Det tog för lång tid att hämta positionen."
+                  : "Kunde inte hämta din position.";
+
+          setMapAction("error");
+          setMapActionMessage(message);
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 12_000,
+          maximumAge: 60_000,
+        },
+      );
+    },
+    [focusMapAt],
+  );
+
+  const handleCountryChange = useCallback(
+    (nextCountry: string) => {
+      activeMapRequestRef.current?.abort();
+      lastViewportKeyRef.current = "";
+      setDynamicMapItems([]);
+      setMapTarget(null);
+      setMapAction("idle");
+      setMapActionMessage("");
+
+      setCountry(nextCountry);
+
+      const currentCityCountry =
+        findCountryForCity(city);
+
+      if (
+        city &&
+        currentCityCountry !== nextCountry
+      ) {
+        setCity("");
+      }
+    },
+    [city],
+  );
+
+  const handleCityChange = useCallback(
+    (nextCity: string) => {
+      activeMapRequestRef.current?.abort();
+      lastViewportKeyRef.current = "";
+      setDynamicMapItems([]);
+      setMapTarget(null);
+      setMapAction("idle");
+      setMapActionMessage("");
+
+      setCity(nextCity);
+
+      const inferredCountry =
+        findCountryForCity(nextCity);
+
+      if (
+        inferredCountry &&
+        inferredCountry !== country
+      ) {
+        setCountry(inferredCountry);
+      }
+    },
+    [country],
+  );
+
+  const handleViewportIdle = useCallback(
+    async (viewport: FSMapViewport) => {
+      const values = [
+        viewport.north,
+        viewport.south,
+        viewport.east,
+        viewport.west,
+        viewport.zoom,
+      ];
+
+      if (
+        !values.every(Number.isFinite) ||
+        viewport.north <= viewport.south ||
+        viewport.east <= viewport.west
+      ) {
+        return;
+      }
+
+      const longitudeSpan =
+        viewport.east - viewport.west;
+
+      const latitudeSpan =
+        viewport.north - viewport.south;
+
+      /*
+       * Google Places locationRestriction accepterar
+       * inte kartrektanglar bredare än 180 grader.
+       *
+       * Vid global vy väntar vi därför tills
+       * besökaren zoomar in till Europa, ett land
+       * eller en stad.
+       */
+      if (
+        longitudeSpan >= 179.5 ||
+        latitudeSpan >= 170 ||
+        viewport.zoom < 3
+      ) {
+        activeMapRequestRef.current?.abort();
+        lastViewportKeyRef.current = "";
+        return;
+      }
+
+      const effectiveCountry =
+        findCountryForCity(city) || country;
+
+      const countryCode =
+        countryCodes[effectiveCountry] || "SE";
+
+      const languageCode =
+        countryLanguageCodes[effectiveCountry] || "en";
+
+      const viewportKey = [
+        countryCode,
+        viewport.north.toFixed(4),
+        viewport.south.toFixed(4),
+        viewport.east.toFixed(4),
+        viewport.west.toFixed(4),
+        viewport.zoom.toFixed(2),
+      ].join("|");
+
+      if (
+        viewportKey ===
+        lastViewportKeyRef.current
+      ) {
+        return;
+      }
+
+      lastViewportKeyRef.current =
+        viewportKey;
+
+      activeMapRequestRef.current?.abort();
+
+      const controller = new AbortController();
+      activeMapRequestRef.current = controller;
+
+      const params = new URLSearchParams({
+        north: String(viewport.north),
+        south: String(viewport.south),
+        east: String(viewport.east),
+        west: String(viewport.west),
+        country: countryCode,
+        language: languageCode,
+        pageSize: "20",
+      });
+
+      try {
+        const response = await fetch(
+          `/api/fs-maps/search?${params.toString()}`,
+          {
+            method: "GET",
+            signal: controller.signal,
+            cache: "no-store",
+          },
+        );
+
+        const data =
+          (await response.json()) as FSMapsSearchResponse;
+
+        if (!response.ok) {
+          throw new Error(
+            data.message ||
+              data.error ||
+              "Kunde inte hämta florister.",
+          );
+        }
+
+        const nextItems = (data.results ?? [])
+          .map(toDynamicMapItem)
+          .filter(
+            (
+              item,
+            ): item is FloristMapItem =>
+              item !== null,
+          );
+
+        setDynamicMapItems((currentItems) =>
+          mergeMapItems(
+            currentItems,
+            nextItems,
+          ),
+        );
+      } catch (error) {
+        if (controller.signal.aborted) {
+          return;
+        }
+
+        lastViewportKeyRef.current = "";
+
+        console.error(
+          "[FloristsMapView] Dynamisk kartsökning misslyckades:",
+          error,
+        );
+      } finally {
+        if (
+          activeMapRequestRef.current ===
+          controller
+        ) {
+          activeMapRequestRef.current = null;
+        }
+      }
+    },
+    [city, country],
+  );
 
   function saveSearch() {
     const fullAddress = [streetAddress, postalCode, city, country]
@@ -379,8 +1412,8 @@ export default function FloristsMapView({
           <div className="mt-6 grid gap-5 lg:grid-cols-[360px_1fr]">
             <aside className="rounded-[30px] bg-[#fbf7f2] p-4 ring-1 ring-stone-200 md:p-5">
               <div className="grid gap-3">
-                <SearchField label="Land" value={country} onChange={setCountry} listId="map-country-list" icon={Globe2} />
-                <SearchField label="Stad" value={city} onChange={setCity} listId="map-city-list" icon={MapPin} />
+                <SearchField label="Land" value={country} onChange={handleCountryChange} listId="map-country-list" icon={Globe2} />
+                <SearchField label="Stad" value={city} onChange={handleCityChange} listId="map-city-list" icon={MapPin} />
                 <SearchField label="Gatuadress" value={streetAddress} onChange={setStreetAddress} icon={Home} />
                 <SearchField label="Postnummer" value={postalCode} onChange={setPostalCode} icon={MapPin} />
 
@@ -407,24 +1440,50 @@ export default function FloristsMapView({
 
                 <button
                   type="button"
-                  onClick={saveSearch}
-                  className="rounded-full bg-pink-600 px-4 py-4 text-sm font-black !text-white"
+                  onClick={() => {
+                    void searchMapLocation();
+                  }}
+                  disabled={
+                    mapAction === "searching" ||
+                    mapAction === "locating"
+                  }
+                  className="rounded-full bg-pink-600 px-4 py-4 text-sm font-black !text-white transition disabled:cursor-wait disabled:opacity-60"
                 >
                   <Search size={16} className="mr-1 inline" />
-                  Sök
+                  {mapAction === "searching"
+                    ? "Söker…"
+                    : "Sök"}
                 </button>
 
                 <button
                   type="button"
-                  onClick={() => {
-                    localStorage.setItem("recipientSearchMode", "near-me");
-                    saveSearch();
-                  }}
-                  className="rounded-full bg-stone-950 px-4 py-4 text-sm font-black !text-white"
+                  onClick={useCurrentLocation}
+                  disabled={
+                    mapAction === "searching" ||
+                    mapAction === "locating"
+                  }
+                  className="rounded-full bg-stone-950 px-4 py-4 text-sm font-black !text-white transition disabled:cursor-wait disabled:opacity-60"
                 >
                   <LocateFixed size={16} className="mr-1 inline" />
-                  Nära mig
+                  {mapAction === "locating"
+                    ? "Hämtar position…"
+                    : "Nära mig"}
                 </button>
+
+                {mapActionMessage ? (
+                  <p
+                    role="status"
+                    aria-live="polite"
+                    className={[
+                      "rounded-2xl px-4 py-3 text-xs font-bold leading-5",
+                      mapAction === "error"
+                        ? "bg-red-50 text-red-700 ring-1 ring-red-200"
+                        : "bg-white text-stone-600 ring-1 ring-stone-200",
+                    ].join(" ")}
+                  >
+                    {mapActionMessage}
+                  </p>
+                ) : null}
               </div>
 
               <p className="mt-5 rounded-2xl bg-white p-4 text-xs font-semibold leading-6 text-stone-500 ring-1 ring-stone-200">
@@ -441,6 +1500,10 @@ export default function FloristsMapView({
                 hoveredFloristId={hoveredFloristId}
                 onHoverFlorist={setHoveredFloristId}
                 onOrderFlorist={orderFromMapFlorist}
+                onViewportIdle={handleViewportIdle}
+                autoFit={false}
+                includeSeedPlaces={false}
+                clusterMarkers
                 mode="full"
               />
             </div>
