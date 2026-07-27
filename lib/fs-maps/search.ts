@@ -14,6 +14,13 @@ import type {
 const DEFAULT_CACHE_TTL_MS = 10 * 60 * 1000;
 const MAX_RESULTS = 60;
 
+/*
+ * Höj värdet när kartans klassificeringsregler ändras.
+ * Då återanvänds inte gamla, ofiltrerade cacheträffar.
+ */
+const SEARCH_QUALITY_VERSION =
+  "qualified-florists-v1";
+
 
 function getGooglePageCount(
   bounds: MapBounds,
@@ -82,6 +89,7 @@ function createCacheKey(input: FSMapsSearchInput): string {
   const bounds = input.bounds;
 
   return JSON.stringify({
+    qualityVersion: SEARCH_QUALITY_VERSION,
     north: normalizeNumber(bounds.north),
     south: normalizeNumber(bounds.south),
     east: normalizeNumber(bounds.east),

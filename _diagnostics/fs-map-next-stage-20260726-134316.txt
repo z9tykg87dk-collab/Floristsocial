@@ -1,0 +1,3707 @@
+=== GIT STATUS ===
+ M app/api/fs-maps/claim-places/route.ts
+ M app/workspace/page.tsx
+ D components/FSMap.backup-before-compact-popup.tsx
+ D components/FSMap.backup-before-final-popup-image-fix.tsx
+ D components/FSMap.backup-before-image-crop-and-profile-link.tsx
+ D components/FSMap.backup-before-image-height-210.tsx
+ D components/FSMap.backup-before-logo-markers.tsx
+ D components/FSMap.backup-before-popup-layout-fix.tsx
+ D components/FSMap.backup-before-product-popup.tsx
+ D components/FSMap.backup-before-unregistered-name-address.tsx
+ D components/FSMap.backup-before-verification-level.tsx
+ M components/FSMap.tsx
+ M components/FloristClaimMap.tsx
+ M components/workspace/WorkspaceGeoControl.tsx
+ M components/workspace/WorkspaceGlobalMap.tsx
+?? _backups/
+?? _diagnostics/
+?? app/workspace/page.before-live-florists-20260724-080725.tsx
+?? components/workspace/WorkspaceGeoControl.backup-20260724-0837.tsx
+?? components/workspace/WorkspaceGeoControl.backup-20260724-091110.tsx
+?? components/workspace/WorkspaceGeoControl.backup-20260724-092249.tsx
+?? lib/workspace/
+
+=== REGISTRERINGSKARTA ===
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import {
+  APIProvider,
+  AdvancedMarker,
+  InfoWindow,
+  Map,
+  Pin,
+  useMap,
+} from "@vis.gl/react-google-maps";
+
+export type FloristClaimPlace = {
+  external_place_id: string;
+  google_place_id: string | null;
+  shop_name: string;
+  formatted_address: string | null;
+  street_address: string;
+  postal_code: string;
+  city: string;
+  phone: string;
+  website: string;
+  latitude: number;
+  longitude: number;
+  claim_status:
+    | "GOOGLE_DISCOVERED"
+    | "REJECTED"
+    | "SUSPENDED"
+    | string;
+};
+
+type FloristClaimMapProps = {
+  selectedExternalPlaceId?: string | null;
+  onClaimPlace: (place: FloristClaimPlace) => void;
+};
+
+const STOCKHOLM = {
+  lat: 59.3293,
+  lng: 18.0686,
+};
+
+type ClaimPlacesResponse = {
+  success?: boolean;
+  count?: number;
+  results?: FloristClaimPlace[];
+  error?: string;
+};
+
+async function fetchClaimPlaces(
+  query = "",
+): Promise<FloristClaimPlace[]> {
+  const params = new URLSearchParams();
+
+  if (query.trim()) {
+    params.set(
+      "q",
+      query.trim(),
+    );
+  }
+
+  const url = params.size
+    ? `/api/fs-maps/claim-places?${params.toString()}`
+    : "/api/fs-maps/claim-places";
+
+  const response = await fetch(
+    url,
+    {
+      cache: "no-store",
+    },
+  );
+
+  const data =
+    (await response.json()) as ClaimPlacesResponse;
+
+  if (!response.ok || !data.success) {
+    throw new Error(
+      data.error ||
+        "Kunde inte hämta butiker till claim-kartan.",
+    );
+  }
+
+  return Array.isArray(data.results)
+    ? data.results
+    : [];
+}
+
+function ClaimMapController({
+  target,
+}: {
+  target: {
+    lat: number;
+    lng: number;
+  } | null;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!map || !target) {
+      return;
+    }
+
+    map.panTo(target);
+    map.setZoom(15);
+  }, [
+    map,
+    target,
+  ]);
+
+  return null;
+}
+
+export default function FloristClaimMap({
+  selectedExternalPlaceId,
+  onClaimPlace,
+}: FloristClaimMapProps) {
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  const [places, setPlaces] = useState<FloristClaimPlace[]>([]);
+  const [selected, setSelected] =
+    useState<FloristClaimPlace | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const [
+    shopQuery,
+    setShopQuery,
+  ] = useState("");
+
+  const [
+    searching,
+    setSearching,
+  ] = useState(false);
+
+  const [
+    searchMessage,
+    setSearchMessage,
+  ] = useState("");
+
+  const [
+    mapTarget,
+    setMapTarget,
+  ] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadPlaces() {
+      setLoading(true);
+      setError("");
+
+      try {
+        const results =
+          await fetchClaimPlaces();
+
+        if (active) {
+          setPlaces(results);
+        }
+      } catch (loadError) {
+        if (active) {
+          setError(
+            loadError instanceof Error
+              ? loadError.message
+              : "Kunde inte läsa kartdata.",
+          );
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void loadPlaces();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  async function searchShopByName() {
+    const query = shopQuery.trim();
+
+    if (!query) {
+      setSearchMessage(
+        "Skriv floristens eller butikens namn.",
+      );
+
+      return;
+    }
+
+    setSearching(true);
+    setSearchMessage("");
+    setError("");
+
+    try {
+      const results =
+        await fetchClaimPlaces(query);
+
+      if (results.length === 0) {
+        setSearchMessage(
+          `Ingen florist eller butik hittades för "${query}".`,
+        );
+
+        return;
+      }
+
+      const firstResult = results[0];
+
+      setPlaces(results);
+      setSelected(firstResult);
+
+      setMapTarget({
+        lat: Number(
+          firstResult.latitude,
+        ),
+        lng: Number(
+          firstResult.longitude,
+        ),
+      });
+
+      setSearchMessage(
+        results.length === 1
+          ? `1 butik hittades för "${query}".`
+          : `${results.length} butiker hittades för "${query}".`,
+      );
+    } catch (searchError) {
+      setSearchMessage(
+        searchError instanceof Error
+          ? searchError.message
+          : "Butikssökningen misslyckades.",
+      );
+    } finally {
+      setSearching(false);
+    }
+  }
+
+  async function showAllClaimPlaces() {
+    setSearching(true);
+    setSearchMessage("");
+    setError("");
+
+    try {
+      const results =
+        await fetchClaimPlaces();
+
+      setPlaces(results);
+      setShopQuery("");
+      setSelected(null);
+      setMapTarget(STOCKHOLM);
+
+      setSearchMessage(
+        "Visar alla tillgängliga butiker.",
+      );
+    } catch (loadError) {
+      setSearchMessage(
+        loadError instanceof Error
+          ? loadError.message
+          : "Kunde inte återställa butikerna.",
+      );
+    } finally {
+      setSearching(false);
+    }
+  }
+
+  const center = useMemo(() => {
+    const selectedPlace = places.find(
+      (place) =>
+        place.external_place_id === selectedExternalPlaceId,
+    );
+
+    if (selectedPlace) {
+      return {
+        lat: Number(selectedPlace.latitude),
+        lng: Number(selectedPlace.longitude),
+      };
+    }
+
+    if (places[0]) {
+      return {
+        lat: Number(places[0].latitude),
+        lng: Number(places[0].longitude),
+      };
+    }
+
+    return STOCKHOLM;
+  }, [places, selectedExternalPlaceId]);
+
+  if (!apiKey) {
+    return (
+      <div className="grid min-h-[440px] place-items-center rounded-3xl border border-red-200 bg-red-50 p-6 text-center">
+        <p className="font-semibold text-red-700">
+          Google Maps API-nyckel saknas.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-hidden rounded-3xl border border-stone-200 bg-white">
+      <div className="border-b border-stone-200 bg-stone-50 px-5 py-4">
+        <h3 className="text-lg font-semibold text-stone-950">
+          Hitta din butik på kartan
+        </h3>
+
+        <p className="mt-1 text-sm leading-6 text-stone-600">
+          Klicka på butikens grå markör och välj sedan
+          <strong> Jag äger denna butik</strong>.
+        </p>
+
+        <form
+          className="mt-4 rounded-2xl border border-stone-200 bg-white p-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void searchShopByName();
+          }}
+        >
+          <label
+            htmlFor="claim-shop-search"
+            className="block text-xs font-black uppercase tracking-[0.14em] text-stone-500"
+          >
+            Florist / Butik
+          </label>
+
+          <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+            <input
+              id="claim-shop-search"
+              type="search"
+              value={shopQuery}
+              onChange={(event) =>
+                setShopQuery(
+                  event.target.value,
+                )
+              }
+              placeholder="Skriv floristens eller butikens namn"
+              autoComplete="off"
+              className="min-h-12 flex-1 rounded-xl border border-stone-300 bg-white px-4 text-sm font-semibold text-stone-950 outline-none transition placeholder:text-stone-400 focus:border-pink-500 focus:ring-2 focus:ring-pink-100"
+            />
+
+            <button
+              type="submit"
+              disabled={searching}
+              className="min-h-12 rounded-xl bg-pink-600 px-5 text-sm font-black text-white transition hover:bg-pink-700 disabled:cursor-wait disabled:opacity-60"
+            >
+              {searching
+                ? "Söker…"
+                : "Hitta florist/butik"}
+            </button>
+          </div>
+
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={() =>
+                void showAllClaimPlaces()
+              }
+              disabled={searching}
+              className="text-sm font-black text-stone-600 underline decoration-stone-300 underline-offset-4 hover:text-stone-950 disabled:opacity-50"
+            >
+              Visa alla butiker
+            </button>
+
+            {searchMessage ? (
+              <p
+                aria-live="polite"
+                className="text-sm font-bold text-stone-600"
+              >
+                {searchMessage}
+              </p>
+            ) : null}
+          </div>
+        </form>
+      </div>
+
+      {loading ? (
+        <div className="grid min-h-[440px] place-items-center">
+          <p className="font-medium text-stone-500">
+            Hämtar blomsterbutiker…
+          </p>
+        </div>
+      ) : error ? (
+        <div className="grid min-h-[440px] place-items-center p-6 text-center">
+          <p className="font-semibold text-red-700">{error}</p>
+        </div>
+      ) : (
+        <APIProvider apiKey={apiKey}>
+          <Map
+            defaultCenter={center}
+            defaultZoom={11}
+            mapId="FS_CLAIM_MAP"
+            gestureHandling="greedy"
+            style={{
+              width: "100%",
+              height: "500px",
+            }}
+          >
+            <ClaimMapController
+              target={mapTarget}
+            />
+
+            {places.map((place) => {
+              const isSelected =
+                selectedExternalPlaceId ===
+                place.external_place_id;
+
+              return (
+                <AdvancedMarker
+                  key={place.external_place_id}
+                  position={{
+                    lat: Number(place.latitude),
+                    lng: Number(place.longitude),
+                  }}
+                  title={place.shop_name}
+                  onClick={() => {
+                    setSelected(place);
+
+                    setMapTarget({
+                      lat: Number(
+                        place.latitude,
+                      ),
+                      lng: Number(
+                        place.longitude,
+                      ),
+                    });
+                  }}
+                >
+                  <Pin
+                    background={
+                      isSelected ? "#db2777" : "#78716c"
+                    }
+                    borderColor={
+                      isSelected ? "#831843" : "#44403c"
+                    }
+                    glyphColor="#ffffff"
+                    glyph={isSelected ? "✓" : "•"}
+                    scale={isSelected ? 1.2 : 0.95}
+                  />
+                </AdvancedMarker>
+              );
+            })}
+
+            {selected ? (
+              <InfoWindow
+                position={{
+                  lat: Number(selected.latitude),
+                  lng: Number(selected.longitude),
+                }}
+                onCloseClick={() => setSelected(null)}
+              >
+                <div className="max-h-[390px] w-[300px] overflow-y-auto p-2 pr-3">
+                  <h3 className="text-base font-black text-stone-950">
+                    {selected.shop_name}
+                  </h3>
+
+                  <p className="mt-1 text-sm font-semibold leading-5 text-stone-600">
+                    {selected.formatted_address ||
+                      [
+                        selected.street_address,
+                        selected.postal_code,
+                        selected.city,
+                      ]
+                        .filter(Boolean)
+                        .join(", ")}
+                  </p>
+
+                  <div className="sticky top-0 z-10 -mx-2 mt-3 border-y border-pink-100 bg-white px-2 py-3">
+                    <p className="text-sm font-bold text-stone-900">
+                      Är du innehavare av denna butik?
+                    </p>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClaimPlace(selected);
+                        setSelected(null);
+                      }}
+                      className="mt-2 w-full rounded-full bg-pink-600 px-4 py-3 text-sm font-black text-white shadow-sm transition hover:bg-pink-700"
+                    >
+                      Jag äger denna butik
+                    </button>
+                  </div>
+
+                  {(selected.phone || selected.website) ? (
+                    <div className="mt-3 space-y-1 rounded-2xl bg-stone-50 px-3 py-3 text-sm text-stone-700">
+                      {selected.phone ? (
+                        <p>
+                          <span className="font-black">Telefon:</span>{" "}
+                          {selected.phone}
+                        </p>
+                      ) : null}
+
+                      {selected.website ? (
+                        <p className="break-all">
+                          <span className="font-black">Webbplats:</span>{" "}
+                          {selected.website}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
+
+                  <p className="mt-3 rounded-2xl bg-stone-50 px-3 py-3 text-sm font-semibold text-stone-600">
+                    Inte ansluten till FloristSocial ännu.
+                  </p>
+
+                </div>
+              </InfoWindow>
+            ) : null}
+          </Map>
+        </APIProvider>
+      )}
+
+      {selectedExternalPlaceId ? (
+        <div className="border-t border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-bold text-emerald-800">
+          ✓ Butiken är vald. Uppgifterna har fyllts i i
+          registreringsformuläret.
+        </div>
+      ) : null}
+    </div>
+  );
+
+=== CLAIM API ===
+import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
+import {
+  stockholmFloristSeeds,
+  stockholmDiscoveryQueries,
+} from "@/lib/fs-maps/stockholm-florists";
+
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
+type GooglePlace = {
+  id?: string;
+  formattedAddress?: string;
+  location?: {
+    latitude?: number;
+    longitude?: number;
+  };
+  displayName?: {
+    text?: string;
+  };
+  nationalPhoneNumber?: string;
+  internationalPhoneNumber?: string;
+  websiteUri?: string;
+};
+
+type FloristClaimRow = {
+  external_place_id: string | null;
+  claim_status: string | null;
+};
+
+function requiredEnv(name: string) {
+  const value = process.env[name];
+
+  if (!value) {
+    throw new Error(`Miljövariabel saknas: ${name}`);
+  }
+
+  return value;
+}
+
+const supabaseAdmin = createClient(
+  requiredEnv("NEXT_PUBLIC_SUPABASE_URL"),
+  requiredEnv("SUPABASE_SERVICE_ROLE_KEY"),
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  },
+);
+
+async function searchPlaces(textQuery: string, maxResultCount = 10) {
+  const apiKey =
+    process.env.GOOGLE_MAPS_API_KEY ||
+    process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+
+  if (!apiKey) {
+    throw new Error("GOOGLE_MAPS_API_KEY saknas i .env.local");
+  }
+
+  const response = await fetch(
+    "https://places.googleapis.com/v1/places:searchText",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": apiKey,
+        "X-Goog-FieldMask": [
+          "places.id",
+          "places.displayName",
+          "places.formattedAddress",
+          "places.location",
+          "places.nationalPhoneNumber",
+          "places.internationalPhoneNumber",
+          "places.websiteUri",
+        ].join(","),
+      },
+      body: JSON.stringify({
+        textQuery,
+        languageCode: "sv",
+        regionCode: "SE",
+        maxResultCount,
+      }),
+      cache: "no-store",
+    },
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+
+    throw new Error(
+      `Google Places returnerade ${response.status}: ${errorText}`,
+    );
+  }
+
+  const data = await response.json();
+
+  return (data.places || []) as GooglePlace[];
+}
+
+function parseSwedishAddress(formattedAddress: string | null) {
+  const address = (formattedAddress || "").trim();
+  const postalMatch = address.match(/\b(\d{3}\s?\d{2})\b/);
+  const postalCode = postalMatch?.[1]?.replace(/\s+/g, " ") || "";
+
+  const withoutCountry = address
+    .replace(/,\s*Sverige\s*$/i, "")
+    .trim();
+
+  const parts = withoutCountry
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  const streetAddress = parts[0] || "";
+
+  let city = "";
+
+  if (postalCode) {
+    const postalIndex = withoutCountry.indexOf(postalCode);
+
+    if (postalIndex >= 0) {
+      city = withoutCountry
+        .slice(postalIndex + postalCode.length)
+        .replace(/^,\s*/, "")
+        .trim();
+    }
+  }
+
+  if (!city && parts.length > 1) {
+    city = parts[parts.length - 1]
+      .replace(postalCode, "")
+      .trim();
+  }
+
+  return {
+    streetAddress,
+    postalCode,
+    city,
+  };
+}
+
+function toClaimPlace(place: GooglePlace, fallbackIndex: number) {
+  const formattedAddress = place.formattedAddress || null;
+  const parsed = parseSwedishAddress(formattedAddress);
+
+  return {
+    external_place_id: place.id || `google-place-${fallbackIndex}`,
+    google_place_id: place.id || null,
+    shop_name: place.displayName?.text || "Blomsterbutik",
+    formatted_address: formattedAddress,
+    street_address: parsed.streetAddress,
+    postal_code: parsed.postalCode,
+    city: parsed.city || "Stockholm",
+    phone:
+      place.internationalPhoneNumber ||
+      place.nationalPhoneNumber ||
+      "",
+    website: place.websiteUri || "",
+    latitude: place.location?.latitude || null,
+    longitude: place.location?.longitude || null,
+    claim_status: "GOOGLE_DISCOVERED",
+  };
+}
+
+export async function GET(request: Request) {
+  try {
+    const { searchParams } =
+      new URL(request.url);
+
+    const requestedQuery =
+      (searchParams.get("q") || "").trim();
+
+    const discoveryQueries =
+      requestedQuery
+        ? [
+            requestedQuery,
+            `${requestedQuery} blomsterbutik`,
+          ]
+        : [
+            ...stockholmFloristSeeds,
+            ...stockholmDiscoveryQueries,
+          ];
+
+    const queryResults = await Promise.all(
+      discoveryQueries.map(
+        async (searchText) =>
+          searchPlaces(
+            searchText,
+            requestedQuery ? 20 : 10,
+          ),
+      ),
+    );
+
+    const googlePlaces = queryResults.flat();
+    const uniquePlaces = new Map<string, GooglePlace>();
+
+    googlePlaces.forEach((place, index) => {
+      const key =
+        place.id ||
+        `${place.displayName?.text || "place"}-${place.formattedAddress || index}`;
+
+      if (
+        place.location?.latitude &&
+        place.location?.longitude &&
+        !uniquePlaces.has(key)
+      ) {
+        uniquePlaces.set(key, place);
+      }
+    });
+
+    const { data: floristRows, error: floristError } =
+      await supabaseAdmin
+        .from("florists")
+        .select("external_place_id, claim_status")
+        .not("external_place_id", "is", null);
+
+    if (floristError) {
+      throw new Error(
+        `Kunde inte läsa claim-status: ${floristError.message}`,
+      );
+    }
+
+    const statusByPlaceId = new Map<string, string>();
+
+    ((floristRows || []) as FloristClaimRow[]).forEach((row) => {
+      if (row.external_place_id) {
+        statusByPlaceId.set(
+          row.external_place_id,
+          row.claim_status || "CLAIM_PENDING",
+        );
+      }
+    });
+
+    const results = Array.from(uniquePlaces.values())
+      .map((place, index) => {
+        const item = toClaimPlace(place, index);
+        const storedStatus = item.google_place_id
+          ? statusByPlaceId.get(item.google_place_id)
+          : undefined;
+
+        return {
+          ...item,
+          claim_status: storedStatus || "GOOGLE_DISCOVERED",
+        };
+      })
+      .filter((item) =>
+        [
+          "GOOGLE_DISCOVERED",
+          "REJECTED",
+          "SUSPENDED",
+        ].includes(item.claim_status),
+      );
+
+    return NextResponse.json({
+      success: true,
+      query: requestedQuery || null,
+      count: results.length,
+      results,
+    });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          error instanceof Error
+            ? error.message
+            : "Okänt fel i claim-kartan.",
+      },
+      { status: 500 },
+    );
+  }
+}
+
+=== PUBLIK FS SEARCH API ===
+import { NextRequest, NextResponse } from "next/server";
+
+import { searchFSMaps } from "@/lib/fs-maps/search";
+import type {
+  MapBounds,
+  SearchCountry,
+} from "@/lib/fs-maps/types";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+function parseRequiredNumber(
+  searchParams: URLSearchParams,
+  key: string
+): number {
+  const rawValue = searchParams.get(key);
+
+  if (rawValue === null || rawValue.trim() === "") {
+    throw new Error(`Parametern "${key}" saknas.`);
+  }
+
+  const value = Number(rawValue);
+
+  if (!Number.isFinite(value)) {
+    throw new Error(`Parametern "${key}" är inte ett giltigt tal.`);
+  }
+
+  return value;
+}
+
+function parseBounds(searchParams: URLSearchParams): MapBounds {
+  return {
+    north: parseRequiredNumber(searchParams, "north"),
+    south: parseRequiredNumber(searchParams, "south"),
+    east: parseRequiredNumber(searchParams, "east"),
+    west: parseRequiredNumber(searchParams, "west"),
+  };
+}
+
+function parseCountry(
+  searchParams: URLSearchParams
+): SearchCountry {
+  const rawValue =
+    searchParams.get("country")?.trim().toUpperCase() || "SE";
+
+  const aliases: Record<string, string> = {
+    UK: "GB",
+  };
+
+  const value = aliases[rawValue] ?? rawValue;
+
+  if (!/^[A-Z]{2}$/.test(value)) {
+    throw new Error(
+      `Landkoden "${rawValue}" maste besta av tva bokstaver.`
+    );
+  }
+
+  return value;
+}
+
+function parseOptionalInteger(
+  searchParams: URLSearchParams,
+  key: string
+): number | undefined {
+  const rawValue = searchParams.get(key);
+
+  if (!rawValue) {
+    return undefined;
+  }
+
+  const value = Number(rawValue);
+
+  if (!Number.isFinite(value)) {
+    throw new Error(`Parametern "${key}" är ogiltig.`);
+  }
+
+  return Math.trunc(value);
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const searchParams = request.nextUrl.searchParams;
+
+    const result = await searchFSMaps({
+      bounds: parseBounds(searchParams),
+      country: parseCountry(searchParams),
+      languageCode:
+        searchParams.get("language")?.trim() || "sv",
+      query: searchParams.get("query")?.trim() || undefined,
+      pageSize: parseOptionalInteger(searchParams, "pageSize"),
+      pageToken:
+        searchParams.get("pageToken")?.trim() || undefined,
+      bypassCache:
+        searchParams.get("bypassCache") === "true",
+    });
+
+    return NextResponse.json(result, {
+      status: 200,
+      headers: {
+        "Cache-Control":
+          "public, s-maxage=300, stale-while-revalidate=600",
+      },
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : "Ett oväntat fel inträffade i kartmotorn.";
+
+    console.error("[FS Maps Search]", error);
+
+    return NextResponse.json(
+      {
+        error: "FS_MAPS_SEARCH_FAILED",
+        message,
+      },
+      {
+        status: 400,
+      }
+    );
+  }
+}
+
+=== FS MAP TYPES ===
+// ======================================================
+// FloristSocial Maps Engine
+// Shared Types
+// ======================================================
+
+export type LatLng = {
+  lat: number;
+  lng: number;
+};
+
+export type MapBounds = {
+  north: number;
+  south: number;
+  east: number;
+  west: number;
+};
+
+export type SearchCountry = string;
+
+export type SearchSource =
+  | "supabase"
+  | "google"
+  | "cache";
+
+export type VerificationLevel =
+  | "NONE"
+  | "BASIC"
+  | "BUSINESS"
+  | "FULL";
+
+export type FSMapStatus =
+  | "approved_display"
+  | "google_discovered"
+  | "claim_pending"
+  | "rejected"
+  | "suspended";
+
+export interface FloristMapItem {
+  florist_id: string;
+
+  source: SearchSource;
+
+  google_place_id: string | null;
+
+  florist_name: string;
+
+  shop_name: string;
+
+  address: string | null;
+
+  city: string | null;
+
+  postcode: string | null;
+
+  country: SearchCountry;
+
+  latitude: number;
+
+  longitude: number;
+
+  rating: number | null;
+
+  review_count: number | null;
+
+  logo_url: string | null;
+
+  profile_image_url: string | null;
+
+  delivery_radius_km: number | null;
+
+  distance_km: number | null;
+
+  opening_hours: string[] | null;
+
+  standard_delivery_fee: number | null;
+
+  express_delivery_available: boolean;
+
+  express_delivery_fee: number | null;
+
+  verification_level: VerificationLevel;
+
+  fs_map_status: FSMapStatus;
+}
+
+export interface SearchRequest {
+  bounds: MapBounds;
+
+  country: SearchCountry;
+
+  includeGoogle: boolean;
+
+  includeRegistered: boolean;
+
+  includeUnregistered: boolean;
+}
+
+export interface SearchResponse {
+  success: boolean;
+
+  results: FloristMapItem[];
+
+  count: number;
+
+  cached: boolean;
+
+  generated_at: string;
+}
+
+=== GOOGLE SOURCE ===
+import type {
+  FloristMapItem,
+  MapBounds,
+  SearchCountry,
+} from "@/lib/fs-maps/types";
+
+const GOOGLE_PLACES_SEARCH_URL =
+  "https://places.googleapis.com/v1/places:searchText";
+
+const GOOGLE_PLACES_FIELD_MASK = [
+  "places.id",
+  "places.displayName",
+  "places.formattedAddress",
+  "places.location",
+  "places.rating",
+  "places.userRatingCount",
+  "places.addressComponents",
+  "places.regularOpeningHours.weekdayDescriptions",
+  "nextPageToken",
+].join(",");
+
+type GoogleLocalizedText = {
+  text?: string;
+  languageCode?: string;
+};
+
+type GoogleLatLng = {
+  latitude?: number;
+  longitude?: number;
+};
+
+type GoogleAddressComponent = {
+  longText?: string;
+  shortText?: string;
+  types?: string[];
+  languageCode?: string;
+};
+
+type GoogleOpeningHours = {
+  weekdayDescriptions?: string[];
+};
+
+type GooglePlace = {
+  id?: string;
+  displayName?: GoogleLocalizedText;
+  formattedAddress?: string;
+  location?: GoogleLatLng;
+  rating?: number;
+  userRatingCount?: number;
+  addressComponents?: GoogleAddressComponent[];
+  regularOpeningHours?: GoogleOpeningHours;
+};
+
+type GoogleTextSearchResponse = {
+  places?: GooglePlace[];
+  nextPageToken?: string;
+};
+
+export type GooglePlacesSearchOptions = {
+  bounds: MapBounds;
+  country?: SearchCountry;
+  languageCode?: string;
+  query?: string;
+  pageSize?: number;
+  pageToken?: string;
+};
+
+function getGoogleMapsApiKey(): string {
+  const apiKey =
+    process.env.GOOGLE_MAPS_API_KEY ??
+    process.env.GOOGLE_PLACES_API_KEY ??
+    process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+
+  if (!apiKey) {
+    throw new Error(
+      "Google Maps API-nyckel saknas. Lägg till GOOGLE_MAPS_API_KEY i .env.local."
+    );
+  }
+
+  return apiKey;
+}
+
+function isFiniteCoordinate(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+function validateBounds(bounds: MapBounds): void {
+  const values = [
+    bounds.north,
+    bounds.south,
+    bounds.east,
+    bounds.west,
+  ];
+
+  if (!values.every(isFiniteCoordinate)) {
+    throw new Error("Kartans bounds innehåller ogiltiga koordinater.");
+  }
+
+  if (bounds.north <= bounds.south) {
+    throw new Error("north måste vara större än south.");
+  }
+
+  if (bounds.north > 90 || bounds.south < -90) {
+    throw new Error("Latitud måste ligga mellan -90 och 90.");
+  }
+
+  if (
+    bounds.east > 180 ||
+    bounds.east < -180 ||
+    bounds.west > 180 ||
+    bounds.west < -180
+  ) {
+    throw new Error("Longitud måste ligga mellan -180 och 180.");
+  }
+
+  if (bounds.east <= bounds.west) {
+    throw new Error(
+      "Bounds som korsar datumlinjen stöds inte ännu. east måste vara större än west."
+    );
+  }
+}
+
+function getAddressComponent(
+  components: GoogleAddressComponent[] | undefined,
+  acceptedTypes: string[]
+): string | null {
+  if (!components?.length) {
+    return null;
+  }
+
+  const component = components.find((item) =>
+    item.types?.some((type) => acceptedTypes.includes(type))
+  );
+
+  return component?.longText?.trim() || component?.shortText?.trim() || null;
+}
+
+function extractCity(place: GooglePlace): string | null {
+  return getAddressComponent(place.addressComponents, [
+    "locality",
+    "postal_town",
+    "administrative_area_level_2",
+    "administrative_area_level_1",
+  ]);
+}
+
+function extractPostcode(place: GooglePlace): string | null {
+  return getAddressComponent(place.addressComponents, ["postal_code"]);
+}
+
+function normalizePageSize(pageSize: number | undefined): number {
+  if (!Number.isFinite(pageSize)) {
+    return 20;
+  }
+
+  return Math.min(20, Math.max(1, Math.trunc(pageSize ?? 20)));
+}
+
+function createTextQuery(
+  query: string | undefined,
+  country: SearchCountry
+): string {
+  const normalizedQuery = query?.trim();
+
+  if (normalizedQuery) {
+    return normalizedQuery;
+  }
+
+  const countryQueries: Record<string, string> = {
+    SE: "blomsterbutik eller florist",
+    NO: "blomsterbutikk eller florist",
+    DK: "blomsterbutik eller florist",
+    FI: "kukkakauppa tai floristi",
+    IS: "blomabud eda florist",
+
+    FR: "fleuriste ou magasin de fleurs",
+    ES: "floristeria o florista",
+    PT: "florista ou loja de flores",
+    IT: "fioraio o negozio di fiori",
+
+    DE: "Blumenladen oder Florist",
+    NL: "bloemenwinkel of bloemist",
+    BE: "bloemenwinkel fleuriste florist",
+    LU: "fleuriste Blumenladen florist",
+    AT: "Blumenladen oder Florist",
+    CH: "Blumenladen fleuriste fioraio",
+
+    PL: "kwiaciarnia lub florysta",
+    CZ: "kvetinarstvi nebo florista",
+    SK: "kvetinarstvo alebo florista",
+    HU: "viragbolt vagy viragkoto",
+    RO: "florarie sau florist",
+    BG: "magazin za tsvetya ili florist",
+    HR: "cvjecarnica ili florist",
+    SI: "cvetlicarna ali florist",
+
+    EE: "lillepood voi florist",
+    LV: "ziedu veikals vai florists",
+    LT: "geliu parduotuve arba floristas",
+    GR: "anthopoleio i florist",
+
+    IE: "flower shop or florist",
+    GB: "flower shop or florist",
+
+    US: "flower shop or florist",
+    CA: "flower shop or florist",
+    AU: "flower shop or florist",
+    NZ: "flower shop or florist",
+
+    JP: "flower shop or florist",
+    KR: "flower shop or florist",
+    CN: "flower shop or florist",
+    IN: "flower shop or florist",
+    TH: "flower shop or florist",
+    TR: "cicekci veya florist",
+    AE: "flower shop or florist",
+    BR: "floricultura ou florista",
+    MX: "floreria o florista",
+    ZA: "flower shop or florist",
+  };
+
+  return countryQueries[country] ?? "flower shop or florist";
+}
+
+function toFloristMapItem(
+  place: GooglePlace,
+  country: SearchCountry
+): FloristMapItem | null {
+  const latitude = place.location?.latitude;
+  const longitude = place.location?.longitude;
+
+  if (
+    !place.id ||
+    !isFiniteCoordinate(latitude) ||
+    !isFiniteCoordinate(longitude)
+  ) {
+    return null;
+  }
+
+  const shopName = place.displayName?.text?.trim() || "Blomsterbutik";
+
+  return {
+    florist_id: `google-${place.id}`,
+    source: "google",
+    google_place_id: place.id,
+    florist_name: shopName,
+    shop_name: shopName,
+    address: place.formattedAddress?.trim() || null,
+    city: extractCity(place),
+    postcode: extractPostcode(place),
+    country,
+    latitude,
+    longitude,
+    rating:
+      typeof place.rating === "number" && Number.isFinite(place.rating)
+        ? place.rating
+        : null,
+    review_count:
+      typeof place.userRatingCount === "number" &&
+      Number.isFinite(place.userRatingCount)
+        ? place.userRatingCount
+        : null,
+    logo_url: null,
+    profile_image_url: null,
+    delivery_radius_km: null,
+    distance_km: null,
+    opening_hours:
+      place.regularOpeningHours?.weekdayDescriptions?.length
+        ? place.regularOpeningHours.weekdayDescriptions
+        : null,
+    standard_delivery_fee: null,
+    express_delivery_available: false,
+    express_delivery_fee: null,
+    verification_level: "NONE",
+    fs_map_status: "google_discovered",
+  };
+}
+
+export async function searchGoogleFlorists(
+  options: GooglePlacesSearchOptions
+): Promise<{
+  results: FloristMapItem[];
+  nextPageToken: string | null;
+}> {
+  validateBounds(options.bounds);
+
+  const country = options.country ?? "SE";
+  const languageCode = options.languageCode?.trim() || "sv";
+  const pageSize = normalizePageSize(options.pageSize);
+  const apiKey = getGoogleMapsApiKey();
+
+  const requestBody: Record<string, unknown> = {
+    textQuery: createTextQuery(options.query, country),
+    languageCode,
+    regionCode: country,
+    pageSize,
+    locationRestriction: {
+      rectangle: {
+        low: {
+          latitude: options.bounds.south,
+          longitude: options.bounds.west,
+        },
+        high: {
+          latitude: options.bounds.north,
+          longitude: options.bounds.east,
+        },
+      },
+    },
+  };
+
+  if (options.pageToken?.trim()) {
+    requestBody.pageToken = options.pageToken.trim();
+  }
+
+  const response = await fetch(GOOGLE_PLACES_SEARCH_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Goog-Api-Key": apiKey,
+      "X-Goog-FieldMask": GOOGLE_PLACES_FIELD_MASK,
+    },
+    body: JSON.stringify(requestBody),
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+
+    throw new Error(
+      `Google Places svarade med ${response.status}: ${errorText}`
+    );
+  }
+
+  const data = (await response.json()) as GoogleTextSearchResponse;
+
+  const results = (data.places ?? [])
+    .map((place) => toFloristMapItem(place, country))
+    .filter((item): item is FloristMapItem => item !== null);
+
+  return {
+    results,
+    nextPageToken: data.nextPageToken?.trim() || null,
+  };
+}
+
+export async function searchGoogleFloristPages(
+  options: GooglePlacesSearchOptions & {
+    maxPages?: number;
+  },
+): Promise<{
+  results: FloristMapItem[];
+  nextPageToken: string | null;
+}> {
+  const {
+    maxPages: requestedMaxPages,
+    ...searchOptions
+  } = options;
+
+  const maxPages = Math.min(
+    3,
+    Math.max(
+      1,
+      Math.trunc(requestedMaxPages ?? 1),
+    ),
+  );
+
+  const allResults: FloristMapItem[] = [];
+  let pageToken =
+    searchOptions.pageToken?.trim() || undefined;
+
+  let nextPageToken: string | null = null;
+
+  for (
+    let pageIndex = 0;
+    pageIndex < maxPages;
+    pageIndex += 1
+  ) {
+    const page = await searchGoogleFlorists({
+      ...searchOptions,
+      pageToken,
+    });
+
+    allResults.push(...page.results);
+    nextPageToken = page.nextPageToken;
+
+    if (!nextPageToken) {
+      break;
+    }
+
+    pageToken = nextPageToken;
+  }
+
+  const uniqueResults =
+    new Map<string, FloristMapItem>();
+
+  for (const item of allResults) {
+    const identity =
+      item.google_place_id ||
+      item.florist_id;
+
+    if (!uniqueResults.has(identity)) {
+      uniqueResults.set(identity, item);
+    }
+  }
+
+  return {
+    results: Array.from(uniqueResults.values()),
+    nextPageToken,
+  };
+}
+
+
+=== SUPABASE SOURCE ===
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+
+import type {
+  FloristMapItem,
+  MapBounds,
+  SearchCountry,
+} from "@/lib/fs-maps/types";
+
+type SupabaseFloristRow = {
+  id: string;
+  shop_name: string | null;
+  first_name: string | null;
+  last_name: string | null;
+
+  city: string | null;
+  municipality: string | null;
+  county: string | null;
+
+  address_line_1: string | null;
+  postal_code: string | null;
+
+  latitude: number | null;
+  longitude: number | null;
+
+  delivery_radius_km: number | null;
+
+  rating: number | null;
+  review_count: number | null;
+  opening_hours: unknown;
+
+  logo_url: string | null;
+  profile_image_url: string | null;
+
+  is_active: boolean | null;
+};
+
+export type FloristSocialSearchOptions = {
+  bounds: MapBounds;
+  country?: SearchCountry;
+  limit?: number;
+};
+
+function toFiniteNumber(value: unknown): number | null {
+  const numberValue = Number(value);
+
+  return Number.isFinite(numberValue)
+    ? numberValue
+    : null;
+}
+
+function normalizeLimit(limit: number | undefined): number {
+  if (!Number.isFinite(limit)) {
+    return 500;
+  }
+
+  return Math.min(
+    1_000,
+    Math.max(1, Math.trunc(limit ?? 500)),
+  );
+}
+
+function getFloristName(row: SupabaseFloristRow): string {
+  return (
+    row.shop_name?.trim() ||
+    `${row.first_name || ""} ${row.last_name || ""}`.trim() ||
+    "Florist"
+  );
+}
+
+function getCity(row: SupabaseFloristRow): string | null {
+  return (
+    row.city?.trim() ||
+    row.municipality?.trim() ||
+    row.county?.trim() ||
+    null
+  );
+}
+
+function getAddress(row: SupabaseFloristRow): string | null {
+  const postalAndCity = [
+    row.postal_code?.trim(),
+    getCity(row),
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const address = [
+    row.address_line_1?.trim(),
+    postalAndCity,
+  ]
+    .filter(Boolean)
+    .join(", ");
+
+  return address || null;
+}
+
+function normalizeOpeningHours(
+  value: unknown,
+): string[] | null {
+  if (!Array.isArray(value)) {
+    return null;
+  }
+
+  const descriptions = value
+    .map((item) => {
+      if (typeof item === "string") {
+        return item.trim();
+      }
+
+      if (!item || typeof item !== "object") {
+        return "";
+      }
+
+      const record = item as Record<string, unknown>;
+
+      const dayLabel =
+        typeof record.dayLabel === "string"
+          ? record.dayLabel.trim()
+          : "";
+
+      const isClosed = record.isClosed === true;
+
+      const openTime =
+        typeof record.openTime === "string"
+          ? record.openTime.trim()
+          : "";
+
+      const closeTime =
+        typeof record.closeTime === "string"
+          ? record.closeTime.trim()
+          : "";
+
+      if (!dayLabel) {
+        return "";
+      }
+
+      if (isClosed) {
+        return `${dayLabel}: Stängt`;
+      }
+
+      if (openTime && closeTime) {
+        return `${dayLabel}: ${openTime}–${closeTime}`;
+      }
+
+      return dayLabel;
+    })
+    .filter(Boolean);
+
+  return descriptions.length > 0
+    ? descriptions
+    : null;
+}
+
+function toMapItem(
+  row: SupabaseFloristRow,
+  country: SearchCountry,
+): FloristMapItem | null {
+  const latitude = toFiniteNumber(row.latitude);
+  const longitude = toFiniteNumber(row.longitude);
+
+  if (
+    latitude === null ||
+    longitude === null ||
+    latitude < -90 ||
+    latitude > 90 ||
+    longitude < -180 ||
+    longitude > 180
+  ) {
+    return null;
+  }
+
+  const floristName = getFloristName(row);
+
+  return {
+    florist_id: row.id,
+    source: "supabase",
+
+    /*
+     * Kopplas till rätt Google Place ID-källa senare.
+     * Merge-motorn använder tills vidare även namn,
+     * adress och koordinater för dubblettkontroll.
+     */
+    google_place_id: null,
+
+    florist_name: floristName,
+    shop_name:
+      row.shop_name?.trim() || floristName,
+
+    address: getAddress(row),
+    city: getCity(row),
+    postcode:
+      row.postal_code?.trim() || null,
+    country,
+
+    latitude,
+    longitude,
+
+    rating: toFiniteNumber(row.rating),
+    review_count:
+      toFiniteNumber(row.review_count),
+
+    logo_url:
+      row.logo_url?.trim() || null,
+    profile_image_url:
+      row.profile_image_url?.trim() || null,
+
+    delivery_radius_km:
+      toFiniteNumber(row.delivery_radius_km),
+
+    distance_km: null,
+
+    opening_hours:
+      normalizeOpeningHours(row.opening_hours),
+
+    standard_delivery_fee: null,
+    express_delivery_available: false,
+    express_delivery_fee: null,
+
+    verification_level: "NONE",
+    fs_map_status: "approved_display",
+  };
+}
+
+export async function searchFloristSocialFlorists(
+  options: FloristSocialSearchOptions,
+): Promise<FloristMapItem[]> {
+  const supabase =
+    await createSupabaseServerClient();
+
+  const country = options.country ?? "SE";
+
+  const { data, error } = await supabase
+    .from("florists")
+    .select(`
+      id,
+      shop_name,
+      first_name,
+      last_name,
+      city,
+      municipality,
+      county,
+      address_line_1,
+      postal_code,
+      latitude,
+      longitude,
+      delivery_radius_km,
+      rating,
+      review_count,
+      opening_hours,
+      logo_url,
+      profile_image_url,
+      is_active
+    `)
+    .gte("latitude", options.bounds.south)
+    .lte("latitude", options.bounds.north)
+    .gte("longitude", options.bounds.west)
+    .lte("longitude", options.bounds.east)
+    .or("is_active.eq.true,is_active.is.null")
+    .order("shop_name", { ascending: true })
+    .limit(normalizeLimit(options.limit));
+
+  if (error) {
+    console.error(
+      "[FS Maps] Kunde inte hämta registrerade florister:",
+      error,
+    );
+
+    return [];
+  }
+
+  return (data ?? [])
+    .map((row) =>
+      toMapItem(row as SupabaseFloristRow, country),
+    )
+    .filter(
+      (item): item is FloristMapItem =>
+        item !== null,
+    );
+}
+
+=== MERGE OCH DEDUPLICERING ===
+import type { FloristMapItem } from "@/lib/fs-maps/types";
+
+function normalizeText(value: string | null | undefined): string {
+  return (value ?? "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function roundCoordinate(value: number): string {
+  return value.toFixed(4);
+}
+
+function createFallbackKey(item: FloristMapItem): string {
+  const name = normalizeText(item.shop_name || item.florist_name);
+  const address = normalizeText(item.address);
+  const city = normalizeText(item.city);
+
+  return [
+    name,
+    address,
+    city,
+    roundCoordinate(item.latitude),
+    roundCoordinate(item.longitude),
+  ].join("|");
+}
+
+function createIdentityKeys(item: FloristMapItem): string[] {
+  const keys: string[] = [];
+
+  if (item.google_place_id) {
+    keys.push(`google:${item.google_place_id}`);
+  }
+
+  if (item.florist_id && !item.florist_id.startsWith("google-")) {
+    keys.push(`floristsocial:${item.florist_id}`);
+  }
+
+  keys.push(`fallback:${createFallbackKey(item)}`);
+
+  return keys;
+}
+
+function sourcePriority(item: FloristMapItem): number {
+  return item.source === "google" ? 1 : 2;
+}
+
+function selectPreferredItem(
+  current: FloristMapItem,
+  candidate: FloristMapItem
+): FloristMapItem {
+  if (sourcePriority(candidate) > sourcePriority(current)) {
+    return {
+      ...current,
+      ...candidate,
+      google_place_id:
+        candidate.google_place_id ?? current.google_place_id,
+      rating: candidate.rating ?? current.rating,
+      review_count: candidate.review_count ?? current.review_count,
+      opening_hours:
+        candidate.opening_hours ?? current.opening_hours,
+    };
+  }
+
+  return {
+    ...candidate,
+    ...current,
+    google_place_id:
+      current.google_place_id ?? candidate.google_place_id,
+    rating: current.rating ?? candidate.rating,
+    review_count: current.review_count ?? candidate.review_count,
+    opening_hours:
+      current.opening_hours ?? candidate.opening_hours,
+  };
+}
+
+export function mergeFloristMapItems(
+  ...groups: FloristMapItem[][]
+): FloristMapItem[] {
+  const items = groups.flat();
+  const result: FloristMapItem[] = [];
+  const keyToIndex = new Map<string, number>();
+
+  for (const item of items) {
+    const keys = createIdentityKeys(item);
+
+    const existingIndex = keys
+      .map((key) => keyToIndex.get(key))
+      .find((index): index is number => index !== undefined);
+
+    if (existingIndex === undefined) {
+      const newIndex = result.length;
+      result.push(item);
+
+      for (const key of keys) {
+        keyToIndex.set(key, newIndex);
+      }
+
+      continue;
+    }
+
+    const mergedItem = selectPreferredItem(
+      result[existingIndex],
+      item
+    );
+
+    result[existingIndex] = mergedItem;
+
+    for (const key of createIdentityKeys(mergedItem)) {
+      keyToIndex.set(key, existingIndex);
+    }
+  }
+
+  return result;
+}
+
+=== GEMENSAM KARTA ===
+"use client";
+
+import {
+  useEffect,
+  useMemo,
+  useState,
+  useCallback,
+  type ComponentProps,
+} from "react";
+import {
+  APIProvider,
+  Map,
+  AdvancedMarker,
+  InfoWindow,
+  Pin,
+  useMap,
+} from "@vis.gl/react-google-maps";
+import {
+  MarkerClusterer,
+  SuperClusterAlgorithm,
+  type Marker,
+  type Renderer,
+} from "@googlemaps/markerclusterer";
+
+
+type OpeningHour = {
+  dayLabel?: string;
+  isClosed?: boolean;
+  openTime?: string;
+  closeTime?: string;
+};
+
+type FloristMapItem = {
+  florist_id: string;
+  florist_name: string | null;
+  shop_name: string | null;
+  city: string | null;
+  area: string | null;
+  delivery_radius_km: number | null;
+  latitude: number;
+  longitude: number;
+  distance_km: number;
+  profile_image_url: string | null;
+  logo_url: string | null;
+  rating: number | null;
+  review_count: number | null;
+  opening_hours: OpeningHour[] | null;
+  same_day_cutoff_time: string | null;
+  standard_delivery_fee: number | null;
+  express_delivery_available: boolean | null;
+  express_delivery_fee: number | null;
+  fs_map_status?: string | null;
+  verification_level?: "BASIC" | "BUSINESS" | "FULL" | string | null;
+  google_place_id?: string | null;
+  address?: string | null;
+  formatted_address?: string | null;
+  street_address?: string | null;
+  address_line_1?: string | null;
+  postal_code?: string | null;
+};
+
+export type FSMapViewport = {
+  north: number;
+  south: number;
+  east: number;
+  west: number;
+  zoom: number;
+};
+
+type FSMapProps = {
+  recipientLat?: number | null;
+  recipientLng?: number | null;
+  florists: FloristMapItem[];
+  hoveredFloristId?: string | null;
+  onHoverFlorist?: (id: string | null) => void;
+  onOrderFlorist?: (florist: FloristMapItem) => void;
+  onViewportIdle?: (viewport: FSMapViewport) => void;
+  autoFit?: boolean;
+  includeSeedPlaces?: boolean;
+  clusterMarkers?: boolean;
+  mode?: "full" | "compact";
+};
+
+const STOCKHOLM = { lat: 59.3293, lng: 18.0686 };
+
+const demoProducts = [
+  {
+    title: "Floristens val",
+    price: 625,
+    image: "/design-preview/buketter/bukett-floristens-val-pastell-750.jpg",
+  },
+  {
+    title: "Romantisk bukett",
+    price: 750,
+    image: "/design-preview/buketter/bukett-romantisk-rosa-1000.jpg",
+  },
+  {
+    title: "Modern bukett",
+    price: 875,
+    image: "/design-preview/buketter/bukett-modern-orange-rosa.jpg",
+  },
+];
+
+const approvedDetailedFlorists = [
+  "makalösa blommor",
+  "makalosa blommor",
+  "blomsterjouren",
+  "olas blommor",
+  "bladverket",
+  "blomsteraffären",
+  "blomsteraffaren",
+  "melanders blommor",
+];
+
+function cleanName(value: string | null | undefined) {
+  return (value || "").trim();
+}
+
+function displayName(florist: FloristMapItem) {
+  return (
+    cleanName(florist.shop_name) ||
+    cleanName(florist.florist_name) ||
+    "Blomsterbutik"
+  );
+}
+
+function displayAddress(florist: FloristMapItem) {
+  const completeAddress =
+    cleanName(florist.formatted_address) ||
+    cleanName(florist.address);
+
+  if (completeAddress) {
+    return completeAddress;
+  }
+
+  const street =
+    cleanName(florist.street_address) ||
+    cleanName(florist.address_line_1);
+
+  const postalAndCity = [
+    cleanName(florist.postal_code),
+    cleanName(florist.city),
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  const addressParts = [street, postalAndCity].filter(Boolean);
+
+  if (addressParts.length > 0) {
+    return addressParts.join(", ");
+  }
+
+  return (
+    cleanName(florist.area) ||
+    cleanName(florist.city) ||
+    "Adress saknas"
+  );
+}
+
+function isDetailedFlorist(florist: FloristMapItem) {
+  const status = (
+    florist.fs_map_status || ""
+  ).toLowerCase();
+
+  if (
+    status === "approved_display" ||
+    status === "registered"
+  ) {
+    return true;
+  }
+
+  const name = displayName(florist).toLowerCase();
+
+  return approvedDetailedFlorists.some(
+    (item) => name.includes(item),
+  );
+}
+
+function verificationLabel(
+  level: FloristMapItem["verification_level"],
+) {
+  switch ((level || "").toUpperCase()) {
+    case "BASIC":
+      return "🟢 Grundverifierad";
+    case "BUSINESS":
+      return "🟢🟢 Företagsverifierad";
+    case "FULL":
+      return "🟢🟢🟢 Fullständigt verifierad";
+    default:
+      return null;
+  }
+}
+
+function getOrderPath() {
+  if (typeof window === "undefined") return "/order/private/guest-v4";
+
+  const customerType = localStorage.getItem("customerType");
+
+  switch (customerType) {
+    case "private_registered":
+      return "/order/private/registered";
+    case "company_registered":
+      return "/order/company/registered";
+    case "company_guest":
+      return "/order/company/guest";
+    default:
+      return "/order/private/guest-v4";
+  }
+}
+
+function ProductPopup({
+  florist,
+  onOrderFlorist,
+}: {
+  florist: FloristMapItem;
+  onOrderFlorist?: (florist: FloristMapItem) => void;
+}) {
+  const [index, setIndex] = useState(0);
+  const item = demoProducts[index];
+
+  function buyProduct() {
+    if (typeof window === "undefined") return;
+
+    localStorage.setItem("selectedFloristId", florist.florist_id);
+    localStorage.setItem("selectedFloristName", displayName(florist));
+    localStorage.setItem("selectedProductTitle", item.title);
+    localStorage.setItem("selectedProductPrice", String(item.price));
+    localStorage.setItem("selectedProductImage", item.image);
+    localStorage.setItem(
+      "selectedFloristDeliveryFee",
+      String(florist.standard_delivery_fee ?? 0),
+    );
+    localStorage.setItem(
+      "selectedFloristExpressFee",
+      String(florist.express_delivery_fee ?? 0),
+    );
+    localStorage.setItem(
+      "selectedFloristSameDayCutoff",
+      florist.same_day_cutoff_time || "",
+    );
+
+    onOrderFlorist?.(florist);
+    window.location.href = getOrderPath();
+  }
+
+  function openProfile() {
+    if (typeof window === "undefined") return;
+    window.location.href = `/public/florist/${florist.florist_id}`;
+  }
+
+  const deliveryRadius =
+    florist.delivery_radius_km != null
+      ? `0–${florist.delivery_radius_km} km`
+      : "Ej angivet";
+
+  const openingText = (() => {
+    const today = new Date().getDay();
+    const mondayBasedIndex = today === 0 ? 6 : today - 1;
+    const todayHours = florist.opening_hours?.[mondayBasedIndex];
+
+    if (!todayHours) return "Ej angivet";
+    if (todayHours.isClosed) return "Stängt idag";
+
+    if (todayHours.openTime && todayHours.closeTime) {
+      return `${todayHours.openTime}–${todayHours.closeTime}`;
+    }
+
+    return "Ej angivet";
+  })();
+
+  return (
+    <div className="mt-2 border-t border-stone-200 pt-2">
+      <div className="relative overflow-hidden rounded-2xl border border-stone-100">
+        <img
+          src={item.image}
+          alt={item.title}
+          className="block w-full rounded-2xl object-cover object-center"
+          style={{
+            width: "100%",
+            height: "210px",
+            maxHeight: "210px",
+            minHeight: "210px",
+            objectFit: "cover",
+            objectPosition: "center",
+          }}
+        />
+
+        <button
+          type="button"
+          aria-label="Föregående produkt"
+          onClick={() =>
+            setIndex((current) =>
+              current === 0 ? demoProducts.length - 1 : current - 1,
+            )
+          }
+          className="absolute left-2 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-full bg-white/95 text-base font-black shadow"
+        >
+
+‹
+        </button>
+
+        <button
+          type="button"
+          aria-label="Nästa produkt"
+          onClick={() =>
+            setIndex((current) =>
+              current === demoProducts.length - 1 ? 0 : current + 1,
+            )
+          }
+          className="absolute right-2 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-full bg-white/95 text-base font-black shadow"
+        >
+          ›
+        </button>
+      </div>
+
+      <div className="mt-2 text-sm font-black text-stone-950">
+        Inspiration från butiken
+      </div>
+
+      <div className="mt-1.5 flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <div className="truncate text-sm font-black text-stone-950">
+            {item.title}
+          </div>
+
+          <div className="text-xs font-semibold text-stone-500">
+            Från{" "}
+            <span className="font-black text-pink-600">
+              {item.price} kr
+            </span>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={buyProduct}
+          className="shrink-0 rounded-full bg-pink-600 px-4 py-2 text-xs font-black text-white hover:bg-pink-700"
+        >
+          Beställ
+        </button>
+      </div>
+
+      <div className="mt-3 grid grid-cols-2 gap-2 border-t border-stone-200 pt-3">
+        <div className="rounded-xl bg-stone-50 px-3 py-2">
+          <div className="text-[11px] font-black uppercase tracking-wide text-stone-500">
+            Leveransområde
+          </div>
+          <div className="mt-1 text-sm font-bold text-stone-900">
+            {deliveryRadius}
+          </div>
+        </div>
+
+        <div className="rounded-xl bg-stone-50 px-3 py-2">
+          <div className="text-[11px] font-black uppercase tracking-wide text-stone-500">
+            Öppettider
+          </div>
+          <div className="mt-1 text-sm font-bold text-stone-900">
+            {openingText}
+          </div>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={openProfile}
+        className="mt-3 flex w-full items-center justify-between border-t border-stone-200 pt-3 text-left text-sm font-black text-pink-600 hover:text-pink-700"
+      >
+        <span>Visa floristens profil</span>
+        <span aria-hidden="true">›</span>
+      </button>
+    </div>
+  );
+}
+
+
+
+
+const floristClusterRenderer: Renderer = {
+  render({ count, position }) {
+    const diameter =
+      count >= 100
+        ? 58
+        : count >= 10
+          ? 52
+          : 46;
+
+    const element =
+      document.createElement("button");
+
+    element.type = "button";
+    element.textContent = String(count);
+
+    element.setAttribute(
+      "aria-label",
+      `${count} florister i området`,
+    );
+
+    element.style.cssText = [
+      "display:grid",
+      "place-items:center",
+      `width:${diameter}px`,
+      `height:${diameter}px`,
+      "padding:0",
+      "border:3px solid rgba(255,255,255,0.98)",
+      "border-radius:9999px",
+      "background:linear-gradient(135deg,#db2777,#be185d)",
+      "color:#ffffff",
+      "font-family:inherit",
+      "font-size:14px",
+      "font-weight:900",
+      "line-height:1",
+      "cursor:pointer",
+      "box-shadow:0 8px 22px rgba(131,24,67,0.32)",
+      "transition:transform 150ms ease,box-shadow 150ms ease",
+    ].join(";");
+
+    element.addEventListener(
+      "mouseenter",
+      () => {
+        element.style.transform = "scale(1.08)";
+        element.style.boxShadow =
+          "0 10px 28px rgba(131,24,67,0.42)";
+      },
+    );
+
+    element.addEventListener(
+      "mouseleave",
+      () => {
+        element.style.transform = "scale(1)";
+        element.style.boxShadow =
+          "0 8px 22px rgba(131,24,67,0.32)";
+      },
+    );
+
+    return new google.maps.marker.AdvancedMarkerElement({
+      position,
+      content: element,
+      title: `${count} florister i området`,
+      zIndex: 1000 + count,
+    });
+  },
+};
+
+function FloristMarkerClusterer({
+  enabled,
+  markers,
+}: {
+  enabled: boolean;
+  markers: Record<string, Marker>;
+}) {
+  const map = useMap();
+
+  const clusterer = useMemo(() => {
+    if (!map || !enabled) {
+      return null;
+    }
+
+    return new MarkerClusterer({
+      map,
+      algorithm: new SuperClusterAlgorithm({
+        radius: 90,
+        maxZoom: 16,
+      }),
+      renderer: floristClusterRenderer,
+    });
+  }, [enabled, map]);
+
+  useEffect(() => {
+    if (!clusterer) {
+      return;
+    }
+
+    clusterer.clearMarkers();
+    clusterer.addMarkers(
+      Object.values(markers),
+    );
+  }, [clusterer, markers]);
+
+  useEffect(() => {
+    return () => {
+      if (!clusterer) {
+        return;
+      }
+
+      clusterer.clearMarkers();
+      clusterer.setMap(null);
+    };
+  }, [clusterer]);
+
+  return null;
+}
+
+type ClusteredAdvancedMarkerProps =
+  ComponentProps<typeof AdvancedMarker> & {
+    markerKey: string;
+    setMarkerRef: (
+      marker: Marker | null,
+      key: string,
+    ) => void;
+  };
+
+function ClusteredAdvancedMarker({
+  markerKey,
+  setMarkerRef,
+  ...markerProps
+}: ClusteredAdvancedMarkerProps) {
+  const ref = useCallback(
+    (
+      marker:
+        | google.maps.marker.AdvancedMarkerElement
+        | null,
+    ) => {
+      setMarkerRef(marker, markerKey);
+    },
+    [markerKey, setMarkerRef],
+  );
+
+  return (
+    <AdvancedMarker
+      {...markerProps}
+      ref={ref}
+    />
+  );
+}
+
+function AutoFitBounds({
+  florists,
+}: {
+  florists: FloristMapItem[];
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!map) return;
+    if (!window.google) return;
+    if (florists.length === 0) return;
+
+    const bounds=new google.maps.LatLngBounds();
+
+    florists.forEach((f)=>{
+      bounds.extend({
+        lat:Number(f.latitude),
+        lng:Number(f.longitude),
+      });
+    });
+
+    map.fitBounds(bounds,{
+      top:60,
+      right:60,
+      bottom:60,
+      left:60,
+    });
+
+  },[map,florists]);
+
+  return null;
+}
+
+
+
+
+function MapTargetController({
+  recipientLat,
+  recipientLng,
+}: {
+  recipientLat?: number | null;
+  recipientLng?: number | null;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (
+      !map ||
+      recipientLat === null ||
+      recipientLat === undefined ||
+      recipientLng === null ||
+      recipientLng === undefined
+    ) {
+      return;
+    }
+
+    const latitude = Number(recipientLat);
+    const longitude = Number(recipientLng);
+
+    if (
+      !Number.isFinite(latitude) ||
+      !Number.isFinite(longitude)
+    ) {
+      return;
+    }
+
+    const currentMap = map;
+
+    currentMap.panTo({
+      lat: latitude,
+      lng: longitude,
+    });
+
+    const currentZoom = currentMap.getZoom() ?? 0;
+
+    if (currentZoom < 10) {
+      currentMap.setZoom(11);
+    }
+  }, [map, recipientLat, recipientLng]);
+
+  return null;
+}
+
+function ViewportReporter({
+  onViewportIdle,
+}: {
+  onViewportIdle?: (viewport: FSMapViewport) => void;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!map || !onViewportIdle) {
+      return;
+    }
+
+    const currentMap = map;
+    const notifyViewportIdle = onViewportIdle;
+
+    function reportViewport() {
+      const bounds = currentMap.getBounds();
+
+      if (!bounds) {
+        return;
+      }
+
+      const northEast = bounds.getNorthEast();
+      const southWest = bounds.getSouthWest();
+
+      notifyViewportIdle({
+        north: northEast.lat(),
+        south: southWest.lat(),
+        east: northEast.lng(),
+        west: southWest.lng(),
+        zoom: currentMap.getZoom() ?? 0,
+      });
+    }
+
+    reportViewport();
+
+    const listener = currentMap.addListener(
+      "idle",
+      reportViewport,
+    );
+
+    return () => {
+      listener.remove();
+    };
+  }, [map, onViewportIdle]);
+
+  return null;
+}
+
+export default function FSMap({
+  recipientLat,
+  recipientLng,
+  florists,
+  hoveredFloristId,
+  onHoverFlorist,
+  onOrderFlorist,
+  onViewportIdle,
+  autoFit = true,
+  includeSeedPlaces = true,
+  clusterMarkers = false,
+  mode = "full",
+}: FSMapProps) {
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  const [selected, setSelected] = useState<FloristMapItem | null>(null);
+  const [approvedPlaces, setApprovedPlaces] = useState<FloristMapItem[]>([]);
+  const [
+    markerInstances,
+    setMarkerInstances,
+  ] = useState<Record<string, Marker>>({});
+
+  const setMarkerRef = useCallback(
+    (
+
+=== PUBLIK KARTVY ===
+"use client";
+
+import dynamic from "next/dynamic";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  ArrowRight,
+  CalendarDays,
+  Globe2,
+  Home,
+  LocateFixed,
+  MapPin,
+  MessageCircle,
+  Search,
+  ShoppingCart,
+  Star,
+  Store,
+  Truck,
+} from "lucide-react";
+import GuestAuthAction from "@/components/GuestAuthAction";
+import type {
+  FSMapViewport,
+} from "@/components/FSMap";
+import type {
+  FloristMapItem as FSMapsSearchItem,
+} from "@/lib/fs-maps/types";
+
+const FSMap = dynamic(() => import("@/components/FSMap"), {
+  ssr: false,
+});
+
+type Florist = {
+  id: string;
+  shop_name?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
+  email?: string | null;
+  city?: string | null;
+  municipality?: string | null;
+  county?: string | null;
+  bio?: string | null;
+  description?: string | null;
+  logo_url?: string | null;
+  profile_image_url?: string | null;
+  created_at?: string | null;
+};
+
+type OpeningHour = {
+  dayLabel?: string;
+  isClosed?: boolean;
+  openTime?: string;
+  closeTime?: string;
+};
+
+type FloristMapItem = {
+  florist_id: string;
+  florist_name: string | null;
+  shop_name: string | null;
+
+  city: string | null;
+  area: string | null;
+
+  delivery_radius_km: number | null;
+
+  latitude: number;
+  longitude: number;
+  distance_km: number;
+
+  profile_image_url: string | null;
+  logo_url: string | null;
+
+  rating: number | null;
+  review_count: number | null;
+
+  opening_hours: OpeningHour[] | null;
+
+  same_day_cutoff_time: string | null;
+  standard_delivery_fee: number | null;
+
+  express_delivery_available: boolean | null;
+  express_delivery_fee: number | null;
+
+  fs_map_status?: string | null;
+  verification_level?:
+    | "NONE"
+    | "BASIC"
+    | "BUSINESS"
+    | "FULL"
+    | string
+    | null;
+
+  google_place_id?: string | null;
+
+  address?: string | null;
+  formatted_address?: string | null;
+  street_address?: string | null;
+  address_line_1?: string | null;
+  postal_code?: string | null;
+};
+
+type FSMapsSearchResponse = {
+  results?: FSMapsSearchItem[];
+  total?: number;
+  cached?: boolean;
+  searchedAt?: string;
+  error?: string;
+  message?: string;
+};
+
+const countries = [
+  "Sverige",
+  "Norge",
+  "Danmark",
+  "Finland",
+  "Island",
+  "Frankrike",
+  "Tyskland",
+  "Spanien",
+  "Italien",
+  "Portugal",
+  "Nederländerna",
+  "Belgien",
+  "Schweiz",
+  "Österrike",
+  "Polen",
+  "Storbritannien",
+  "Irland",
+  "USA",
+  "Kanada",
+  "Australien",
+  "Nya Zeeland",
+  "Japan",
+  "Sydkorea",
+  "Kina",
+  "Indien",
+  "Thailand",
+  "Turkiet",
+  "Förenade Arabemiraten",
+  "Brasilien",
+  "Mexiko",
+  "Sydafrika",
+];
+
+const countryCodes: Record<string, string> = {
+  Sverige: "SE",
+  Norge: "NO",
+  Danmark: "DK",
+  Finland: "FI",
+  Island: "IS",
+
+  Frankrike: "FR",
+  Tyskland: "DE",
+  Spanien: "ES",
+  Italien: "IT",
+  Portugal: "PT",
+  Nederländerna: "NL",
+  Belgien: "BE",
+  Schweiz: "CH",
+  Österrike: "AT",
+  Polen: "PL",
+  Storbritannien: "GB",
+  Irland: "IE",
+
+  USA: "US",
+  Kanada: "CA",
+  Australien: "AU",
+  "Nya Zeeland": "NZ",
+
+  Japan: "JP",
+  Sydkorea: "KR",
+  Kina: "CN",
+  Indien: "IN",
+  Thailand: "TH",
+  Turkiet: "TR",
+  "Förenade Arabemiraten": "AE",
+
+  Brasilien: "BR",
+  Mexiko: "MX",
+  Sydafrika: "ZA",
+};
+
+const countryLanguageCodes: Record<string, string> = {
+  Sverige: "sv",
+  Norge: "no",
+  Danmark: "da",
+  Finland: "fi",
+  Island: "is",
+
+  Frankrike: "fr",
+  Tyskland: "de",
+  Spanien: "es",
+  Italien: "it",
+  Portugal: "pt",
+  Nederländerna: "nl",
+  Belgien: "fr",
+  Schweiz: "de",
+  Österrike: "de",
+  Polen: "pl",
+  Storbritannien: "en",
+  Irland: "en",
+
+  USA: "en",
+  Kanada: "en",
+  Australien: "en",
+  "Nya Zeeland": "en",
+
+  Japan: "ja",
+  Sydkorea: "ko",
+  Kina: "zh",
+  Indien: "en",
+  Thailand: "th",
+  Turkiet: "tr",
+  "Förenade Arabemiraten": "en",
+
+  Brasilien: "pt",
+  Mexiko: "es",
+  Sydafrika: "en",
+};
+
+const citiesByCountry: Record<string, string[]> = {
+  Sverige: [
+    "Stockholm",
+    "Göteborg",
+    "Malmö",
+    "Uppsala",
+    "Västerås",
+    "Örebro",
+    "Linköping",
+    "Helsingborg",
+    "Jönköping",
+    "Norrköping",
+    "Lund",
+    "Umeå",
+    "Gävle",
+    "Borås",
+    "Södertälje",
+    "Eskilstuna",
+    "Halmstad",
+    "Växjö",
+    "Karlstad",
+    "Sundsvall",
+  ],
+  Norge: ["Oslo", "Bergen", "Trondheim", "Stavanger", "Drammen", "Tromsø"],
+  Danmark: ["Köpenhamn", "Aarhus", "Odense", "Aalborg", "Esbjerg", "Randers"],
+  Finland: ["Helsingfors", "Esbo", "Tammerfors", "Vanda", "Åbo", "Uleåborg"],
+  Frankrike: ["Paris", "Marseille", "Lyon", "Toulouse", "Nice", "Nantes"],
+  Tyskland: ["Berlin", "Hamburg", "München", "Köln", "Frankfurt", "Stuttgart"],
+  Spanien: ["Madrid", "Barcelona", "Valencia", "Sevilla", "Málaga", "Bilbao"],
+  Storbritannien: ["London", "Manchester", "Birmingham", "Liverpool", "Edinburgh", "Glasgow"],
+};
+
+
+function normalizeCitySearchValue(value: string): string {
+  return value
+    .trim()
+    .toLocaleLowerCase("sv");
+}
+
+function findCountryForCity(
+  cityValue: string,
+): string | null {
+  const normalizedCity =
+    normalizeCitySearchValue(cityValue);
+
+  if (!normalizedCity) {
+    return null;
+  }
+
+  for (
+    const [candidateCountry, candidateCities]
+    of Object.entries(citiesByCountry)
+  ) {
+    const matches = candidateCities.some(
+      (candidateCity) =>
+        normalizeCitySearchValue(candidateCity) ===
+        normalizedCity,
+    );
+
+    if (matches) {
+      return candidateCountry;
+    }
+  }
+
+  return null;
+}
+
+const cityCoordinates: Record<string, [number, number]> = {
+  Stockholm: [59.3293, 18.0686],
+  Göteborg: [57.7089, 11.9746],
+  Malmö: [55.605, 13.0038],
+  Uppsala: [59.8586, 17.6389],
+  Västerås: [59.6099, 16.5448],
+  Örebro: [59.2753, 15.2134],
+  Linköping: [58.4108, 15.6214],
+  Helsingborg: [56.0465, 12.6945],
+  Jönköping: [57.7826, 14.1618],
+  Norrköping: [58.5877, 16.1924],
+  Lund: [55.7047, 13.191],
+  Umeå: [63.8258, 20.263],
+  Oslo: [59.9139, 10.7522],
+  Köpenhamn: [55.6761, 12.5683],
+  Helsingfors: [60.1699, 24.9384],
+  Paris: [48.8566, 2.3522],
+  Berlin: [52.52, 13.405],
+  Madrid: [40.4168, -3.7038],
+  London: [51.5072, -0.1276],
+};
+
+
+function findCityCoordinates(
+  cityValue: string,
+): [number, number] | undefined {
+  const normalizedCity =
+    normalizeCitySearchValue(cityValue);
+
+  if (!normalizedCity) {
+    return undefined;
+  }
+
+  const match = Object.entries(
+    cityCoordinates,
+  ).find(
+    ([candidateCity]) =>
+      normalizeCitySearchValue(
+        candidateCity,
+      ) === normalizedCity,
+  );
+
+  return match?.[1];
+}
+
+const fallbackImages = [
+  "/design-preview/buketter/bukett-romantisk-rosa-1000.jpg",
+  "/design-preview/buketter/bukett-floristens-val-pastell-750.jpg",
+  "/design-preview/event/staende-dekoration-6000.jpg",
+  "/design-preview/buketter/bukett-modern-orange-rosa.jpg",
+];
+
+function floristName(florist: Florist) {
+  return (
+    florist.shop_name ||
+    `${florist.first_name || ""} ${florist.last_name || ""}`.trim() ||
+    florist.email ||
+    "Florist"
+  );
+}
+
+function floristCity(florist: Florist) {
+  return florist.city || florist.municipality || florist.county || "Sverige";
+}
+
+function floristImage(florist: Florist, index: number) {
+  return (
+    florist.logo_url ||
+    florist.profile_image_url ||
+    fallbackImages[index % fallbackImages.length]
+  );
+}
+
+function shuffleFlorists(items: Florist[]) {
+  return [...items]
+    .map((item) => ({ item, sort: Math.random() }))
+    .sort((a, b) => a.sort - b.sort)
+    .map(({ item }) => item);
+}
+
+
+
+
+function getMapItemIdentity(
+  item: FloristMapItem,
+): string {
+  const placeId =
+    item.google_place_id?.trim();
+
+  if (placeId) {
+    return `google:${placeId}`;
+  }
+
+  const floristId =
+    item.florist_id?.trim();
+
+  if (floristId) {
+    return `florist:${floristId}`;
+  }
+
+  const name = (
+    item.shop_name ||
+    item.florist_name ||
+    "florist"
+  )
+    .trim()
+    .toLocaleLowerCase("sv");
+
+  return [
+    "position",
+    name,
+    Number(item.latitude).toFixed(5),
+    Number(item.longitude).toFixed(5),
+  ].join(":");
+}
+
+function mergeMapItems(
+  currentItems: FloristMapItem[],
+  incomingItems: FloristMapItem[],
+): FloristMapItem[] {
+  const merged =
+    new Map<string, FloristMapItem>();
+
+  /*
+   * Behåll alla florister som redan har hittats
+   * under den aktuella platssökningen.
+   */
+  for (const item of currentItems) {
+    merged.set(
+      getMapItemIdentity(item),
+      item,
+    );
+  }
+
+  /*
+   * Lägg till nya träffar och uppdatera tidigare
+   * träffar med färskare information.
+   */
+  for (const item of incomingItems) {
+    const identity =
+      getMapItemIdentity(item);
+
+    const existing =
+      merged.get(identity);
+
+    merged.set(
+      identity,
+      existing
+        ? {
+            ...existing,
+            ...item,
+
+            /*
+             * Behåll befintliga bilder och detaljer
+             * när en senare Google-sida saknar dem.
+             */
+            logo_url:
+              item.logo_url ||
+              existing.logo_url,
+
+            profile_image_url:
+              item.profile_image_url ||
+              existing.profile_image_url,
+
+            opening_hours:
+              item.opening_hours ||
+              existing.opening_hours,
+          }
+        : item,
+    );
+  }
+
+  /*
+   * Skydd mot obegränsad minnesökning om någon
+   * drar kartan genom väldigt många områden.
+   */
+  return Array.from(
+    merged.values(),
+  ).slice(-500);
+}
+
+function normalizeApiOpeningHours(
+  descriptions: string[] | null,
+): OpeningHour[] | null {
+  if (!descriptions?.length) {
+    return null;
+  }
+
+  const closedPattern =
+    /stängt|closed|fermé|ferme|cerrado|geschlossen|chiuso/i;
+
+  return descriptions.map((description) => {
+    const separatorIndex = description.indexOf(":");
+
+    const dayLabel =
+      separatorIndex >= 0
+        ? description.slice(0, separatorIndex).trim()
+        : description.trim();
+
+    const hours =
+      separatorIndex >= 0
+        ? description.slice(separatorIndex + 1).trim()
+        : "";
+
+    if (closedPattern.test(hours)) {
+      return {
+        dayLabel,
+        isClosed: true,
+      };
+    }
+
+    const timeMatch = hours.match(
+      /(\d{1,2}[:.]\d{2})\s*[–—-]\s*(\d{1,2}[:.]\d{2})/,
+    );
+
+    return {
+      dayLabel,
+      isClosed: false,
+      openTime:
+        timeMatch?.[1]?.replace(".", ":"),
+      closeTime:
+        timeMatch?.[2]?.replace(".", ":"),
+    };
+  });
+}
+
+function toDynamicMapItem(
+  item: FSMapsSearchItem,
+): FloristMapItem | null {
+  const latitude = Number(item.latitude);
+  const longitude = Number(item.longitude);
+
+  if (
+    !Number.isFinite(latitude) ||
+    !Number.isFinite(longitude)
+  ) {
+    return null;
+  }
+
+  const address = item.address || null;
+
+  return {
+    florist_id: item.florist_id,
+    florist_name:
+      item.florist_name || item.shop_name,
+    shop_name:
+      item.shop_name || item.florist_name,
+
+    city: item.city || null,
+    area: address || item.city || null,
+
+    delivery_radius_km:
+      item.delivery_radius_km ?? null,
+
+    latitude,
+    longitude,
+    distance_km: item.distance_km ?? 0,
+
+    profile_image_url:
+      item.profile_image_url || null,
+    logo_url: item.logo_url || null,
+
+    rating: item.rating ?? null,
+    review_count: item.review_count ?? null,
+
+    opening_hours:
+      normalizeApiOpeningHours(
+        item.opening_hours,
+      ),
+
+    same_day_cutoff_time: null,
+
+    standard_delivery_fee:
+      item.standard_delivery_fee ?? null,
+
+    express_delivery_available:
+      item.express_delivery_available ?? false,
+
+    express_delivery_fee:
+      item.express_delivery_fee ?? null,
+
+    fs_map_status:
+      item.fs_map_status || null,
+
+    verification_level:
+      item.verification_level || "NONE",
+
+    google_place_id:
+      item.google_place_id || null,
+
+    address,
+    formatted_address: address,
+    street_address: address,
+    address_line_1: address,
+    postal_code: item.postcode || null,
+  };
+}
+
+export default function FloristsMapView({
+  initialFlorists,
+}: {
+  initialFlorists: Florist[];
+}) {
+  const [country, setCountry] = useState("Sverige");
+  const [city, setCity] = useState("Stockholm");
+  const [streetAddress, setStreetAddress] = useState("");
+  const [postalCode, setPostalCode] = useState("");
+  const [deliveryDate, setDeliveryDate] = useState("");
+  const [visibleCount, setVisibleCount] = useState(12);
+  const [sortMode, setSortMode] = useState("random");
+  const [purchaseMode, setPurchaseMode] = useState<"flowers" | "subscription">("flowers");
+  const [hoveredFloristId, setHoveredFloristId] = useState<string | null>(null);
+  const [shuffledFlorists, setShuffledFlorists] = useState<Florist[]>(initialFlorists);
+  const [
+    dynamicMapItems,
+    setDynamicMapItems,
+  ] = useState<FloristMapItem[]>([]);
+  const [
+    mapTarget,
+    setMapTarget,
+  ] = useState<[number, number] | null>(null);
+
+  const [
+    mapAction,
+    setMapAction,
+  ] = useState<
+    "idle" |
+    "searching" |
+    "locating" |
+    "success" |
+    "error"
+  >("idle");
+
+  const [
+    mapActionMessage,
+
+=== FOS GLOBAL MAP ===
+"use client";
+
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+
+import FSMap, {
+  type FSMapViewport,
+} from "@/components/FSMap";
+
+import type {
+  FloristMapItem as FSMapsItem,
+} from "@/lib/fs-maps/types";
+
+type OpeningHour = {
+  dayLabel?: string;
+  isClosed?: boolean;
+  openTime?: string;
+  closeTime?: string;
+};
+
+export type WorkspaceGlobalMapItem = {
+  florist_id: string;
+  florist_name: string | null;
+  shop_name: string | null;
+
+  city: string | null;
+  area: string | null;
+
+  delivery_radius_km: number | null;
+
+  latitude: number;
+  longitude: number;
+  distance_km: number;
+
+  profile_image_url: string | null;
+  logo_url: string | null;
+
+  rating: number | null;
+  review_count: number | null;
+
+  opening_hours: OpeningHour[] | null;
+
+  same_day_cutoff_time: string | null;
+  standard_delivery_fee: number | null;
+
+  express_delivery_available: boolean | null;
+  express_delivery_fee: number | null;
+
+  fs_map_status?: string | null;
+
+  verification_level?:
+    | "NONE"
+    | "BASIC"
+    | "BUSINESS"
+    | "FULL"
+    | string
+    | null;
+
+  google_place_id?: string | null;
+
+  address?: string | null;
+  formatted_address?: string | null;
+  street_address?: string | null;
+  address_line_1?: string | null;
+  postal_code?: string | null;
+};
+
+type SearchResponse = {
+  results?: FSMapsItem[];
+  error?: string;
+  message?: string;
+};
+
+type WorkspaceGlobalMapProps = {
+  initialItems: WorkspaceGlobalMapItem[];
+
+  filterText?: string;
+  selectedCity?: string;
+  resetToken?: number;
+
+  onVisibleCountChange?: (
+    count: number,
+  ) => void;
+
+  recipientLat?: number | null;
+  recipientLng?: number | null;
+
+  hoveredFloristId?: string | null;
+
+  onHoverFlorist?: (
+    floristId: string | null,
+  ) => void;
+
+  onOrderFlorist?: (
+    florist: WorkspaceGlobalMapItem,
+  ) => void;
+};
+
+function normalizeOpeningHours(
+  descriptions: string[] | null,
+): OpeningHour[] | null {
+  if (!descriptions?.length) {
+    return null;
+  }
+
+  const closedPattern =
+    /stängt|closed|fermé|ferme|cerrado|geschlossen|chiuso/i;
+
+  return descriptions.map((description) => {
+    const separatorIndex =
+      description.indexOf(":");
+
+    const dayLabel =
+      separatorIndex >= 0
+        ? description
+            .slice(0, separatorIndex)
+            .trim()
+        : description.trim();
+
+    const hours =
+      separatorIndex >= 0
+        ? description
+            .slice(separatorIndex + 1)
+            .trim()
+        : "";
+
+    if (closedPattern.test(hours)) {
+      return {
+        dayLabel,
+        isClosed: true,
+      };
+    }
+
+    const match = hours.match(
+      /(\d{1,2}[:.]\d{2})\s*[–—-]\s*(\d{1,2}[:.]\d{2})/,
+    );
+
+    return {
+      dayLabel,
+      isClosed: false,
+      openTime:
+        match?.[1]?.replace(".", ":"),
+      closeTime:
+        match?.[2]?.replace(".", ":"),
+    };
+  });
+}
+
+function toWorkspaceMapItem(
+  item: FSMapsItem,
+): WorkspaceGlobalMapItem | null {
+  const latitude = Number(item.latitude);
+  const longitude = Number(item.longitude);
+
+  if (
+    !Number.isFinite(latitude) ||
+    !Number.isFinite(longitude)
+  ) {
+    return null;
+  }
+
+  const address =
+    item.address || null;
+
+  return {
+    florist_id: item.florist_id,
+
+    florist_name:
+      item.florist_name ||
+      item.shop_name ||
+      null,
+
+    shop_name:
+      item.shop_name ||
+      item.florist_name ||
+      null,
+
+    city: item.city || null,
+    area: address || item.city || null,
+
+    delivery_radius_km:
+      item.delivery_radius_km ?? null,
+
+    latitude,
+    longitude,
+    distance_km: item.distance_km ?? 0,
+
+    profile_image_url:
+      item.profile_image_url || null,
+
+    logo_url:
+      item.logo_url || null,
+
+    rating:
+      item.rating ?? null,
+
+    review_count:
+      item.review_count ?? null,
+
+    opening_hours:
+      normalizeOpeningHours(
+        item.opening_hours,
+      ),
+
+    same_day_cutoff_time: null,
+
+    standard_delivery_fee:
+      item.standard_delivery_fee ?? null,
+
+    express_delivery_available:
+      item.express_delivery_available ??
+      false,
+
+    express_delivery_fee:
+      item.express_delivery_fee ?? null,
+
+    fs_map_status:
+      item.fs_map_status || null,
+
+    verification_level:
+      item.verification_level || "NONE",
+
+    google_place_id:
+      item.google_place_id || null,
+
+    address,
+    formatted_address: address,
+    street_address: address,
+    address_line_1: address,
+
+    postal_code:
+      item.postcode || null,
+  };
+}
+
+function identity(
+  item: WorkspaceGlobalMapItem,
+): string {
+  if (item.google_place_id?.trim()) {
+    return `google:${item.google_place_id}`;
+  }
+
+  if (item.florist_id?.trim()) {
+    return `florist:${item.florist_id}`;
+  }
+
+  return [
+    item.shop_name ||
+      item.florist_name ||
+      "florist",
+
+    Number(item.latitude).toFixed(5),
+    Number(item.longitude).toFixed(5),
+  ].join(":");
+}
+
+function mergeItems(
+  currentItems: WorkspaceGlobalMapItem[],
+  incomingItems: WorkspaceGlobalMapItem[],
+): WorkspaceGlobalMapItem[] {
+  const merged =
+    new Map<string, WorkspaceGlobalMapItem>();
+
+  for (const item of currentItems) {
+    merged.set(identity(item), item);
+  }
+
+  for (const item of incomingItems) {
+    const key = identity(item);
+    const previous = merged.get(key);
+
+    merged.set(
+      key,
+      previous
+        ? {
+            ...previous,
+            ...item,
+
+            logo_url:
+              item.logo_url ||
+              previous.logo_url,
+
+            profile_image_url:
+              item.profile_image_url ||
+              previous.profile_image_url,
+
+            opening_hours:
+              item.opening_hours ||
+              previous.opening_hours,
+          }
+        : item,
+    );
+  }
+
+  return Array.from(
+    merged.values(),
+  ).slice(-500);
+}
+
+export default function WorkspaceGlobalMap({
+  initialItems,
+  filterText = "",
+  selectedCity = "",
+  resetToken = 0,
+  onVisibleCountChange,
+  recipientLat,
+  recipientLng,
+  hoveredFloristId,
+  onHoverFlorist,
+  onOrderFlorist,
+}: WorkspaceGlobalMapProps) {
+  const [
+    dynamicItems,
+    setDynamicItems,
+  ] = useState<WorkspaceGlobalMapItem[]>(
+    initialItems,
+  );
+
+  const lastViewportKeyRef =
+    useRef("");
+
+  const requestRef =
+    useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    setDynamicItems((currentItems) =>
+      mergeItems(
+        currentItems,
+        initialItems,
+      ),
+    );
+  }, [initialItems]);
+
+  useEffect(() => {
+    requestRef.current?.abort();
+    lastViewportKeyRef.current = "";
+    setDynamicItems(initialItems);
+  }, [resetToken]);
+
+  useEffect(() => {
+    return () => {
+      requestRef.current?.abort();
+    };
+  }, []);
+
+  const handleViewportIdle = useCallback(
+    async (viewport: FSMapViewport) => {
+      const longitudeSpan =
+        viewport.east - viewport.west;
+
+      const latitudeSpan =
+        viewport.north - viewport.south;
+
+      const values = [
+        viewport.north,
+        viewport.south,
+        viewport.east,
+        viewport.west,
+        viewport.zoom,
+      ];
+
+      if (
+        !values.every(Number.isFinite) ||
+        viewport.north <= viewport.south ||
+        viewport.east <= viewport.west ||
+        longitudeSpan >= 179.5 ||
+        latitudeSpan >= 170 ||
+        viewport.zoom < 3
+      ) {
+        return;
+      }
+
+      const key = [
+        viewport.north.toFixed(4),
+        viewport.south.toFixed(4),
+        viewport.east.toFixed(4),
+        viewport.west.toFixed(4),
+        viewport.zoom.toFixed(2),
+      ].join("|");
+
+      if (
+        key === lastViewportKeyRef.current
+      ) {
+        return;
+      }
+
+      lastViewportKeyRef.current = key;
+
+      requestRef.current?.abort();
+
+      const controller =
+        new AbortController();
+
+      requestRef.current = controller;
+
+      const params =
+        new URLSearchParams({
+          north: String(viewport.north),
+          south: String(viewport.south),
+          east: String(viewport.east),
+          west: String(viewport.west),
+
+          /*
+           * GEO Control börjar med Sverige.
+           * Landstyrning blir nästa separata
+           * administratörsfunktion.
+           */
+          country: "SE",
+          language: "sv",
+          pageSize: "20",
+        });
+
+      try {
+        const response = await fetch(
+          `/api/fs-maps/search?${params.toString()}`,
+          {
+            method: "GET",
+            signal: controller.signal,
+            cache: "no-store",
+          },
+        );
+
+        const data =
+          (await response.json()) as SearchResponse;
+
+        if (!response.ok) {
+          throw new Error(
+            data.message ||
+            data.error ||
+            "GEO Control kunde inte hämta florister.",
+          );
+        }
+
+        const incomingItems =
+          (data.results ?? [])
+            .map(toWorkspaceMapItem)
+            .filter(
+              (
+                item,
+              ): item is WorkspaceGlobalMapItem =>
+                item !== null,
+            );
+
+        setDynamicItems((currentItems) =>
+          mergeItems(
+            currentItems,
+            incomingItems,
+          ),
+        );
+      } catch (error) {
+        if (controller.signal.aborted) {
+          return;
+        }
+
+        lastViewportKeyRef.current = "";
+
+        console.error(
+          "[WorkspaceGlobalMap] Sökningen misslyckades:",
+          error,
+        );
+      } finally {
+        if (
+          requestRef.current === controller
+        ) {
+          requestRef.current = null;
+        }
+      }
+    },
+    [],
+  );
+
+  const items = useMemo(() => {
+    const needle =
+      filterText
+        .trim()
+        .toLocaleLowerCase("sv");
+
+    const cityNeedle =
+      selectedCity
+        .trim()
+        .toLocaleLowerCase("sv");
+
+    return dynamicItems.filter((item) => {
+      const city =
+        item.city
+          ?.toLocaleLowerCase("sv") ||
+        "";
+
+      const searchableText = [
+        item.shop_name,
+        item.florist_name,
+        item.city,
+        item.area,
+        item.address,
+        item.formatted_address,
+        item.street_address,
+        item.address_line_1,
+        item.postal_code,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLocaleLowerCase("sv");
+
+      const matchesText =
+        !needle ||
+        searchableText.includes(needle);
+
+      const matchesCity =
+        !cityNeedle ||
+        city === cityNeedle ||
+        searchableText.includes(cityNeedle);
+
+      return matchesText && matchesCity;
+    });
+  }, [
+
+=== SÖK EFTER BEFINTLIGA REGLER ===
+app/api/fs-maps/claim-places/route.ts:162:    claim_status: "GOOGLE_DISCOVERED",
+app/api/fs-maps/claim-places/route.ts:230:          row.claim_status || "CLAIM_PENDING",
+app/api/fs-maps/claim-places/route.ts:244:          claim_status: storedStatus || "GOOGLE_DISCOVERED",
+app/api/fs-maps/claim-places/route.ts:249:          "GOOGLE_DISCOVERED",
+app/api/florists/register/route.ts:429:      claim_status: "CLAIM_PENDING",
+components/FloristClaimMap.tsx:26:    | "GOOGLE_DISCOVERED"
+components/FloristClaimMap.tsx:309:          <strong> Jag äger denna butik</strong>.
+components/FloristClaimMap.tsx:323:            Florist / Butik
+components/FloristClaimMap.tsx:348:                : "Hitta florist/butik"}
+components/FloristClaimMap.tsx:480:                      Jag äger denna butik
+lib/core/company-passport/adapters/mapper.ts:136:    case "CLAIM_PENDING":
+lib/core/company-passport/adapters/mapper.ts:174:      return "CLAIM_PENDING";

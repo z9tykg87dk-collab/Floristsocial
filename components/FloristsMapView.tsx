@@ -15,6 +15,7 @@ import {
   Star,
   Store,
   Truck,
+  X,
 } from "lucide-react";
 import GuestAuthAction from "@/components/GuestAuthAction";
 import type {
@@ -590,6 +591,10 @@ export default function FloristsMapView({
   const [city, setCity] = useState("Stockholm");
   const [streetAddress, setStreetAddress] = useState("");
   const [postalCode, setPostalCode] = useState("");
+  const [requiredFieldErrors, setRequiredFieldErrors] = useState({
+    country: false,
+    city: false,
+  });
   const [deliveryDate, setDeliveryDate] = useState("");
   const [visibleCount, setVisibleCount] = useState(12);
   const [sortMode, setSortMode] = useState("random");
@@ -604,6 +609,17 @@ export default function FloristsMapView({
     mapTarget,
     setMapTarget,
   ] = useState<[number, number] | null>(null);
+
+
+  const [
+    currentViewport,
+    setCurrentViewport,
+  ] = useState<FSMapViewport | null>(null);
+
+  const [
+    resolvedCountryCode,
+    setResolvedCountryCode,
+  ] = useState<string | null>(null);
 
   const [
     mapAction,
@@ -678,6 +694,64 @@ export default function FloristsMapView({
   }, [city, initialFlorists, shuffledFlorists, sortMode]);
 
   const mapItems = dynamicMapItems;
+
+  const visibleMapItems = useMemo(() => {
+    if (!currentViewport) {
+      return mapItems;
+    }
+
+    return mapItems.filter((item) => {
+      const latitude = Number(item.latitude);
+      const longitude = Number(item.longitude);
+
+      if (
+        !Number.isFinite(latitude) ||
+        !Number.isFinite(longitude)
+      ) {
+        return false;
+      }
+
+      const latitudeVisible =
+        latitude >= currentViewport.south &&
+        latitude <= currentViewport.north;
+
+      /*
+       * Normalt är väst mindre än öst. Om kartan korsar
+       * datumlinjen behöver longituden kontrolleras omvänt.
+       */
+      const longitudeVisible =
+        currentViewport.west <= currentViewport.east
+          ? longitude >= currentViewport.west &&
+            longitude <= currentViewport.east
+          : longitude >= currentViewport.west ||
+            longitude <= currentViewport.east;
+
+      return latitudeVisible && longitudeVisible;
+    });
+  }, [
+    currentViewport,
+    mapItems,
+  ]);
+
+  const connectedFloristCount = useMemo(
+    () =>
+      visibleMapItems.filter((item) => {
+        const verificationLevel = String(
+          item.verification_level || "",
+        ).toUpperCase();
+
+        return [
+          "BASIC",
+          "BUSINESS",
+          "FULL",
+        ].includes(verificationLevel);
+      }).length,
+    [visibleMapItems],
+  );
+
+  const totalVisibleMapCount =
+    visibleMapItems.length;
+
   const visibleFlorists = filteredFlorists.slice(0, visibleCount);
   const citySuggestions = citiesByCountry[country] || [];
 
@@ -728,10 +802,36 @@ export default function FloristsMapView({
 
   const searchMapLocation = useCallback(
     async () => {
+      const missingCity =
+        city.trim().length === 0;
+
+      setRequiredFieldErrors({
+        country: false,
+        city: missingCity,
+      });
+
+      if (missingCity) {
+        setMapAction("error");
+
+        setMapActionMessage(
+          "Fyll i stad för att FloristSocial ska kunna hitta rätt plats.",
+        );
+
+        window.requestAnimationFrame(() => {
+          document
+            .getElementById("florist-city")
+            ?.focus();
+        });
+
+        return;
+      }
+
       saveSearch();
 
       setMapAction("searching");
-      setMapActionMessage("Söker plats och florister…");
+      setMapActionMessage(
+        "Söker efter staden…",
+      );
 
       const normalizedStreet =
         streetAddress.trim();
@@ -742,190 +842,138 @@ export default function FloristsMapView({
       const normalizedCity =
         city.trim();
 
-      const normalizedCountry =
-        country.trim();
-
-      const knownCityCoordinates =
-        findCityCoordinates(
-          normalizedCity,
-        );
-
-      /*
-       * En ren stadssökning använder den kända
-       * stadspositionen direkt.
-       */
-      if (
-        knownCityCoordinates &&
-        !normalizedStreet &&
-        !normalizedPostalCode
-      ) {
-        const inferredCountry =
-          findCountryForCity(normalizedCity);
-
-        if (
-          inferredCountry &&
-          inferredCountry !== country
-        ) {
-          setCountry(inferredCountry);
-        }
-
-        focusMapAt(
-          knownCityCoordinates[0],
-          knownCityCoordinates[1],
-        );
-
-        localStorage.setItem(
-          "recipientLat",
-          String(knownCityCoordinates[0]),
-        );
-
-        localStorage.setItem(
-          "recipientLng",
-          String(knownCityCoordinates[1]),
-        );
-
-        localStorage.setItem(
-          "recipientSearchMode",
-          "address-search",
-        );
-
-        setMapAction("success");
-        setMapActionMessage(
-          `Visar florister i ${normalizedCity}.`,
-        );
-
-        return;
-      }
-
       const fullAddress = [
         normalizedStreet,
         normalizedPostalCode,
         normalizedCity,
-        normalizedCountry,
       ]
         .filter(Boolean)
         .join(", ");
 
-      if (!fullAddress) {
-        setMapAction("error");
-        setMapActionMessage(
-          "Skriv en stad, adress eller ett postnummer.",
+      try {
+        const params = new URLSearchParams({
+          address: fullAddress,
+          global: "1",
+        });
+
+        const response = await fetch(
+          `/api/geocode?${params.toString()}`,
+          {
+            method: "GET",
+            cache: "no-store",
+          },
         );
 
-        return;
-      }
+        const payload = await response
+          .json()
+          .catch(() => null);
 
-      try {
-        let foundCoordinates:
-          | [number, number]
-          | null = null;
-
-        /*
-         * Projektets geocode-route använder normalt
-         * "address". Fallback till "q" gör klienten
-         * tolerant om route-kontraktet senare ändras.
-         */
-        for (const parameterName of [
-          "address",
-          "q",
-        ]) {
-          const selectedCountryCode =
-            countryCodes[
-              findCountryForCity(
-                normalizedCity,
-              ) || normalizedCountry
-            ] || "SE";
-
-          const params = new URLSearchParams({
-            [parameterName]: fullAddress,
-            countryCode:
-              selectedCountryCode,
-          });
-
-          const response = await fetch(
-            `/api/geocode?${params.toString()}`,
-            {
-              method: "GET",
-              cache: "no-store",
-            },
-          );
-
-          const payload = await response
-            .json()
-            .catch(() => null);
-
-          if (
-            !response.ok ||
-            !payload ||
-            typeof payload !== "object"
-          ) {
-            continue;
-          }
-
-          const record =
-            payload as Record<string, unknown>;
-
-          const location =
-            record.location &&
-            typeof record.location === "object"
-              ? record.location as Record<
-                  string,
-                  unknown
-                >
-              : null;
-
-          const latitude = Number(
-            record.latitude ??
-            record.lat ??
-            location?.lat,
-          );
-
-          const longitude = Number(
-            record.longitude ??
-            record.lng ??
-            record.lon ??
-            location?.lng,
-          );
-
-          if (
-            Number.isFinite(latitude) &&
-            Number.isFinite(longitude)
-          ) {
-            foundCoordinates = [
-              latitude,
-              longitude,
-            ];
-
-            break;
-          }
-        }
-
-        /*
-         * Om en fullständig adress inte hittas exakt
-         * visar vi åtminstone den valda staden.
-         */
         if (
-          !foundCoordinates &&
-          knownCityCoordinates
+          !response.ok ||
+          !payload ||
+          typeof payload !== "object"
         ) {
-          foundCoordinates = [
-            knownCityCoordinates[0],
-            knownCityCoordinates[1],
-          ];
-        }
-
-        if (!foundCoordinates) {
           throw new Error(
             "Platsen kunde inte hittas.",
           );
         }
 
-        const [
+        const record =
+          payload as Record<string, unknown>;
+
+        const latitude =
+          Number(record.latitude);
+
+        const longitude =
+          Number(record.longitude);
+
+        if (
+          !Number.isFinite(latitude) ||
+          !Number.isFinite(longitude)
+        ) {
+          throw new Error(
+            "Karttjänsten returnerade ogiltiga koordinater.",
+          );
+        }
+
+        const resolvedCity =
+          typeof record.city === "string"
+            ? record.city
+            : normalizedCity;
+
+        const resolvedCountry =
+          typeof record.country === "string"
+            ? record.country
+            : "";
+
+        const nextCountryCode =
+          typeof record.country_code === "string"
+            ? record.country_code.toUpperCase()
+            : null;
+
+        const placeLabel =
+          typeof record.display_name === "string"
+            ? record.display_name
+            : [resolvedCity, resolvedCountry]
+                .filter(Boolean)
+                .join(", ");
+
+        const accepted = window.confirm(
+          `Menar du ${placeLabel}?`,
+        );
+
+        if (!accepted) {
+          setMapAction("idle");
+          setMapActionMessage(
+            "Skriv en mer exakt stad eller komplettera med gatuadress eller postnummer.",
+          );
+
+          return;
+        }
+
+        setCity(resolvedCity);
+
+        if (resolvedCountry) {
+          setCountry(resolvedCountry);
+        }
+
+        setResolvedCountryCode(
+          nextCountryCode,
+        );
+
+        localStorage.setItem(
+          "deliveryCity",
+          resolvedCity,
+        );
+
+        localStorage.setItem(
+          "recipientCity",
+          resolvedCity,
+        );
+
+        if (resolvedCountry) {
+          localStorage.setItem(
+            "deliveryCountry",
+            resolvedCountry,
+          );
+
+          localStorage.setItem(
+            "recipientCountry",
+            resolvedCountry,
+          );
+        }
+
+        if (nextCountryCode) {
+          localStorage.setItem(
+            "recipientCountryCode",
+            nextCountryCode,
+          );
+        }
+
+        focusMapAt(
           latitude,
           longitude,
-        ] = foundCoordinates;
-
-        focusMapAt(latitude, longitude);
+        );
 
         localStorage.setItem(
           "recipientLat",
@@ -939,22 +987,20 @@ export default function FloristsMapView({
 
         localStorage.setItem(
           "recipientSearchMode",
-          "address-search",
+          "city-search",
         );
 
         setMapAction("success");
 
         setMapActionMessage(
-          normalizedCity
-            ? `Visar florister nära ${normalizedCity}.`
-            : "Visar florister nära den sökta platsen.",
+          resolvedCountry
+            ? `Visar florister nära ${resolvedCity}, ${resolvedCountry}.`
+            : `Visar florister nära ${resolvedCity}.`,
         );
       } catch (error) {
         console.warn(
           "[FloristsMapView] Platssökningen misslyckades:",
-          error instanceof Error
-            ? error.message
-            : error,
+          error,
         );
 
         setMapAction("error");
@@ -968,7 +1014,6 @@ export default function FloristsMapView({
     },
     [
       city,
-      country,
       focusMapAt,
       postalCode,
       streetAddress,
@@ -977,6 +1022,12 @@ export default function FloristsMapView({
 
   const useCurrentLocation = useCallback(
     () => {
+      // Florist nära mig använder position och kräver inte land eller stad.
+      setRequiredFieldErrors({
+        country: false,
+        city: false,
+      });
+
       if (!navigator.geolocation) {
         setMapAction("error");
 
@@ -1095,7 +1146,7 @@ export default function FloristsMapView({
           const message =
             error.code ===
             error.PERMISSION_DENIED
-              ? "Tillåt platsåtkomst i webbläsaren för att använda Nära mig."
+              ? "Tillåt platsåtkomst i webbläsaren för att använda Florist nära mig."
               : error.code ===
                   error.POSITION_UNAVAILABLE
                 ? "Din position kunde inte fastställas."
@@ -1117,8 +1168,80 @@ export default function FloristsMapView({
     [focusMapAt],
   );
 
+  const clearCountry = useCallback(() => {
+    setCountry("");
+    setResolvedCountryCode(null);
+
+    setRequiredFieldErrors((current) => ({
+      ...current,
+      country: false,
+    }));
+
+    localStorage.removeItem("deliveryCountry");
+    localStorage.removeItem("recipientCountry");
+    localStorage.removeItem("recipientCountryCode");
+    localStorage.removeItem("orderRecipientCountry");
+
+    setMapAction("idle");
+    setMapActionMessage("");
+  }, []);
+
+  const clearCityAndLocation = useCallback(() => {
+    activeMapRequestRef.current?.abort();
+    activeMapRequestRef.current = null;
+
+    lastViewportKeyRef.current = "";
+
+    setCity("");
+    setCountry("");
+    setResolvedCountryCode(null);
+
+    setStreetAddress("");
+    setPostalCode("");
+
+    setMapTarget(null);
+    setDynamicMapItems([]);
+    setHoveredFloristId(null);
+
+    setRequiredFieldErrors({
+      country: false,
+      city: false,
+    });
+
+    setMapAction("idle");
+    setMapActionMessage("");
+
+    [
+      "deliveryCity",
+      "deliveryCountry",
+      "deliveryStreetAddress",
+      "deliveryPostalCode",
+      "recipientCity",
+      "recipientCountry",
+      "recipientCountryCode",
+      "recipientStreetAddress",
+      "recipientPostalCode",
+      "recipientLat",
+      "recipientLng",
+      "recipientAddress",
+      "recipientSearchMode",
+      "orderRecipientCity",
+      "orderRecipientCountry",
+      "orderRecipientStreetAddress",
+      "orderRecipientPostalCode",
+      "orderRecipientAddress",
+    ].forEach((key) => {
+      localStorage.removeItem(key);
+    });
+  }, []);
+
   const handleCountryChange = useCallback(
     (nextCountry: string) => {
+      setRequiredFieldErrors((current) => ({
+        ...current,
+        country: false,
+      }));
+
       activeMapRequestRef.current?.abort();
       lastViewportKeyRef.current = "";
       setDynamicMapItems([]);
@@ -1143,6 +1266,11 @@ export default function FloristsMapView({
 
   const handleCityChange = useCallback(
     (nextCity: string) => {
+      setRequiredFieldErrors((current) => ({
+        ...current,
+        city: false,
+      }));
+
       activeMapRequestRef.current?.abort();
       lastViewportKeyRef.current = "";
       setDynamicMapItems([]);
@@ -1167,6 +1295,8 @@ export default function FloristsMapView({
 
   const handleViewportIdle = useCallback(
     async (viewport: FSMapViewport) => {
+      setCurrentViewport(viewport);
+
       const values = [
         viewport.north,
         viewport.south,
@@ -1211,7 +1341,9 @@ export default function FloristsMapView({
         findCountryForCity(city) || country;
 
       const countryCode =
-        countryCodes[effectiveCountry] || "SE";
+        resolvedCountryCode ||
+        countryCodes[effectiveCountry] ||
+        "";
 
       const languageCode =
         countryLanguageCodes[effectiveCountry] || "en";
@@ -1245,10 +1377,13 @@ export default function FloristsMapView({
         south: String(viewport.south),
         east: String(viewport.east),
         west: String(viewport.west),
-        country: countryCode,
         language: languageCode,
         pageSize: "20",
       });
+
+      if (countryCode) {
+        params.set("country", countryCode);
+      }
 
       try {
         const response = await fetch(
@@ -1306,7 +1441,11 @@ export default function FloristsMapView({
         }
       }
     },
-    [city, country],
+    [
+      city,
+      country,
+      resolvedCountryCode,
+    ],
   );
 
   function saveSearch() {
@@ -1398,8 +1537,8 @@ export default function FloristsMapView({
                 Hitta Florist
               </h1>
               <p className="mt-3 max-w-3xl text-sm leading-7 text-stone-600 md:text-base">
-                Sök via land, stad, adress, postnummer eller datum. Informationen
-                följer med till beställningen.
+                Skriv stad och välj rätt plats. Land hämtas automatiskt.
+                Gatuadress, postnummer och datum är valfria.
               </p>
             </div>
 
@@ -1412,8 +1551,26 @@ export default function FloristsMapView({
           <div className="mt-6 grid gap-5 lg:grid-cols-[360px_1fr]">
             <aside className="rounded-[30px] bg-[#fbf7f2] p-4 ring-1 ring-stone-200 md:p-5">
               <div className="grid gap-3">
-                <SearchField label="Land" value={country} onChange={handleCountryChange} listId="map-country-list" icon={Globe2} />
-                <SearchField label="Stad" value={city} onChange={handleCityChange} listId="map-city-list" icon={MapPin} />
+                <SearchField
+                  label="Land (valfritt)"
+                  value={country}
+                  onChange={handleCountryChange}
+                  listId="map-country-list"
+                  icon={Globe2}
+                  inputId="florist-country"
+                  invalid={false}
+                  onClear={clearCountry}
+                />
+                <SearchField
+                  label="Stad"
+                  value={city}
+                  onChange={handleCityChange}
+                  listId="map-city-list"
+                  icon={MapPin}
+                  inputId="florist-city"
+                  invalid={requiredFieldErrors.city}
+                  onClear={clearCityAndLocation}
+                />
                 <SearchField label="Gatuadress" value={streetAddress} onChange={setStreetAddress} icon={Home} />
                 <SearchField label="Postnummer" value={postalCode} onChange={setPostalCode} icon={MapPin} />
 
@@ -1452,7 +1609,7 @@ export default function FloristsMapView({
                   <Search size={16} className="mr-1 inline" />
                   {mapAction === "searching"
                     ? "Söker…"
-                    : "Sök"}
+                    : "SÖK FLORIST"}
                 </button>
 
                 <button
@@ -1467,7 +1624,7 @@ export default function FloristsMapView({
                   <LocateFixed size={16} className="mr-1 inline" />
                   {mapAction === "locating"
                     ? "Hämtar position…"
-                    : "Nära mig"}
+                    : "FLORIST NÄRA MIG"}
                 </button>
 
                 {mapActionMessage ? (
@@ -1487,12 +1644,50 @@ export default function FloristsMapView({
               </div>
 
               <p className="mt-5 rounded-2xl bg-white p-4 text-xs font-semibold leading-6 text-stone-500 ring-1 ring-stone-200">
-                Välj bara de fält du vill. Informationen sparas och följer med
-                vidare till beställningen.
+                Stad krävs för SÖK FLORIST. Land hämtas automatiskt när du bekräftar rätt plats. Gatuadress, postnummer och datum är valfria. FLORIST NÄRA MIG använder din aktuella position.
               </p>
+
+              <div className="mt-4 grid gap-3">
+                <div className="rounded-2xl bg-white p-4 ring-1 ring-pink-200">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-pink-50 text-pink-600">
+                      <Store size={18} />
+                    </div>
+
+                    <span className="text-2xl font-black text-stone-950">
+                      {connectedFloristCount}
+                    </span>
+                  </div>
+
+                  <p className="mt-3 text-sm font-black leading-5 text-stone-900">
+                    {connectedFloristCount === 1
+                      ? "florist är ansluten till FloristSocial"
+                      : "florister är anslutna till FloristSocial"}
+                  </p>
+                </div>
+
+                <div className="rounded-2xl bg-white p-4 ring-1 ring-stone-200">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-sky-50 text-sky-600">
+                      <MapPin size={18} />
+                    </div>
+
+                    <span className="text-2xl font-black text-stone-950">
+                      {totalVisibleMapCount}
+                    </span>
+                  </div>
+
+                  <p className="mt-3 text-sm font-black leading-5 text-stone-900">
+                    Totalt{" "}
+                    {totalVisibleMapCount === 1
+                      ? "visas 1 florist på kartan"
+                      : `visas ${totalVisibleMapCount} florister på kartan`}
+                  </p>
+                </div>
+              </div>
             </aside>
 
-            <div className="aspect-square min-h-[620px] overflow-hidden rounded-[32px] bg-white ring-1 ring-stone-200">
+            <div className="relative aspect-square min-h-[620px] overflow-hidden rounded-[32px] bg-white ring-1 ring-stone-200">
               <FSMap
                 recipientLat={selectedCoords?.[0] || null}
                 recipientLng={selectedCoords?.[1] || null}
@@ -1588,25 +1783,82 @@ function SearchField({
   onChange,
   listId,
   icon: Icon,
+  inputId,
+  invalid = false,
+  onClear,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
   listId?: string;
   icon: typeof Search;
+  inputId?: string;
+  invalid?: boolean;
+  onClear?: () => void;
 }) {
   return (
-    <label className="rounded-2xl bg-stone-50 px-4 py-3 ring-1 ring-stone-200">
-      <span className="mb-1 flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-stone-400">
-        <Icon size={14} className="text-pink-600" />
+    <label
+      className={[
+        "rounded-2xl px-4 py-3 ring-1 transition",
+        invalid
+          ? "bg-red-50 ring-2 ring-red-500"
+          : "bg-white ring-stone-200",
+      ].join(" ")}
+    >
+      <span
+        className={[
+          "mb-1 flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em]",
+          invalid
+            ? "text-red-700"
+            : "text-stone-400",
+        ].join(" ")}
+      >
+        <Icon
+          size={14}
+          className={
+            invalid
+              ? "text-red-600"
+              : "text-pink-600"
+          }
+        />
+
         {label}
       </span>
-      <input
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        list={listId}
-        className="w-full bg-transparent text-sm font-bold outline-none"
-      />
+
+      <div className="flex items-center gap-2">
+        <input
+          id={inputId}
+          value={value}
+          onChange={(event) =>
+            onChange(event.target.value)
+          }
+          list={listId}
+          aria-invalid={invalid}
+          className="min-w-0 flex-1 bg-transparent text-sm font-bold outline-none"
+        />
+
+        {onClear && value ? (
+          <button
+            type="button"
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onClear();
+            }}
+            aria-label={`Rensa ${label.toLocaleLowerCase("sv")}`}
+            title={`Rensa ${label.toLocaleLowerCase("sv")}`}
+            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-stone-100 text-stone-500 transition hover:bg-pink-50 hover:text-pink-700"
+          >
+            <X size={15} strokeWidth={2.5} />
+          </button>
+        ) : null}
+      </div>
+
+      {invalid ? (
+        <span className="mt-2 block text-xs font-bold text-red-700">
+          Obligatoriskt för SÖK FLORIST
+        </span>
+      ) : null}
     </label>
   );
 }

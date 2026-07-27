@@ -163,11 +163,32 @@ function toClaimPlace(place: GooglePlace, fallbackIndex: number) {
   };
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } =
+      new URL(request.url);
+
+    const requestedQuery =
+      (searchParams.get("q") || "").trim();
+
+    const discoveryQueries =
+      requestedQuery
+        ? [
+            requestedQuery,
+            `${requestedQuery} blomsterbutik`,
+          ]
+        : [
+            ...stockholmFloristSeeds,
+            ...stockholmDiscoveryQueries,
+          ];
+
     const queryResults = await Promise.all(
-      [...stockholmFloristSeeds, ...stockholmDiscoveryQueries].map(
-        async (query) => searchPlaces(query, 10),
+      discoveryQueries.map(
+        async (searchText) =>
+          searchPlaces(
+            searchText,
+            requestedQuery ? 20 : 10,
+          ),
       ),
     );
 
@@ -233,6 +254,7 @@ export async function GET() {
 
     return NextResponse.json({
       success: true,
+      query: requestedQuery || null,
       count: results.length,
       results,
     });

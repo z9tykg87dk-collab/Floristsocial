@@ -12,6 +12,11 @@ const GOOGLE_PLACES_FIELD_MASK = [
   "places.displayName",
   "places.formattedAddress",
   "places.location",
+  "places.primaryType",
+  "places.primaryTypeDisplayName",
+  "places.types",
+  "places.pureServiceAreaBusiness",
+  "places.businessStatus",
   "places.rating",
   "places.userRatingCount",
   "places.addressComponents",
@@ -45,6 +50,13 @@ type GooglePlace = {
   displayName?: GoogleLocalizedText;
   formattedAddress?: string;
   location?: GoogleLatLng;
+
+  primaryType?: string;
+  primaryTypeDisplayName?: GoogleLocalizedText;
+  types?: string[];
+  pureServiceAreaBusiness?: boolean;
+  businessStatus?: string;
+
   rating?: number;
   userRatingCount?: number;
   addressComponents?: GoogleAddressComponent[];
@@ -167,7 +179,7 @@ function createTextQuery(
   }
 
   const countryQueries: Record<string, string> = {
-    SE: "blomsterbutik eller florist",
+    SE: "florist blomsterbutik blomsteraffär blomsterarrangemang bukettleverans floristateljé blomsterdesign",
     NO: "blomsterbutikk eller florist",
     DK: "blomsterbutik eller florist",
     FI: "kukkakauppa tai floristi",
@@ -222,10 +234,164 @@ function createTextQuery(
   return countryQueries[country] ?? "flower shop or florist";
 }
 
+const STRONG_FLORIST_TERMS = [
+  "florist",
+  "floristik",
+  "floristi",
+  "florista",
+  "floriste",
+  "floristeria",
+  "floristería",
+  "flower shop",
+  "flower studio",
+  "floral studio",
+  "floral design",
+  "blomsterbutik",
+  "blomsteraffär",
+  "blomsterhandel",
+  "blomsterateljé",
+  "floristateljé",
+  "blomsterarrangemang",
+  "bukettleverans",
+  "bröllopsflorist",
+  "eventflorist",
+  "begravningsblommor",
+  "kukkakauppa",
+  "blomsterbutikk",
+  "bloemenwinkel",
+  "bloemist",
+  "blumenladen",
+  "blumenfachgeschäft",
+  "fleuriste",
+  "fioraio",
+  "negozio di fiori",
+  "floreria",
+  "florería",
+  "floricultura",
+  "kwiaciarnia",
+  "cvjećarnica",
+  "cvjecarnica",
+  "cvetličarna",
+  "cvetlicarna",
+  "virágbolt",
+  "viragbolt",
+  "lillepood",
+  "ziedu veikals",
+  "gėlių parduotuvė",
+  "geliu parduotuve",
+];
+
+const NON_FLORIST_PRIMARY_TYPES = new Set([
+  "supermarket",
+  "grocery_store",
+  "discount_supermarket",
+  "convenience_store",
+  "department_store",
+  "shopping_mall",
+  "home_improvement_store",
+  "hardware_store",
+  "garden_center",
+  "plant_nursery",
+  "farm",
+]);
+
+function normalizeSearchText(
+  value: string | null | undefined,
+): string {
+  return (value || "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("en")
+    .trim();
+}
+
+function containsStrongFloristTerm(
+  value: string | null | undefined,
+): boolean {
+  const normalizedValue =
+    normalizeSearchText(value);
+
+  if (!normalizedValue) {
+    return false;
+  }
+
+  return STRONG_FLORIST_TERMS.some((term) =>
+    normalizedValue.includes(
+      normalizeSearchText(term),
+    ),
+  );
+}
+
+function isQualifiedGoogleFlorist(
+  place: GooglePlace,
+): boolean {
+  if (
+    place.businessStatus ===
+    "CLOSED_PERMANENTLY"
+  ) {
+    return false;
+  }
+
+  const primaryType =
+    place.primaryType?.trim() || "";
+
+  const types = new Set(
+    (place.types ?? [])
+      .map((type) => type.trim())
+      .filter(Boolean),
+  );
+
+  /*
+   * Starkaste signalen:
+   * Google har klassificerat den aktuella platsen
+   * som florist.
+   *
+   * Detta gör att en kedjebutik får visas när just
+   * den butiken verkligen har floristklassificering.
+   */
+  if (
+    primaryType === "florist" ||
+    types.has("florist")
+  ) {
+    return true;
+  }
+
+  const displayName =
+    place.displayName?.text;
+
+  const primaryTypeName =
+    place.primaryTypeDisplayName?.text;
+
+  const hasStrongFloristLanguage =
+    containsStrongFloristTerm(displayName) ||
+    containsStrongFloristTerm(primaryTypeName);
+
+  if (!hasStrongFloristLanguage) {
+    return false;
+  }
+
+  /*
+   * En matbutik, plantskola eller ett garden center
+   * tas inte med enbart för att ordet blommor råkar
+   * förekomma. Det krävs Google-typen florist ovan.
+   */
+  if (
+    NON_FLORIST_PRIMARY_TYPES.has(primaryType)
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
 function toFloristMapItem(
   place: GooglePlace,
   country: SearchCountry
 ): FloristMapItem | null {
+  if (!isQualifiedGoogleFlorist(place)) {
+    return null;
+  }
+
   const latitude = place.location?.latitude;
   const longitude = place.location?.longitude;
 
@@ -291,6 +457,20 @@ export async function searchGoogleFlorists(
 
   const requestBody: Record<string, unknown> = {
     textQuery: createTextQuery(options.query, country),
+
+    /*
+     * Endast verksamheter som Google har kopplat
+     * till floristtypen ska returneras.
+     */
+    includedType: "florist",
+    strictTypeFiltering: true,
+
+    /*
+     * Inkludera även floristateljéer och frilansare
+     * som arbetar inom ett serviceområde.
+     */
+    includePureServiceAreaBusinesses: true,
+
     languageCode,
     regionCode: country,
     pageSize,

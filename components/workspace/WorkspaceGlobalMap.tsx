@@ -79,12 +79,27 @@ type SearchResponse = {
 type WorkspaceGlobalMapProps = {
   initialItems: WorkspaceGlobalMapItem[];
 
+  filterText?: string;
+  selectedCity?: string;
+  countryCode?: string;
+  searchResults?: FSMapsItem[];
+  selectedFloristId?: string | null;
+  resetToken?: number;
+
+  onVisibleCountChange?: (
+    count: number,
+  ) => void;
+
   recipientLat?: number | null;
   recipientLng?: number | null;
 
   hoveredFloristId?: string | null;
 
   onHoverFlorist?: (
+    floristId: string | null,
+  ) => void;
+
+  onSelectedFloristChange?: (
     floristId: string | null,
   ) => void;
 
@@ -296,10 +311,18 @@ function mergeItems(
 
 export default function WorkspaceGlobalMap({
   initialItems,
+  filterText = "",
+  selectedCity = "",
+  countryCode = "SE",
+  searchResults,
+  selectedFloristId,
+  resetToken = 0,
+  onVisibleCountChange,
   recipientLat,
   recipientLng,
   hoveredFloristId,
   onHoverFlorist,
+  onSelectedFloristChange,
   onOrderFlorist,
 }: WorkspaceGlobalMapProps) {
   const [
@@ -323,6 +346,27 @@ export default function WorkspaceGlobalMap({
       ),
     );
   }, [initialItems]);
+
+  useEffect(() => {
+    requestRef.current?.abort();
+    lastViewportKeyRef.current = "";
+    setDynamicItems(initialItems);
+  }, [countryCode, resetToken]);
+
+  useEffect(() => {
+    if (!searchResults?.length) return;
+
+    const incomingItems = searchResults
+      .map(toWorkspaceMapItem)
+      .filter(
+        (item): item is WorkspaceGlobalMapItem =>
+          item !== null,
+      );
+
+    setDynamicItems((currentItems) =>
+      mergeItems(currentItems, incomingItems),
+    );
+  }, [searchResults]);
 
   useEffect(() => {
     return () => {
@@ -392,7 +436,7 @@ export default function WorkspaceGlobalMap({
            * Landstyrning blir nästa separata
            * administratörsfunktion.
            */
-          country: "SE",
+          country: countryCode,
           language: "sv",
           pageSize: "20",
         });
@@ -453,13 +497,66 @@ export default function WorkspaceGlobalMap({
         }
       }
     },
-    [],
+    [countryCode],
   );
 
-  const items = useMemo(
-    () => dynamicItems,
-    [dynamicItems],
-  );
+  const items = useMemo(() => {
+    const needle =
+      filterText
+        .trim()
+        .toLocaleLowerCase("sv");
+
+    const cityNeedle =
+      selectedCity
+        .trim()
+        .toLocaleLowerCase("sv");
+
+    return dynamicItems.filter((item) => {
+      const city =
+        item.city
+          ?.toLocaleLowerCase("sv") ||
+        "";
+
+      const searchableText = [
+        item.shop_name,
+        item.florist_name,
+        item.city,
+        item.area,
+        item.address,
+        item.formatted_address,
+        item.street_address,
+        item.address_line_1,
+        item.postal_code,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLocaleLowerCase("sv");
+
+      const matchesText =
+        !needle ||
+        searchableText.includes(needle);
+
+      const matchesCity =
+        !cityNeedle ||
+        city === cityNeedle ||
+        searchableText.includes(cityNeedle);
+
+      return matchesText && matchesCity;
+    });
+  }, [
+    dynamicItems,
+    filterText,
+    selectedCity,
+  ]);
+
+  useEffect(() => {
+    onVisibleCountChange?.(
+      items.length,
+    );
+  }, [
+    items.length,
+    onVisibleCountChange,
+  ]);
 
   return (
     <FSMap
@@ -467,7 +564,11 @@ export default function WorkspaceGlobalMap({
       recipientLng={recipientLng}
       florists={items}
       hoveredFloristId={hoveredFloristId}
+      selectedFloristId={selectedFloristId}
       onHoverFlorist={onHoverFlorist}
+      onSelectedFloristChange={
+        onSelectedFloristChange
+      }
       onOrderFlorist={onOrderFlorist}
       onViewportIdle={handleViewportIdle}
       autoFit={false}

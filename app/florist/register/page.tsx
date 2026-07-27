@@ -1209,18 +1209,18 @@ export default function FloristSocialRegistrationPage() {
               </button>
             </header>
 
+            <FloristClaimMap
+              selectedExternalPlaceId={
+                selectedClaimPlace?.external_place_id || null
+              }
+              onClaimPlace={selectClaimPlace}
+            />
+
             <form
               data-florist-register-form="true"
               className="space-y-6"
               onSubmit={handleSubmit}
             >
-              <FloristClaimMap
-                selectedExternalPlaceId={
-                  selectedClaimPlace?.external_place_id || null
-                }
-                onClaimPlace={selectClaimPlace}
-              />
-
               <input
                 type="hidden"
                 name="externalPlaceId"

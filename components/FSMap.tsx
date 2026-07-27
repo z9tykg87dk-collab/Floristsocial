@@ -1,13 +1,27 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  useCallback,
+  type ComponentProps,
+} from "react";
 import {
   APIProvider,
   Map,
   AdvancedMarker,
   InfoWindow,
   Pin,
+  useMap,
 } from "@vis.gl/react-google-maps";
+import {
+  MarkerClusterer,
+  SuperClusterAlgorithm,
+  type Marker,
+  type Renderer,
+} from "@googlemaps/markerclusterer";
+
 
 type OpeningHour = {
   dayLabel?: string;
@@ -45,13 +59,27 @@ type FloristMapItem = {
   postal_code?: string | null;
 };
 
+export type FSMapViewport = {
+  north: number;
+  south: number;
+  east: number;
+  west: number;
+  zoom: number;
+};
+
 type FSMapProps = {
   recipientLat?: number | null;
   recipientLng?: number | null;
   florists: FloristMapItem[];
   hoveredFloristId?: string | null;
+  selectedFloristId?: string | null;
   onHoverFlorist?: (id: string | null) => void;
+  onSelectedFloristChange?: (id: string | null) => void;
   onOrderFlorist?: (florist: FloristMapItem) => void;
+  onViewportIdle?: (viewport: FSMapViewport) => void;
+  autoFit?: boolean;
+  includeSeedPlaces?: boolean;
+  clusterMarkers?: boolean;
   mode?: "full" | "compact";
 };
 
@@ -132,8 +160,22 @@ function displayAddress(florist: FloristMapItem) {
 }
 
 function isDetailedFlorist(florist: FloristMapItem) {
+  const status = (
+    florist.fs_map_status || ""
+  ).toLowerCase();
+
+  if (
+    status === "approved_display" ||
+    status === "registered"
+  ) {
+    return true;
+  }
+
   const name = displayName(florist).toLowerCase();
-  return approvedDetailedFlorists.some((item) => name.includes(item));
+
+  return approvedDetailedFlorists.some(
+    (item) => name.includes(item),
+  );
 }
 
 function verificationLabel(
@@ -255,7 +297,8 @@ function ProductPopup({
           }
           className="absolute left-2 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-full bg-white/95 text-base font-black shadow"
         >
-          ‹
+
+‹
         </button>
 
         <button
@@ -331,29 +374,448 @@ function ProductPopup({
   );
 }
 
+
+
+
+const floristClusterRenderer: Renderer = {
+  render({ count, position }) {
+    const diameter =
+      count >= 100
+        ? 58
+        : count >= 10
+          ? 52
+          : 46;
+
+    const element =
+      document.createElement("button");
+
+    element.type = "button";
+    element.textContent = String(count);
+
+    element.setAttribute(
+      "aria-label",
+      `${count} florister i området`,
+    );
+
+    element.style.cssText = [
+      "display:grid",
+      "place-items:center",
+      `width:${diameter}px`,
+      `height:${diameter}px`,
+      "padding:0",
+      "border:3px solid rgba(255,255,255,0.98)",
+      "border-radius:9999px",
+      "background:linear-gradient(135deg,#db2777,#be185d)",
+      "color:#ffffff",
+      "font-family:inherit",
+      "font-size:14px",
+      "font-weight:900",
+      "line-height:1",
+      "cursor:pointer",
+      "box-shadow:0 8px 22px rgba(131,24,67,0.32)",
+      "transition:transform 150ms ease,box-shadow 150ms ease",
+    ].join(";");
+
+    element.addEventListener(
+      "mouseenter",
+      () => {
+        element.style.transform = "scale(1.08)";
+        element.style.boxShadow =
+          "0 10px 28px rgba(131,24,67,0.42)";
+      },
+    );
+
+    element.addEventListener(
+      "mouseleave",
+      () => {
+        element.style.transform = "scale(1)";
+        element.style.boxShadow =
+          "0 8px 22px rgba(131,24,67,0.32)";
+      },
+    );
+
+    return new google.maps.marker.AdvancedMarkerElement({
+      position,
+      content: element,
+      title: `${count} florister i området`,
+      zIndex: 1000 + count,
+    });
+  },
+};
+
+function FloristMarkerClusterer({
+  enabled,
+  markers,
+}: {
+  enabled: boolean;
+  markers: Record<string, Marker>;
+}) {
+  const map = useMap();
+
+  const clusterer = useMemo(() => {
+    if (!map || !enabled) {
+      return null;
+    }
+
+    return new MarkerClusterer({
+      map,
+      algorithm: new SuperClusterAlgorithm({
+        radius: 90,
+        maxZoom: 16,
+      }),
+      renderer: floristClusterRenderer,
+    });
+  }, [enabled, map]);
+
+  useEffect(() => {
+    if (!clusterer) {
+      return;
+    }
+
+    clusterer.clearMarkers();
+    clusterer.addMarkers(
+      Object.values(markers),
+    );
+  }, [clusterer, markers]);
+
+  useEffect(() => {
+    return () => {
+      if (!clusterer) {
+        return;
+      }
+
+      clusterer.clearMarkers();
+      clusterer.setMap(null);
+    };
+  }, [clusterer]);
+
+  return null;
+}
+
+type ClusteredAdvancedMarkerProps =
+  ComponentProps<typeof AdvancedMarker> & {
+    markerKey: string;
+    setMarkerRef: (
+      marker: Marker | null,
+      key: string,
+    ) => void;
+  };
+
+function ClusteredAdvancedMarker({
+  markerKey,
+  setMarkerRef,
+  ...markerProps
+}: ClusteredAdvancedMarkerProps) {
+  const ref = useCallback(
+    (
+      marker:
+        | google.maps.marker.AdvancedMarkerElement
+        | null,
+    ) => {
+      setMarkerRef(marker, markerKey);
+    },
+    [markerKey, setMarkerRef],
+  );
+
+  return (
+    <AdvancedMarker
+      {...markerProps}
+      ref={ref}
+    />
+  );
+}
+
+function AutoFitBounds({
+  florists,
+}: {
+  florists: FloristMapItem[];
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!map) return;
+    if (!window.google) return;
+    if (florists.length === 0) return;
+
+    const bounds=new google.maps.LatLngBounds();
+
+    florists.forEach((f)=>{
+      bounds.extend({
+        lat:Number(f.latitude),
+        lng:Number(f.longitude),
+      });
+    });
+
+    map.fitBounds(bounds,{
+      top:60,
+      right:60,
+      bottom:60,
+      left:60,
+    });
+
+  },[map,florists]);
+
+  return null;
+}
+
+
+
+
+function MapTargetController({
+  recipientLat,
+  recipientLng,
+}: {
+  recipientLat?: number | null;
+  recipientLng?: number | null;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (
+      !map ||
+      recipientLat === null ||
+      recipientLat === undefined ||
+      recipientLng === null ||
+      recipientLng === undefined
+    ) {
+      return;
+    }
+
+    const latitude = Number(recipientLat);
+    const longitude = Number(recipientLng);
+
+    if (
+      !Number.isFinite(latitude) ||
+      !Number.isFinite(longitude)
+    ) {
+      return;
+    }
+
+    const currentMap = map;
+
+    currentMap.panTo({
+      lat: latitude,
+      lng: longitude,
+    });
+
+    currentMap.setZoom(11);
+  }, [map, recipientLat, recipientLng]);
+
+  return null;
+}
+
+function ViewportReporter({
+  onViewportIdle,
+}: {
+  onViewportIdle?: (viewport: FSMapViewport) => void;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!map || !onViewportIdle) {
+      return;
+    }
+
+    const currentMap = map;
+    const notifyViewportIdle = onViewportIdle;
+
+    function reportViewport() {
+      const bounds = currentMap.getBounds();
+
+      if (!bounds) {
+        return;
+      }
+
+      const northEast = bounds.getNorthEast();
+      const southWest = bounds.getSouthWest();
+
+      notifyViewportIdle({
+        north: northEast.lat(),
+        south: southWest.lat(),
+        east: northEast.lng(),
+        west: southWest.lng(),
+        zoom: currentMap.getZoom() ?? 0,
+      });
+    }
+
+    reportViewport();
+
+    const listener = currentMap.addListener(
+      "idle",
+      reportViewport,
+    );
+
+    return () => {
+      listener.remove();
+    };
+  }, [map, onViewportIdle]);
+
+  return null;
+}
+
 export default function FSMap({
   recipientLat,
   recipientLng,
   florists,
   hoveredFloristId,
+  selectedFloristId,
   onHoverFlorist,
+  onSelectedFloristChange,
   onOrderFlorist,
+  onViewportIdle,
+  autoFit = true,
+  includeSeedPlaces = true,
+  clusterMarkers = false,
   mode = "full",
 }: FSMapProps) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   const [selected, setSelected] = useState<FloristMapItem | null>(null);
-  const [approvedPlaces, setApprovedPlaces] = useState<FloristMapItem[]>([]);
+
+
+
+  // Stäng vald florist när kartan flyttas till en ny sökt plats.
 
   useEffect(() => {
+
+    setSelected(null);
+
+  }, [recipientLat, recipientLng]);
+  useEffect(() => {
+    if (!selectedFloristId) {
+      setSelected(null);
+      return;
+    }
+
+    const selectedFromSearch = florists.find(
+      (florist) =>
+        florist.florist_id === selectedFloristId ||
+        florist.google_place_id === selectedFloristId,
+    );
+
+    if (selectedFromSearch) {
+      setSelected(selectedFromSearch);
+    }
+  }, [florists, selectedFloristId]);
+  const [approvedPlaces, setApprovedPlaces] = useState<FloristMapItem[]>([]);
+  const [
+    markerInstances,
+    setMarkerInstances,
+  ] = useState<Record<string, Marker>>({});
+
+  const setMarkerRef = useCallback(
+    (
+      marker: Marker | null,
+      key: string,
+    ) => {
+      setMarkerInstances((current) => {
+        if (
+          marker &&
+          current[key] === marker
+        ) {
+          return current;
+        }
+
+        if (
+          !marker &&
+          !current[key]
+        ) {
+          return current;
+        }
+
+        if (marker) {
+          return {
+            ...current,
+            [key]: marker,
+          };
+        }
+
+        const next = {
+          ...current,
+        };
+
+        delete next[key];
+
+        return next;
+      });
+    },
+    [],
+  );
+
+  const handleMarkerSelection = useCallback(
+    (florist: FloristMapItem) => {
+      setSelected((current) => {
+        /*
+         * En registrerad florists informationsruta
+         * ligger kvar tills besökaren använder X.
+         */
+        if (
+          current &&
+          isDetailedFlorist(current)
+        ) {
+          return current;
+        }
+
+        /*
+         * En oregistrerad ruta kan ersättas av
+         * en annan floristmarkör.
+         */
+        return florist;
+      });
+    },
+    [],
+  );
+
+  const handleMapClick = useCallback(() => {
+    setSelected((current) => {
+      if (!current) {
+        return null;
+      }
+
+      /*
+       * Registrerad florist:
+       * kartklick stänger inte informationsrutan.
+       */
+      if (isDetailedFlorist(current)) {
+        return current;
+      }
+
+      /*
+       * Oregistrerad florist:
+       * kartklick stänger informationsrutan.
+       */
+      return null;
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!includeSeedPlaces) {
+      setApprovedPlaces([]);
+      return;
+    }
+
+    let cancelled = false;
+
     fetch("/api/fs-maps/places-seed")
-      .then((res) => res.json())
+      .then((response) => response.json())
       .then((data) => {
-        if (data?.success && Array.isArray(data.results)) {
+        if (
+          !cancelled &&
+          data?.success &&
+          Array.isArray(data.results)
+        ) {
           setApprovedPlaces(data.results);
         }
       })
-      .catch(() => setApprovedPlaces([]));
-  }, []);
+      .catch(() => {
+        if (!cancelled) {
+          setApprovedPlaces([]);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [includeSeedPlaces]);
 
   const validFlorists = useMemo(
     () =>
@@ -366,7 +828,10 @@ export default function FSMap({
   );
 
   const center =
-    recipientLat && recipientLng
+    recipientLat !== null &&
+    recipientLat !== undefined &&
+    recipientLng !== null &&
+    recipientLng !== undefined
       ? { lat: recipientLat, lng: recipientLng }
       : validFlorists[0]
         ? {
@@ -394,9 +859,10 @@ export default function FSMap({
     <APIProvider apiKey={apiKey}>
       <Map
         defaultCenter={center}
-        defaultZoom={mode === "compact" ? 10 : 11}
+        defaultZoom={5}
         mapId="FS_MAPS_MAIN"
         gestureHandling="greedy"
+        onClick={handleMapClick}
         disableDefaultUI={mode === "compact"}
         style={{
           width: "100%",
@@ -404,7 +870,27 @@ export default function FSMap({
           minHeight: mode === "compact" ? 420 : 620,
         }}
       >
-        {recipientLat && recipientLng ? (
+        <FloristMarkerClusterer
+          enabled={clusterMarkers}
+          markers={markerInstances}
+        />
+
+        {autoFit ? (
+          <AutoFitBounds florists={validFlorists} />
+        ) : null}
+
+        <MapTargetController
+          recipientLat={recipientLat}
+          recipientLng={recipientLng}
+        />
+
+        <ViewportReporter
+          onViewportIdle={onViewportIdle}
+        />
+        {recipientLat !== null &&
+        recipientLat !== undefined &&
+        recipientLng !== null &&
+        recipientLng !== undefined ? (
           <AdvancedMarker
             position={{ lat: recipientLat, lng: recipientLng }}
             title="Mottagare"
@@ -423,14 +909,16 @@ export default function FSMap({
           const isHovered = hoveredFloristId === florist.florist_id;
 
           return (
-            <AdvancedMarker
+            <ClusteredAdvancedMarker
               key={florist.florist_id}
+              markerKey={florist.florist_id}
+              setMarkerRef={setMarkerRef}
               position={{
                 lat: Number(florist.latitude),
                 lng: Number(florist.longitude),
               }}
               title={detailed ? displayName(florist) : "Blomsterbutik"}
-              onClick={() => setSelected(florist)}
+              onClick={() => handleMarkerSelection(florist)}
               onMouseEnter={() => onHoverFlorist?.(florist.florist_id)}
               onMouseLeave={() => onHoverFlorist?.(null)}
             >
@@ -473,7 +961,7 @@ export default function FSMap({
                   scale={isHovered ? 1.15 : 0.9}
                 />
               )}
-            </AdvancedMarker>
+            </ClusteredAdvancedMarker>
           );
         })}
 
@@ -483,7 +971,10 @@ export default function FSMap({
               lat: Number(selected.latitude),
               lng: Number(selected.longitude),
             }}
-            onCloseClick={() => setSelected(null)}
+            onCloseClick={() => {
+              setSelected(null);
+              onSelectedFloristChange?.(null);
+            }}
           >
             <div className="w-[280px] p-2">
               <h3 className="text-base font-black text-stone-950">

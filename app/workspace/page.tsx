@@ -30,6 +30,7 @@ import { listFosEvents } from "@/lib/fos/event-store";
 import { getFosSystemHealthReport } from "@/lib/fos/system-health";
 import WorkspaceGeoControl from "@/components/workspace/WorkspaceGeoControl";
 import WorkspaceHero from "@/components/workspace/WorkspaceHero";
+import { getWorkspaceFlorists } from "@/lib/workspace/getWorkspaceFlorists";
 
 const engines = [
   {
@@ -169,7 +170,8 @@ const missionPanels = [
   { label: "FOS AI", value: "Redo", icon: Sparkles },
 ];
 
-export default function WorkspacePage() {
+export default async function WorkspacePage() {
+  const florists = await getWorkspaceFlorists();
   const health = getFosSystemHealthReport();
   const recentEvents = [...listFosEvents()]
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
@@ -414,7 +416,7 @@ export default function WorkspacePage() {
         </section>
 
         <section className="mt-8">
-          <WorkspaceGeoControl initialFlorists={[]} />
+          <WorkspaceGeoControl initialFlorists={florists} />
         </section>
       </section>
     </main>

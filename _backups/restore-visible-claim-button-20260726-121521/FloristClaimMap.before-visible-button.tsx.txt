@@ -1,0 +1,274 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import {
+  APIProvider,
+  AdvancedMarker,
+  InfoWindow,
+  Map,
+  Pin,
+} from "@vis.gl/react-google-maps";
+
+export type FloristClaimPlace = {
+  external_place_id: string;
+  google_place_id: string | null;
+  shop_name: string;
+  formatted_address: string | null;
+  street_address: string;
+  postal_code: string;
+  city: string;
+  phone: string;
+  website: string;
+  latitude: number;
+  longitude: number;
+  claim_status:
+    | "GOOGLE_DISCOVERED"
+    | "REJECTED"
+    | "SUSPENDED"
+    | string;
+};
+
+type FloristClaimMapProps = {
+  selectedExternalPlaceId?: string | null;
+  onClaimPlace: (place: FloristClaimPlace) => void;
+};
+
+const STOCKHOLM = {
+  lat: 59.3293,
+  lng: 18.0686,
+};
+
+export default function FloristClaimMap({
+  selectedExternalPlaceId,
+  onClaimPlace,
+}: FloristClaimMapProps) {
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  const [places, setPlaces] = useState<FloristClaimPlace[]>([]);
+  const [selected, setSelected] =
+    useState<FloristClaimPlace | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadPlaces() {
+      setLoading(true);
+      setError("");
+
+      try {
+        const response = await fetch("/api/fs-maps/claim-places", {
+          cache: "no-store",
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data?.success) {
+          throw new Error(
+            data?.error || "Kunde inte hämta butiker till claim-kartan.",
+          );
+        }
+
+        if (active) {
+          setPlaces(
+            Array.isArray(data.results) ? data.results : [],
+          );
+        }
+      } catch (loadError) {
+        if (active) {
+          setError(
+            loadError instanceof Error
+              ? loadError.message
+              : "Kunde inte läsa kartdata.",
+          );
+        }
+      } finally {
+        if (active) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadPlaces();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const center = useMemo(() => {
+    const selectedPlace = places.find(
+      (place) =>
+        place.external_place_id === selectedExternalPlaceId,
+    );
+
+    if (selectedPlace) {
+      return {
+        lat: Number(selectedPlace.latitude),
+        lng: Number(selectedPlace.longitude),
+      };
+    }
+
+    if (places[0]) {
+      return {
+        lat: Number(places[0].latitude),
+        lng: Number(places[0].longitude),
+      };
+    }
+
+    return STOCKHOLM;
+  }, [places, selectedExternalPlaceId]);
+
+  if (!apiKey) {
+    return (
+      <div className="grid min-h-[440px] place-items-center rounded-3xl border border-red-200 bg-red-50 p-6 text-center">
+        <p className="font-semibold text-red-700">
+          Google Maps API-nyckel saknas.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-hidden rounded-3xl border border-stone-200 bg-white">
+      <div className="border-b border-stone-200 bg-stone-50 px-5 py-4">
+        <h3 className="text-lg font-semibold text-stone-950">
+          Hitta din butik på kartan
+        </h3>
+
+        <p className="mt-1 text-sm leading-6 text-stone-600">
+          Klicka på butikens grå markör och välj sedan
+          <strong> Jag äger denna butik</strong>.
+        </p>
+      </div>
+
+      {loading ? (
+        <div className="grid min-h-[440px] place-items-center">
+          <p className="font-medium text-stone-500">
+            Hämtar blomsterbutiker…
+          </p>
+        </div>
+      ) : error ? (
+        <div className="grid min-h-[440px] place-items-center p-6 text-center">
+          <p className="font-semibold text-red-700">{error}</p>
+        </div>
+      ) : (
+        <APIProvider apiKey={apiKey}>
+          <Map
+            defaultCenter={center}
+            defaultZoom={11}
+            mapId="FS_CLAIM_MAP"
+            gestureHandling="greedy"
+            style={{
+              width: "100%",
+              height: "500px",
+            }}
+          >
+            {places.map((place) => {
+              const isSelected =
+                selectedExternalPlaceId ===
+                place.external_place_id;
+
+              return (
+                <AdvancedMarker
+                  key={place.external_place_id}
+                  position={{
+                    lat: Number(place.latitude),
+                    lng: Number(place.longitude),
+                  }}
+                  title={place.shop_name}
+                  onClick={() => setSelected(place)}
+                >
+                  <Pin
+                    background={
+                      isSelected ? "#db2777" : "#78716c"
+                    }
+                    borderColor={
+                      isSelected ? "#831843" : "#44403c"
+                    }
+                    glyphColor="#ffffff"
+                    glyph={isSelected ? "✓" : "•"}
+                    scale={isSelected ? 1.2 : 0.95}
+                  />
+                </AdvancedMarker>
+              );
+            })}
+
+            {selected ? (
+              <InfoWindow
+                position={{
+                  lat: Number(selected.latitude),
+                  lng: Number(selected.longitude),
+                }}
+                onCloseClick={() => setSelected(null)}
+              >
+                <div className="w-[280px] p-2">
+                  <h3 className="text-base font-black text-stone-950">
+                    {selected.shop_name}
+                  </h3>
+
+                  <p className="mt-1 text-sm font-semibold leading-5 text-stone-600">
+                    {selected.formatted_address ||
+                      [
+                        selected.street_address,
+                        selected.postal_code,
+                        selected.city,
+                      ]
+                        .filter(Boolean)
+                        .join(", ")}
+                  </p>
+
+                  {(selected.phone || selected.website) ? (
+                    <div className="mt-3 space-y-1 rounded-2xl bg-stone-50 px-3 py-3 text-sm text-stone-700">
+                      {selected.phone ? (
+                        <p>
+                          <span className="font-black">Telefon:</span>{" "}
+                          {selected.phone}
+                        </p>
+                      ) : null}
+
+                      {selected.website ? (
+                        <p className="break-all">
+                          <span className="font-black">Webbplats:</span>{" "}
+                          {selected.website}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
+
+                  <p className="mt-3 rounded-2xl bg-stone-50 px-3 py-3 text-sm font-semibold text-stone-600">
+                    Inte ansluten till FloristSocial ännu.
+                  </p>
+
+                  <div className="mt-3 border-t border-stone-200 pt-3">
+                    <p className="text-sm font-bold text-stone-900">
+                      Är du innehavare av denna butik?
+                    </p>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClaimPlace(selected);
+                        setSelected(null);
+                      }}
+                      className="mt-3 w-full rounded-full bg-pink-600 px-4 py-3 text-sm font-black text-white hover:bg-pink-700"
+                    >
+                      Jag äger denna butik
+                    </button>
+                  </div>
+                </div>
+              </InfoWindow>
+            ) : null}
+          </Map>
+        </APIProvider>
+      )}
+
+      {selectedExternalPlaceId ? (
+        <div className="border-t border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-bold text-emerald-800">
+          ✓ Butiken är vald. Uppgifterna har fyllts i i
+          registreringsformuläret.
+        </div>
+      ) : null}
+    </div>
+  );
+}

@@ -7,6 +7,7 @@ import {
   InfoWindow,
   Map,
   Pin,
+  useMap,
 } from "@vis.gl/react-google-maps";
 
 export type FloristClaimPlace = {
@@ -38,6 +39,76 @@ const STOCKHOLM = {
   lng: 18.0686,
 };
 
+type ClaimPlacesResponse = {
+  success?: boolean;
+  count?: number;
+  results?: FloristClaimPlace[];
+  error?: string;
+};
+
+async function fetchClaimPlaces(
+  query = "",
+): Promise<FloristClaimPlace[]> {
+  const params = new URLSearchParams();
+
+  if (query.trim()) {
+    params.set(
+      "q",
+      query.trim(),
+    );
+  }
+
+  const url = params.size
+    ? `/api/fs-maps/claim-places?${params.toString()}`
+    : "/api/fs-maps/claim-places";
+
+  const response = await fetch(
+    url,
+    {
+      cache: "no-store",
+    },
+  );
+
+  const data =
+    (await response.json()) as ClaimPlacesResponse;
+
+  if (!response.ok || !data.success) {
+    throw new Error(
+      data.error ||
+        "Kunde inte hämta butiker till claim-kartan.",
+    );
+  }
+
+  return Array.isArray(data.results)
+    ? data.results
+    : [];
+}
+
+function ClaimMapController({
+  target,
+}: {
+  target: {
+    lat: number;
+    lng: number;
+  } | null;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!map || !target) {
+      return;
+    }
+
+    map.panTo(target);
+    map.setZoom(15);
+  }, [
+    map,
+    target,
+  ]);
+
+  return null;
+}
+
 export default function FloristClaimMap({
   selectedExternalPlaceId,
   onClaimPlace,
@@ -49,6 +120,29 @@ export default function FloristClaimMap({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const [
+    shopQuery,
+    setShopQuery,
+  ] = useState("");
+
+  const [
+    searching,
+    setSearching,
+  ] = useState(false);
+
+  const [
+    searchMessage,
+    setSearchMessage,
+  ] = useState("");
+
+  const [
+    mapTarget,
+    setMapTarget,
+  ] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
+
   useEffect(() => {
     let active = true;
 
@@ -57,22 +151,11 @@ export default function FloristClaimMap({
       setError("");
 
       try {
-        const response = await fetch("/api/fs-maps/claim-places", {
-          cache: "no-store",
-        });
-
-        const data = await response.json();
-
-        if (!response.ok || !data?.success) {
-          throw new Error(
-            data?.error || "Kunde inte hämta butiker till claim-kartan.",
-          );
-        }
+        const results =
+          await fetchClaimPlaces();
 
         if (active) {
-          setPlaces(
-            Array.isArray(data.results) ? data.results : [],
-          );
+          setPlaces(results);
         }
       } catch (loadError) {
         if (active) {
@@ -89,12 +172,97 @@ export default function FloristClaimMap({
       }
     }
 
-    loadPlaces();
+    void loadPlaces();
 
     return () => {
       active = false;
     };
   }, []);
+
+  async function searchShopByName() {
+    const query = shopQuery.trim();
+
+    if (!query) {
+      setSearchMessage(
+        "Skriv floristens eller butikens namn.",
+      );
+
+      return;
+    }
+
+    setSearching(true);
+    setSearchMessage("");
+    setError("");
+
+    try {
+      const results =
+        await fetchClaimPlaces(query);
+
+      if (results.length === 0) {
+        setSearchMessage(
+          `Ingen florist eller butik hittades för "${query}".`,
+        );
+
+        return;
+      }
+
+      const firstResult = results[0];
+
+      setPlaces(results);
+      setSelected(firstResult);
+
+      setMapTarget({
+        lat: Number(
+          firstResult.latitude,
+        ),
+        lng: Number(
+          firstResult.longitude,
+        ),
+      });
+
+      setSearchMessage(
+        results.length === 1
+          ? `1 butik hittades för "${query}".`
+          : `${results.length} butiker hittades för "${query}".`,
+      );
+    } catch (searchError) {
+      setSearchMessage(
+        searchError instanceof Error
+          ? searchError.message
+          : "Butikssökningen misslyckades.",
+      );
+    } finally {
+      setSearching(false);
+    }
+  }
+
+  async function showAllClaimPlaces() {
+    setSearching(true);
+    setSearchMessage("");
+    setError("");
+
+    try {
+      const results =
+        await fetchClaimPlaces();
+
+      setPlaces(results);
+      setShopQuery("");
+      setSelected(null);
+      setMapTarget(STOCKHOLM);
+
+      setSearchMessage(
+        "Visar alla tillgängliga butiker.",
+      );
+    } catch (loadError) {
+      setSearchMessage(
+        loadError instanceof Error
+          ? loadError.message
+          : "Kunde inte återställa butikerna.",
+      );
+    } finally {
+      setSearching(false);
+    }
+  }
 
   const center = useMemo(() => {
     const selectedPlace = places.find(
@@ -140,6 +308,69 @@ export default function FloristClaimMap({
           Klicka på butikens grå markör och välj sedan
           <strong> Jag äger denna butik</strong>.
         </p>
+
+        <form
+          className="mt-4 rounded-2xl border border-stone-200 bg-white p-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void searchShopByName();
+          }}
+        >
+          <label
+            htmlFor="claim-shop-search"
+            className="block text-xs font-black uppercase tracking-[0.14em] text-stone-500"
+          >
+            Florist / Butik
+          </label>
+
+          <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+            <input
+              id="claim-shop-search"
+              type="search"
+              value={shopQuery}
+              onChange={(event) =>
+                setShopQuery(
+                  event.target.value,
+                )
+              }
+              placeholder="Skriv floristens eller butikens namn"
+              autoComplete="off"
+              className="min-h-12 flex-1 rounded-xl border border-stone-300 bg-white px-4 text-sm font-semibold text-stone-950 outline-none transition placeholder:text-stone-400 focus:border-pink-500 focus:ring-2 focus:ring-pink-100"
+            />
+
+            <button
+              type="submit"
+              disabled={searching}
+              className="min-h-12 rounded-xl bg-pink-600 px-5 text-sm font-black text-white transition hover:bg-pink-700 disabled:cursor-wait disabled:opacity-60"
+            >
+              {searching
+                ? "Söker…"
+                : "Hitta florist/butik"}
+            </button>
+          </div>
+
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+            <button
+              type="button"
+              onClick={() =>
+                void showAllClaimPlaces()
+              }
+              disabled={searching}
+              className="text-sm font-black text-stone-600 underline decoration-stone-300 underline-offset-4 hover:text-stone-950 disabled:opacity-50"
+            >
+              Visa alla butiker
+            </button>
+
+            {searchMessage ? (
+              <p
+                aria-live="polite"
+                className="text-sm font-bold text-stone-600"
+              >
+                {searchMessage}
+              </p>
+            ) : null}
+          </div>
+        </form>
       </div>
 
       {loading ? (
@@ -164,6 +395,10 @@ export default function FloristClaimMap({
               height: "500px",
             }}
           >
+            <ClaimMapController
+              target={mapTarget}
+            />
+
             {places.map((place) => {
               const isSelected =
                 selectedExternalPlaceId ===
@@ -177,7 +412,18 @@ export default function FloristClaimMap({
                     lng: Number(place.longitude),
                   }}
                   title={place.shop_name}
-                  onClick={() => setSelected(place)}
+                  onClick={() => {
+                    setSelected(place);
+
+                    setMapTarget({
+                      lat: Number(
+                        place.latitude,
+                      ),
+                      lng: Number(
+                        place.longitude,
+                      ),
+                    });
+                  }}
                 >
                   <Pin
                     background={
@@ -202,7 +448,7 @@ export default function FloristClaimMap({
                 }}
                 onCloseClick={() => setSelected(null)}
               >
-                <div className="w-[280px] p-2">
+                <div className="max-h-[390px] w-[300px] overflow-y-auto p-2 pr-3">
                   <h3 className="text-base font-black text-stone-950">
                     {selected.shop_name}
                   </h3>
@@ -217,6 +463,23 @@ export default function FloristClaimMap({
                         .filter(Boolean)
                         .join(", ")}
                   </p>
+
+                  <div className="sticky top-0 z-10 -mx-2 mt-3 border-y border-pink-100 bg-white px-2 py-3">
+                    <p className="text-sm font-bold text-stone-900">
+                      Är du innehavare av denna butik?
+                    </p>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClaimPlace(selected);
+                        setSelected(null);
+                      }}
+                      className="mt-2 w-full rounded-full bg-pink-600 px-4 py-3 text-sm font-black text-white shadow-sm transition hover:bg-pink-700"
+                    >
+                      Jag äger denna butik
+                    </button>
+                  </div>
 
                   {(selected.phone || selected.website) ? (
                     <div className="mt-3 space-y-1 rounded-2xl bg-stone-50 px-3 py-3 text-sm text-stone-700">
@@ -240,22 +503,6 @@ export default function FloristClaimMap({
                     Inte ansluten till FloristSocial ännu.
                   </p>
 
-                  <div className="mt-3 border-t border-stone-200 pt-3">
-                    <p className="text-sm font-bold text-stone-900">
-                      Är du innehavare av denna butik?
-                    </p>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onClaimPlace(selected);
-                        setSelected(null);
-                      }}
-                      className="mt-3 w-full rounded-full bg-pink-600 px-4 py-3 text-sm font-black text-white hover:bg-pink-700"
-                    >
-                      Jag äger denna butik
-                    </button>
-                  </div>
                 </div>
               </InfoWindow>
             ) : null}

@@ -1,0 +1,41 @@
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+
+export type WorkspaceFlorist = {
+  id: string;
+  shop_name: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  email: string | null;
+  city: string | null;
+  municipality: string | null;
+  county: string | null;
+  logo_url: string | null;
+  profile_image_url: string | null;
+};
+
+export async function getWorkspaceFlorists(): Promise<WorkspaceFlorist[]> {
+  const supabase = await createSupabaseServerClient();
+
+  const { data, error } = await supabase
+    .from("florists")
+    .select(`
+      id,
+      shop_name,
+      first_name,
+      last_name,
+      email,
+      city,
+      municipality,
+      county,
+      logo_url,
+      profile_image_url
+    `)
+    .order("shop_name", { ascending: true });
+
+  if (error) {
+    console.error("[Workspace] Failed to load florists:", error);
+    return [];
+  }
+
+  return (data ?? []) as WorkspaceFlorist[];
+}

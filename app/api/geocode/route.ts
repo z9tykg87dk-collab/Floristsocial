@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
 const COUNTRY_NAME_BY_CODE: Record<string, string> = {
   SE: "Sweden",
   NO: "Norway",
   DK: "Denmark",
   FI: "Finland",
+  IS: "Iceland",
   FR: "France",
   DE: "Germany",
   ES: "Spain",
@@ -18,36 +22,212 @@ const COUNTRY_NAME_BY_CODE: Record<string, string> = {
   IE: "Ireland",
   PL: "Poland",
   CZ: "Czechia",
+  EE: "Estonia",
+  LV: "Latvia",
+  LT: "Lithuania",
+  GR: "Greece",
+  HR: "Croatia",
+  SI: "Slovenia",
+  SK: "Slovakia",
+  HU: "Hungary",
+  RO: "Romania",
+  BG: "Bulgaria",
+  LU: "Luxembourg",
+  US: "United States",
+  CA: "Canada",
+  AU: "Australia",
+  NZ: "New Zealand",
+  JP: "Japan",
+  KR: "South Korea",
+  IN: "India",
+  BR: "Brazil",
+  AR: "Argentina",
+  MX: "Mexico",
+  ZA: "South Africa",
+  AE: "United Arab Emirates",
 };
+
+const COUNTRY_CODE_BY_NAME: Record<string, string> = {
+  sverige: "SE",
+  sweden: "SE",
+
+  norge: "NO",
+  norway: "NO",
+
+  danmark: "DK",
+  denmark: "DK",
+
+  finland: "FI",
+  suomi: "FI",
+
+  island: "IS",
+  iceland: "IS",
+
+  frankrike: "FR",
+  france: "FR",
+
+  tyskland: "DE",
+  germany: "DE",
+
+  spanien: "ES",
+  spain: "ES",
+
+  storbritannien: "GB",
+  england: "GB",
+  "united kingdom": "GB",
+  "great britain": "GB",
+
+  italien: "IT",
+  italy: "IT",
+
+  nederländerna: "NL",
+  nederlanderna: "NL",
+  netherlands: "NL",
+  holland: "NL",
+
+  belgien: "BE",
+  belgium: "BE",
+
+  österrike: "AT",
+  osterrike: "AT",
+  austria: "AT",
+
+  schweiz: "CH",
+  switzerland: "CH",
+
+  portugal: "PT",
+
+  irland: "IE",
+  ireland: "IE",
+
+  polen: "PL",
+  poland: "PL",
+
+  tjeckien: "CZ",
+  czechia: "CZ",
+  "czech republic": "CZ",
+
+  estland: "EE",
+  estonia: "EE",
+
+  lettland: "LV",
+  latvia: "LV",
+
+  litauen: "LT",
+  lithuania: "LT",
+
+  grekland: "GR",
+  greece: "GR",
+
+  usa: "US",
+  "united states": "US",
+  "united states of america": "US",
+
+  kanada: "CA",
+  canada: "CA",
+
+  australien: "AU",
+  australia: "AU",
+
+  japan: "JP",
+
+  indien: "IN",
+  india: "IN",
+
+  brasilien: "BR",
+  brazil: "BR",
+
+  argentina: "AR",
+
+  mexico: "MX",
+  mexiko: "MX",
+
+  sydafrika: "ZA",
+  "south africa": "ZA",
+};
+
+function normalizeCountryName(value: string) {
+  return value
+    .trim()
+    .toLocaleLowerCase("sv")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
 
 function normalizeCountryCode(
   value: string | null,
-): string {
+): string | null {
   const normalized = value
     ?.trim()
     .toUpperCase();
+
+  if (!normalized) {
+    return null;
+  }
 
   if (normalized === "UK") {
     return "GB";
   }
 
-  if (
-    normalized &&
-    /^[A-Z]{2}$/.test(normalized)
-  ) {
+  if (/^[A-Z]{2}$/.test(normalized)) {
     return normalized;
   }
 
-  /*
-   * Behåller bakåtkompatibilitet för äldre
-   * adressflöden som bara används i Sverige.
-   */
-  return "SE";
+  return null;
+}
+
+function resolveCountry(
+  rawCountryCode: string | null,
+  rawCountryName: string | null,
+) {
+  const directCode =
+    normalizeCountryCode(rawCountryCode) ||
+    normalizeCountryCode(rawCountryName);
+
+  const nameKey = rawCountryName
+    ? normalizeCountryName(rawCountryName)
+    : "";
+
+  const mappedCode =
+    nameKey
+      ? COUNTRY_CODE_BY_NAME[nameKey]
+      : null;
+
+  const hasExplicitCountry = Boolean(
+    rawCountryCode?.trim() ||
+    rawCountryName?.trim(),
+  );
+
+  const countryCode =
+    directCode ||
+    mappedCode ||
+    (
+      hasExplicitCountry
+        ? null
+        : "SE"
+    );
+
+  const countryName =
+    rawCountryName?.trim() &&
+    !normalizeCountryCode(rawCountryName)
+      ? rawCountryName.trim()
+      : countryCode
+        ? COUNTRY_NAME_BY_CODE[countryCode] || null
+        : null;
+
+  return {
+    countryCode,
+    countryName,
+  };
 }
 
 export async function GET(req: Request) {
   const { searchParams } =
     new URL(req.url);
+
+  const globalSearch =
+    searchParams.get("global") === "1" ||
+    searchParams.get("global") === "true";
 
   const address =
     searchParams.get("address") ||
@@ -66,29 +246,28 @@ export async function GET(req: Request) {
     );
   }
 
-  const countryCode =
-    normalizeCountryCode(
-      searchParams.get("countryCode") ||
-      searchParams.get("country"),
-    );
-
-  const countryName =
-    COUNTRY_NAME_BY_CODE[countryCode];
+  const {
+    countryCode,
+    countryName,
+  } = globalSearch
+    ? {
+        countryCode: null,
+        countryName: null,
+      }
+    : resolveCountry(
+        searchParams.get("countryCode"),
+        searchParams.get("countryName") ||
+          searchParams.get("country"),
+      );
 
   const cleanAddress =
     address.trim();
 
-  /*
-   * Lägg bara till landets internationella namn
-   * om adressen inte redan innehåller det.
-   */
   const query =
     countryName &&
-    !cleanAddress
-      .toLocaleLowerCase("en")
-      .includes(
-        countryName.toLocaleLowerCase("en"),
-      )
+    !normalizeCountryName(cleanAddress).includes(
+      normalizeCountryName(countryName),
+    )
       ? `${cleanAddress}, ${countryName}`
       : cleanAddress;
 
@@ -98,9 +277,14 @@ export async function GET(req: Request) {
       limit: "1",
       addressdetails: "1",
       q: query,
-      countrycodes:
-        countryCode.toLocaleLowerCase("en"),
     });
+
+  if (countryCode) {
+    params.set(
+      "countrycodes",
+      countryCode.toLocaleLowerCase("en"),
+    );
+  }
 
   const url =
     `https://nominatim.openstreetmap.org/search?${params.toString()}`;
@@ -149,7 +333,7 @@ export async function GET(req: Request) {
       return NextResponse.json(
         {
           error:
-            "Kunde inte hitta platsen.",
+            "Kunde inte hitta platsen i det angivna landet.",
         },
         { status: 404 },
       );
@@ -174,6 +358,12 @@ export async function GET(req: Request) {
       );
     }
 
+    const resolvedCountryCode =
+      data[0].address?.country_code
+        ?.toUpperCase() ||
+      countryCode ||
+      null;
+
     return NextResponse.json({
       latitude,
       longitude,
@@ -194,9 +384,7 @@ export async function GET(req: Request) {
         countryName ||
         null,
       country_code:
-        data[0].address?.country_code
-          ?.toUpperCase() ||
-        countryCode,
+        resolvedCountryCode,
     });
   } catch (error) {
     console.error(
