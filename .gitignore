@@ -48,3 +48,17 @@ supabase/.branches
 backups/
 *.zip
 *.tar.gz
+
+# Lokala projektbackuper och diagnostik
+_backups/
+_diagnostics/
+
+# Manuella backupfiler inne i källkoden
+*.backup-*.ts
+*.backup-*.tsx
+*.before-*.ts
+*.before-*.tsx
+*.backup-*.ts.txt
+*.backup-*.tsx.txt
+*.before-*.ts.txt
+*.before-*.tsx.txt
