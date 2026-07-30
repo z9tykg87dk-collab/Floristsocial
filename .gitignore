@@ -62,3 +62,8 @@ _diagnostics/
 *.backup-*.tsx.txt
 *.before-*.ts.txt
 *.before-*.tsx.txt
+
+# Alla äldre backupnamn, oavsett filändelse
+backups/
+*.backup-*
+*.before-*
