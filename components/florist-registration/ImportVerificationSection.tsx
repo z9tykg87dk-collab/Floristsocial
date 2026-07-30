@@ -12,6 +12,7 @@ type ImportVerificationSectionProps = {
   consentPublicProfile: boolean;
   confirmsBusinessOwnership: boolean;
   onGoogleBusinessQueryChange: (value: string) => void;
+  onSearchGoogleBusiness: () => void;
   onInstagramHandleChange: (value: string) => void;
   onToggleGoogleImport: () => void;
   onToggleGooglePublish: () => void;
@@ -75,6 +76,7 @@ export default function ImportVerificationSection({
   consentPublicProfile,
   confirmsBusinessOwnership,
   onGoogleBusinessQueryChange,
+  onSearchGoogleBusiness,
   onInstagramHandleChange,
   onToggleGoogleImport,
   onToggleGooglePublish,
@@ -117,20 +119,31 @@ export default function ImportVerificationSection({
                 onChange={(event) =>
                   onGoogleBusinessQueryChange(event.target.value)
                 }
+                onKeyDown={(event) => {
+                  if (event.key !== "Enter") {
+                    return;
+                  }
+
+                  event.preventDefault();
+                  onSearchGoogleBusiness();
+                }}
                 placeholder="Ex. Makalösa Blommor Stockholm"
                 className="min-w-0 flex-1 rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm font-semibold outline-none focus:border-sky-300 focus:ring-4 focus:ring-sky-100"
               />
               <button
                 type="button"
-                className="inline-flex shrink-0 items-center gap-2 rounded-2xl bg-sky-700 px-4 py-3 text-sm font-black text-white opacity-70"
-                title="Kopplas till Google Places senare"
+                onClick={onSearchGoogleBusiness}
+                disabled={!googleBusinessQuery.trim()}
+                className="inline-flex shrink-0 items-center gap-2 rounded-2xl bg-sky-700 px-4 py-3 text-sm font-black text-white transition hover:bg-sky-800 disabled:cursor-not-allowed disabled:opacity-40"
+                title="Sök butiken på Google Places-kartan"
               >
                 <Search size={16} />
                 Sök
               </button>
             </div>
             <span className="mt-2 block text-xs text-stone-500">
-              Sökfunktionen kopplas senare till Google Places. Fältet sparas redan nu.
+              Sökningen öppnas i butikskartan ovan. Välj rätt butik där
+              och klicka sedan på ”Jag äger denna butik”.
             </span>
           </label>
 

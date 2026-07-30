@@ -32,6 +32,13 @@ export type FloristClaimPlace = {
 type FloristClaimMapProps = {
   selectedExternalPlaceId?: string | null;
   onClaimPlace: (place: FloristClaimPlace) => void;
+
+  /*
+   * Används av sökfältet i sektionen
+   * "Import & verifiering".
+   */
+  externalSearchQuery?: string;
+  externalSearchRequestId?: number;
 };
 
 const STOCKHOLM = {
@@ -112,6 +119,8 @@ function ClaimMapController({
 export default function FloristClaimMap({
   selectedExternalPlaceId,
   onClaimPlace,
+  externalSearchQuery = "",
+  externalSearchRequestId = 0,
 }: FloristClaimMapProps) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   const [places, setPlaces] = useState<FloristClaimPlace[]>([]);
@@ -179,8 +188,16 @@ export default function FloristClaimMap({
     };
   }, []);
 
-  async function searchShopByName() {
-    const query = shopQuery.trim();
+  async function searchShopByName(
+    queryOverride?: string,
+  ) {
+    const query = (
+      queryOverride ?? shopQuery
+    ).trim();
+
+    if (queryOverride !== undefined) {
+      setShopQuery(query);
+    }
 
     if (!query) {
       setSearchMessage(
@@ -235,6 +252,22 @@ export default function FloristClaimMap({
       setSearching(false);
     }
   }
+
+  useEffect(() => {
+    if (
+      externalSearchRequestId <= 0 ||
+      !externalSearchQuery.trim()
+    ) {
+      return;
+    }
+
+    void searchShopByName(
+      externalSearchQuery,
+    );
+    // En ny request-id representerar ett nytt
+    // uttryckligt knapptryck från registreringssidan.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [externalSearchRequestId]);
 
   async function showAllClaimPlaces() {
     setSearching(true);
@@ -512,8 +545,8 @@ export default function FloristClaimMap({
 
       {selectedExternalPlaceId ? (
         <div className="border-t border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-bold text-emerald-800">
-          ✓ Butiken är vald. Uppgifterna har fyllts i i
-          registreringsformuläret.
+          ✓ Butiken är vald. Kontrollera butikskortet och
+          klicka på Importera företagsuppgifter när du är redo.
         </div>
       ) : null}
     </div>

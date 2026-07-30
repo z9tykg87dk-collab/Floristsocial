@@ -421,6 +421,12 @@ export default function FloristSocialRegistrationPage() {
     useState<FloristClaimPlace | null>(null);
   const [claimInformationImported, setClaimInformationImported] =
     useState(false);
+  const [claimImportSource, setClaimImportSource] = useState("");
+  const [claimImportedAt, setClaimImportedAt] = useState("");
+  const [
+    googleClaimSearchRequestId,
+    setGoogleClaimSearchRequestId,
+  ] = useState(0);
   const [coverageAreas, setCoverageAreas] = useState<CoverageArea[]>([
     {
       id: 1,
@@ -514,16 +520,16 @@ export default function FloristSocialRegistrationPage() {
     );
   }
 
-  function clearPreviousRegistrationInformation() {
-    const fieldsToClear = [
-      // Kontaktperson och tidigare testuppgifter
-      "firstName",
-      "lastName",
-      "ownerEmail",
-      "ownerPhone",
-      "contactRole",
-
-      // Företagsinformation
+  function clearPreviousImportedBusinessInformation() {
+    /*
+     * Endast uppgifter som kan komma från en extern
+     * företagsimport rensas.
+     *
+     * Kontaktperson, inloggning, lösenord, tjänster,
+     * portfolio, leveransområden, ekonomi och andra
+     * manuella inställningar ska alltid bevaras.
+     */
+    const importedBusinessFields = [
       "shopName",
       "legalBusinessName",
       "organizationNumber",
@@ -532,7 +538,6 @@ export default function FloristSocialRegistrationPage() {
       "websiteUrl",
       "instagramHandle",
 
-      // Adress
       "streetAddress",
       "addressLine2",
       "postalCode",
@@ -540,22 +545,73 @@ export default function FloristSocialRegistrationPage() {
       "municipality",
       "county",
 
-      // Importerade externa uppgifter
       "portfolioUrl",
       "googleBusinessProfile",
     ];
 
-    fieldsToClear.forEach((name) => {
+    importedBusinessFields.forEach((name) => {
       setRegistrationField(name, "");
     });
   }
 
-  function selectClaimPlace(place: FloristClaimPlace) {
-    // Den nya butiken väljs men importeras inte automatiskt.
-    clearPreviousRegistrationInformation();
+  function searchGoogleBusinessFromImportSection() {
+    const query = googleBusinessQuery.trim();
 
+    if (!query) {
+      setSubmitSuccess("");
+      setSubmitError(
+        "Skriv floristens eller butikens namn innan du söker.",
+      );
+      return;
+    }
+
+    /*
+     * En ny sökning gör det tidigare butiksvalet ogiltigt.
+     *
+     * Formulärfält rensas inte här. Kontaktperson,
+     * företagsuppgifter och övriga manuella uppgifter
+     * ligger kvar tills floristen väljer en ny butik och
+     * uttryckligen bekräftar importen.
+     */
+    setSelectedClaimPlace(null);
+    setClaimInformationImported(false);
+    setClaimImportSource("");
+    setClaimImportedAt("");
+    setConfirmsBusinessOwnership(false);
+    setConsentGoogleImport(false);
+    setConsentGooglePublish(false);
+
+    setSubmitError("");
+    setSubmitSuccess(
+      `Söker efter "${query}". Välj rätt träff och klicka på "Jag äger denna butik" innan du importerar.`,
+    );
+
+    setGoogleClaimSearchRequestId(
+      (current) => current + 1,
+    );
+
+    requestAnimationFrame(() => {
+      document
+        .querySelector(
+          "[data-florist-claim-map='true']",
+        )
+        ?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+    });
+  }
+
+  function selectClaimPlace(place: FloristClaimPlace) {
+    /*
+     * Att välja en butik ska aldrig ändra eller rensa
+     * registreringsformuläret. Import sker först efter
+     * ett separat och uttryckligt knapptryck.
+     */
     setSelectedClaimPlace(place);
     setClaimInformationImported(false);
+    setClaimImportSource("");
+    setClaimImportedAt("");
     setGoogleBusinessQuery(place.shop_name || "");
     setConfirmsBusinessOwnership(true);
     setConsentGoogleImport(false);
@@ -563,7 +619,7 @@ export default function FloristSocialRegistrationPage() {
 
     setSubmitError("");
     setSubmitSuccess(
-      "Butiken är vald. Kontrollera uppgifterna och klicka på Importera företagsuppgifter.",
+      "Butiken är vald. Inga formulärfält har ändrats. Kontrollera uppgifterna och klicka på Importera företagsuppgifter.",
     );
 
     requestAnimationFrame(() => {
@@ -582,8 +638,35 @@ export default function FloristSocialRegistrationPage() {
       return;
     }
 
-    // Säkerställ att inga värden från en tidigare butik följer med.
-    clearPreviousRegistrationInformation();
+    const confirmed = window.confirm(
+      [
+        `Importera företagsuppgifter för ${selectedClaimPlace.shop_name}?`,
+        "",
+        "Följande företagsfält ersätts:",
+        "• Butiksnamn",
+        "• Företags- och kontaktuppgifter",
+        "• Adress",
+        "• Webbplats och Google-profil",
+        "",
+        "Kontaktperson, inloggning, lösenord, tjänster, portfolio, leveransområden och ekonomi bevaras.",
+      ].join("\n"),
+    );
+
+    if (!confirmed) {
+      setSubmitError("");
+      setSubmitSuccess(
+        "Importen avbröts. Inga formulärfält ändrades.",
+      );
+      return;
+    }
+
+    /*
+     * Rensa först alla fält som kan ha kommit från
+     * en tidigare extern företagsimport. Även tomma
+     * värden från den nya Google-platsen ska därför
+     * förbli tomma och inte ärva gamla uppgifter.
+     */
+    clearPreviousImportedBusinessInformation();
 
     const importedValues: Record<string, string> = {
       shopName: selectedClaimPlace.shop_name || "",
@@ -610,11 +693,16 @@ export default function FloristSocialRegistrationPage() {
     setRegistrationField("municipality", "");
     setRegistrationField("county", "");
 
+    const importedAt =
+      new Date().toISOString();
+
     setConsentGoogleImport(true);
     setClaimInformationImported(true);
+    setClaimImportSource("google_places");
+    setClaimImportedAt(importedAt);
     setSubmitError("");
     setSubmitSuccess(
-      "Google-informationen är importerad. Kontrollera och komplettera juridiskt namn, organisationsnummer och övriga uppgifter.",
+      "Google-informationen är importerad. Kontrollera och komplettera juridiskt namn, organisationsnummer, företags-e-post och övriga uppgifter.",
     );
 
     requestAnimationFrame(() => {
@@ -1209,12 +1297,18 @@ export default function FloristSocialRegistrationPage() {
               </button>
             </header>
 
-            <FloristClaimMap
-              selectedExternalPlaceId={
-                selectedClaimPlace?.external_place_id || null
-              }
-              onClaimPlace={selectClaimPlace}
-            />
+            <div data-florist-claim-map="true">
+              <FloristClaimMap
+                selectedExternalPlaceId={
+                  selectedClaimPlace?.external_place_id || null
+                }
+                onClaimPlace={selectClaimPlace}
+                externalSearchQuery={googleBusinessQuery}
+                externalSearchRequestId={
+                  googleClaimSearchRequestId
+                }
+              />
+            </div>
 
             <form
               data-florist-register-form="true"
@@ -1227,6 +1321,18 @@ export default function FloristSocialRegistrationPage() {
                 value={
                   selectedClaimPlace?.external_place_id || ""
                 }
+              />
+
+              <input
+                type="hidden"
+                name="claimImportSource"
+                value={claimImportSource}
+              />
+
+              <input
+                type="hidden"
+                name="claimImportedAt"
+                value={claimImportedAt}
               />
 
               {selectedClaimPlace ? (
@@ -1308,7 +1414,22 @@ export default function FloristSocialRegistrationPage() {
                         ].join(" ")}
                       >
                         {claimInformationImported
-                          ? "✓ Uppgifterna är importerade"
+                          ? (
+                              <>
+                                <span className="block">
+                                  ✓ Uppgifterna är importerade
+                                </span>
+
+                                {claimImportedAt ? (
+                                  <span className="mt-1 block text-xs font-semibold">
+                                    Källa: Google Places ·{" "}
+                                    {new Date(
+                                      claimImportedAt,
+                                    ).toLocaleString("sv-SE")}
+                                  </span>
+                                ) : null}
+                              </>
+                            )
                           : "Uppgifterna har ännu inte importerats"}
                       </div>
                     </div>
@@ -1441,6 +1562,9 @@ export default function FloristSocialRegistrationPage() {
                 consentPublicProfile={consentPublicProfile}
                 confirmsBusinessOwnership={confirmsBusinessOwnership}
                 onGoogleBusinessQueryChange={setGoogleBusinessQuery}
+                onSearchGoogleBusiness={
+                  searchGoogleBusinessFromImportSection
+                }
                 onInstagramHandleChange={() => {}}
                 onToggleGoogleImport={() => setConsentGoogleImport((value) => !value)}
                 onToggleGooglePublish={() => setConsentGooglePublish((value) => !value)}
