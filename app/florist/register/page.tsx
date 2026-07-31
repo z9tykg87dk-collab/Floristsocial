@@ -1009,6 +1009,31 @@ export default function FloristSocialRegistrationPage() {
         maskedOrganizationNumber: maskOrgNumber(
           String(formData.get("organizationNumber") || ""),
         ),
+        legalForm: String(formData.get("legalForm") || ""),
+        vatRegistered:
+          formData.get("vatRegistered") === "Ja"
+            ? true
+            : formData.get("vatRegistered") === "Nej"
+              ? false
+              : null,
+        fTaxRegistered:
+          formData.get("fTaxRegistered") === "Ja"
+            ? true
+            : formData.get("fTaxRegistered") === "Nej"
+              ? false
+              : null,
+        employerRegistered:
+          formData.get("employerRegistered") === "Ja"
+            ? true
+            : formData.get("employerRegistered") === "Nej"
+              ? false
+              : null,
+        registrantDeclarationAccepted:
+          formData.get("registrantDeclarationAccepted") === "yes",
+        registrantDeclarationAcceptedAt:
+          formData.get("registrantDeclarationAccepted") === "yes"
+            ? new Date().toISOString()
+            : null,
         shopEmail,
         publicEmail: shopEmail,
         ownerPhone: normalizeSwedishPhone(
@@ -1513,8 +1538,35 @@ export default function FloristSocialRegistrationPage() {
                   />
                   <SelectField
                     required
+                    name="legalForm"
+                    label="Juridisk företagsform"
+                    options={[
+                      "Aktiebolag",
+                      "Enskild näringsverksamhet",
+                      "Handelsbolag",
+                      "Kommanditbolag",
+                      "Ekonomisk förening",
+                      "Ideell förening",
+                      "Stiftelse",
+                      "Filial",
+                      "Annat",
+                    ]}
+                  />
+                  <SelectField
+                    required
                     name="vatRegistered"
                     label="Momsregistrerad"
+                    options={["Ja", "Nej", "Ej angivet"]}
+                  />
+                  <SelectField
+                    required
+                    name="fTaxRegistered"
+                    label="Godkänd för F-skatt"
+                    options={["Ja", "Nej", "Ej angivet"]}
+                  />
+                  <SelectField
+                    name="employerRegistered"
+                    label="Registrerad som arbetsgivare"
                     options={["Ja", "Nej", "Ej angivet"]}
                   />
                   <Field
@@ -1546,6 +1598,27 @@ export default function FloristSocialRegistrationPage() {
                     icon={<Camera size={18} />}
                   />
                 </div>
+
+                <label className="mt-5 flex cursor-pointer items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                  <input
+                    required
+                    type="checkbox"
+                    name="registrantDeclarationAccepted"
+                    value="yes"
+                    className="mt-1 h-5 w-5 rounded border-emerald-300 text-emerald-600"
+                  />
+                  <span className="text-sm font-semibold leading-6 text-emerald-950">
+                    Jag försäkrar att företagsuppgifterna är riktiga och att jag
+                    har rätt att registrera och företräda denna florist eller
+                    butik på FloristSocial.
+                  </span>
+                </label>
+
+                <p className="mt-3 text-xs font-medium leading-5 text-stone-500">
+                  FloristSocial kan kontrollera uppgifterna mot offentliga
+                  företagsregister, skatteregistrering, butikens domän och
+                  Stripe-verifieringen.
+                </p>
               </Card>
 
               <ImportVerificationSection

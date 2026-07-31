@@ -286,6 +286,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (payload.registrantDeclarationAccepted !== true) {
+      return NextResponse.json(
+        {
+          error:
+            "Du måste försäkra att företagsuppgifterna är riktiga och att du har rätt att registrera företaget.",
+        },
+        { status: 400 },
+      );
+    }
+
     const slug = makeSlug(shopName);
     const bucket = "florist-portfolio";
 
@@ -445,6 +455,43 @@ export async function POST(request: NextRequest) {
       municipality: getPayloadString(payload, ["municipality"]),
       county: getPayloadString(payload, ["county"]),
       country: getPayloadString(payload, ["country", "countryName"], "Sverige"),
+
+      legal_form: getPayloadString(payload, ["legalForm"]) || null,
+      vat_registered:
+        typeof payload.vatRegistered === "boolean"
+          ? payload.vatRegistered
+          : null,
+      f_tax_registered:
+        typeof payload.fTaxRegistered === "boolean"
+          ? payload.fTaxRegistered
+          : null,
+      employer_registered:
+        typeof payload.employerRegistered === "boolean"
+          ? payload.employerRegistered
+          : null,
+
+      business_identity_status: "UNVERIFIED",
+      business_identity_score: null,
+      business_identity_provider: null,
+      business_identity_candidates: [],
+      business_identity_evidence: [],
+      business_identity_contradictions: [],
+      business_registry_snapshot: {},
+
+      domain_email_verified: false,
+      domain_email_verified_at: null,
+
+      registrant_declaration_accepted:
+        payload.registrantDeclarationAccepted === true,
+      registrant_declaration_accepted_at:
+        payload.registrantDeclarationAccepted === true
+          ? getPayloadString(payload, ["registrantDeclarationAcceptedAt"]) ||
+            new Date().toISOString()
+          : null,
+
+      stripe_verification_status: "NOT_STARTED",
+      stripe_verification_checked_at: null,
+
       delivery_model: getPayloadString(payload, ["deliveryModel"]),
       delivery_radius_km: payload.deliveryRadiusKm ?? null,
       delivery_areas: asArray(payload.coverageAreas),
