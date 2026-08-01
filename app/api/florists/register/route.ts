@@ -497,6 +497,13 @@ export async function POST(request: NextRequest) {
       delivery_areas: asArray(payload.coverageAreas),
       services: asArray(payload.selectedServices),
       styles: asArray(payload.selectedStyles),
+
+      specialties: asArray(payload.selectedSpecialties),
+      quality_badges: asArray(payload.selectedQualityBadges),
+      sustainability_options: asArray(payload.selectedSustainability),
+      sustainability_text:
+        getPayloadString(payload, ["sustainabilityText"]) || null,
+
       price_level: getPayloadString(payload, ["priceLevel"]),
       minimum_booking_value: getPayloadString(payload, [
         "minimumOrderValue",
