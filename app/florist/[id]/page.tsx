@@ -171,7 +171,6 @@ function uniqueLabels(items: string[]) {
 function collectRegisteredServices(florist: Florist) {
   const rawLabels = [
     ...labelsFromArray(florist.services),
-    ...labelsFromArray(florist.specialties),
     ...labelsFromArray(florist.specialities),
     ...labelsFromArray(florist.service_specialties),
     ...labelsFromArray(florist.selected_services),
@@ -526,6 +525,28 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
   const name = getName(florist);
   const services = collectRegisteredServices(florist);
   const styles = collectRegisteredStyles(florist);
+
+  const publicProfileFlorist = florist as Florist;
+
+  const specialties = uniqueLabels(
+    labelsFromArray(publicProfileFlorist.specialties),
+  );
+  const qualityBadges = uniqueLabels(
+    labelsFromArray(publicProfileFlorist.quality_badges),
+  );
+  const sustainabilityOptions = uniqueLabels(
+    labelsFromArray(publicProfileFlorist.sustainability_options),
+  );
+  const sustainabilityText = text(
+    publicProfileFlorist.sustainability_text,
+  );
+
+  const hasPublicProfileDetails =
+    specialties.length > 0 ||
+    qualityBadges.length > 0 ||
+    sustainabilityOptions.length > 0 ||
+    sustainabilityText.length > 0;
+
   const openingHours = asArray(florist.opening_hours);
   const today = getTodayStatus(openingHours);
   const description = splitDescription(
@@ -1740,7 +1761,7 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
           >
             <SectionTop
               title="Tjänster & stil"
-              subtitle="Allt floristen har registrerat som specialiteter och designstil."
+              subtitle="Floristens registrerade tjänster och designstilar."
             />
             <div
               style={{
@@ -1753,6 +1774,59 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
               <TagGroup title="Stilar" items={styles} />
             </div>
           </section>
+
+          {hasPublicProfileDetails && (
+            <section
+              style={{
+                marginTop: 20,
+                borderRadius: 26,
+                background: "white",
+                padding: 20,
+                boxShadow: "0 10px 35px rgba(15,23,42,0.04)",
+                border: "1px solid #e7e2dc",
+              }}
+            >
+              <SectionTop
+                title="Specialiteter, kvalitet & hållbarhet"
+                subtitle="Uppgifter som floristen har valt att visa på sin publika profil."
+              />
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                  gap: 16,
+                  alignItems: "start",
+                }}
+              >
+                {specialties.length > 0 && (
+                  <PublicProfileInfoCard
+                    title="Specialiteter"
+                    items={specialties}
+                    tone="pink"
+                  />
+                )}
+
+                {qualityBadges.length > 0 && (
+                  <PublicProfileInfoCard
+                    title="Kvalitet & styrkor"
+                    items={qualityBadges}
+                    tone="green"
+                  />
+                )}
+
+                {(sustainabilityOptions.length > 0 ||
+                  sustainabilityText.length > 0) && (
+                  <PublicProfileInfoCard
+                    title="Hållbarhetsarbete"
+                    items={sustainabilityOptions}
+                    description={sustainabilityText}
+                    tone="lime"
+                  />
+                )}
+              </div>
+            </section>
+          )}
         </div>
       </main>
 
@@ -1795,6 +1869,10 @@ const FLORIST_EDITABLE_FIELDS = [
   "holiday_calendar",
   "services",
   "styles",
+  "specialties",
+  "quality_badges",
+  "sustainability_options",
+  "sustainability_text",
   "delivery_cutoff",
   "express_delivery",
   "delivery_days",
@@ -2541,6 +2619,133 @@ function TagGroup({ title, items }: { title: string; items: string[] }) {
             </Link>
           ))}
         </div>
+      )}
+    </div>
+  );
+}
+
+function PublicProfileInfoCard({
+  title,
+  items,
+  description,
+  tone,
+}: {
+  title: string;
+  items: string[];
+  description?: string;
+  tone: "pink" | "green" | "lime";
+}) {
+  const palette = {
+    pink: {
+      background: "#fff7fb",
+      border: "#ffd5e7",
+      badgeBackground: "#fff1f7",
+      badgeBorder: "#ffd5e7",
+      accent: "#e60073",
+    },
+    green: {
+      background: "#f4fbf7",
+      border: "#ccebd8",
+      badgeBackground: "#eaf8ef",
+      badgeBorder: "#ccebd8",
+      accent: "#15803d",
+    },
+    lime: {
+      background: "#f8fbea",
+      border: "#dce9ad",
+      badgeBackground: "#f1f7d7",
+      badgeBorder: "#dce9ad",
+      accent: "#4d7c0f",
+    },
+  }[tone];
+
+  return (
+    <div
+      style={{
+        minHeight: 180,
+        borderRadius: 22,
+        border: `1px solid ${palette.border}`,
+        background: palette.background,
+        padding: 18,
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          gap: 12,
+        }}
+      >
+        <h3
+          style={{
+            margin: 0,
+            fontSize: 16,
+            fontWeight: 950,
+            color: "#1c1917",
+          }}
+        >
+          {title}
+        </h3>
+
+        <span
+          style={{
+            flexShrink: 0,
+            borderRadius: 999,
+            border: `1px solid ${palette.badgeBorder}`,
+            background: palette.badgeBackground,
+            padding: "5px 9px",
+            fontSize: 10,
+            fontWeight: 900,
+            color: palette.accent,
+          }}
+        >
+          Angivet av floristen
+        </span>
+      </div>
+
+      {items.length > 0 && (
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 8,
+            marginTop: 16,
+          }}
+        >
+          {items.map((item) => (
+            <Link
+              key={item}
+              href={`/marketplace?tag=${encodeURIComponent(item)}`}
+              style={{
+                borderRadius: 999,
+                border: `1px solid ${palette.badgeBorder}`,
+                background: "white",
+                padding: "7px 11px",
+                fontSize: 12,
+                fontWeight: 850,
+                color: palette.accent,
+                textDecoration: "none",
+              }}
+            >
+              {item}
+            </Link>
+          ))}
+        </div>
+      )}
+
+      {description && (
+        <p
+          style={{
+            margin: items.length > 0 ? "15px 0 0" : "16px 0 0",
+            fontSize: 13,
+            lineHeight: 1.65,
+            color: "#57534e",
+            whiteSpace: "pre-line",
+          }}
+        >
+          {description}
+        </p>
       )}
     </div>
   );
