@@ -558,9 +558,9 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
   );
   const aboutImage = safeImage(
     text(
-      florist.cover_image_url,
-      florist.cover_image_medium_url,
+      florist.profile_image_url,
       portfolio[0]?.image,
+      florist.cover_image_medium_url,
     ),
     FALLBACK_SHOP,
   );
@@ -672,18 +672,7 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
                       boxShadow: "0 16px 35px rgba(15,23,42,0.16)",
                     }}
                   >
-                    {profileImage ? (
-                      <img
-                        src={profileImage}
-                        alt={`${name} profilbild`}
-                        style={{
-                          height: "100%",
-                          width: "100%",
-                          objectFit: "cover",
-                          display: "block",
-                        }}
-                      />
-                    ) : logo ? (
+                    {logo ? (
                       <img
                         src={logo}
                         alt={`${name} logotyp`}
@@ -708,35 +697,6 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
                         <UserRound size={48} />
                       </div>
                     )}
-
-                    {logo && profileImage ? (
-                      <div
-                        style={{
-                          position: "absolute",
-                          left: 4,
-                          bottom: 4,
-                          height: 38,
-                          width: 38,
-                          overflow: "hidden",
-                          borderRadius: 12,
-                          border: "3px solid white",
-                          background: "white",
-                          boxShadow: "0 8px 18px rgba(15,23,42,0.18)",
-                        }}
-                      >
-                        <img
-                          src={logo}
-                          alt={`${name} logotyp`}
-                          style={{
-                            height: "100%",
-                            width: "100%",
-                            objectFit: "contain",
-                            padding: 4,
-                            display: "block",
-                          }}
-                        />
-                      </div>
-                    ) : null}
 
                     <span
                       style={{
