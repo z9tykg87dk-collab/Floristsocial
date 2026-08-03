@@ -5,6 +5,24 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+type OpeningHour = {
+  id: number;
+  dayLabel: string;
+  openTime: string;
+  closeTime: string;
+  isClosed: boolean;
+  note: string;
+};
+
+type DeliveryArea = {
+  id: number;
+  city: string;
+  area: string;
+  postalCode: string;
+  radius: number;
+  price: string;
+};
+
 type FloristProfilePayload = {
   shop_name?: unknown;
   florist_name?: unknown;
@@ -22,6 +40,16 @@ type FloristProfilePayload = {
   county?: unknown;
   country?: unknown;
   delivery_radius_km?: unknown;
+  delivery_model?: unknown;
+  delivery_areas?: unknown;
+
+  services?: unknown;
+  styles?: unknown;
+  price_level?: unknown;
+  minimum_booking_value?: unknown;
+  years_in_business?: unknown;
+  team_size?: unknown;
+  opening_hours?: unknown;
 
   specialties?: unknown;
   quality_badges?: unknown;
@@ -47,6 +75,20 @@ type FloristProfileRow = {
   county: string | null;
   country: string | null;
   delivery_radius_km: number | null;
+  delivery_model: string | null;
+  delivery_areas: unknown;
+
+  services: unknown;
+  styles: unknown;
+  price_level: string | null;
+  minimum_booking_value: string | null;
+  years_in_business: string | null;
+  team_size: string | null;
+  opening_hours: unknown;
+
+  profile_image_url: string | null;
+  logo_url: string | null;
+  cover_image_url: string | null;
 
   specialties: string[] | null;
   quality_badges: string[] | null;
@@ -72,6 +114,18 @@ const PROFILE_SELECT = [
   "county",
   "country",
   "delivery_radius_km",
+  "delivery_model",
+  "delivery_areas",
+  "services",
+  "styles",
+  "price_level",
+  "minimum_booking_value",
+  "years_in_business",
+  "team_size",
+  "opening_hours",
+  "profile_image_url",
+  "logo_url",
+  "cover_image_url",
   "specialties",
   "quality_badges",
   "sustainability_options",
@@ -89,6 +143,85 @@ function normalizeStringArray(value: unknown): string[] {
         .filter(Boolean),
     ),
   ).slice(0, 50);
+}
+
+function normalizeOpeningHours(value: unknown): OpeningHour[] {
+  if (!Array.isArray(value)) return [];
+
+  return value.slice(0, 7).map((item, index) => {
+    const row =
+      item && typeof item === "object"
+        ? (item as Record<string, unknown>)
+        : {};
+
+    return {
+      id:
+        typeof row.id === "number" && Number.isFinite(row.id)
+          ? row.id
+          : index + 1,
+      dayLabel:
+        typeof row.dayLabel === "string"
+          ? row.dayLabel.trim().slice(0, 40)
+          : "",
+      openTime:
+        typeof row.openTime === "string"
+          ? row.openTime.trim().slice(0, 10)
+          : "",
+      closeTime:
+        typeof row.closeTime === "string"
+          ? row.closeTime.trim().slice(0, 10)
+          : "",
+      isClosed: row.isClosed === true,
+      note:
+        typeof row.note === "string"
+          ? row.note.trim().slice(0, 300)
+          : "",
+    };
+  });
+}
+
+function normalizeDeliveryAreas(value: unknown): DeliveryArea[] {
+  if (!Array.isArray(value)) return [];
+
+  return value.slice(0, 50).map((item, index) => {
+    const row =
+      item && typeof item === "object"
+        ? (item as Record<string, unknown>)
+        : {};
+
+    const rawRadius =
+      typeof row.radius === "number"
+        ? row.radius
+        : Number(String(row.radius ?? "").replace(",", "."));
+
+    const radius = Number.isFinite(rawRadius)
+      ? Math.min(Math.max(rawRadius, 1), 150)
+      : 15;
+
+    return {
+      id:
+        typeof row.id === "number" && Number.isFinite(row.id)
+          ? row.id
+          : index + 1,
+      city:
+        typeof row.city === "string"
+          ? row.city.trim().slice(0, 150)
+          : "",
+      area:
+        typeof row.area === "string" && row.area.trim()
+          ? row.area.trim().slice(0, 150)
+          : "Annat område",
+      postalCode:
+        typeof row.postalCode === "string"
+          ? row.postalCode.trim().slice(0, 50)
+          : "",
+      radius,
+      price:
+        typeof row.price === "string"
+          ? row.price.trim().slice(0, 50)
+          : "",
+    };
+  });
 }
 
 function normalizeOptionalText(
@@ -178,6 +311,20 @@ function serializeFlorist(florist: FloristProfileRow) {
     county: florist.county || "",
     country: florist.country || "",
     deliveryRadiusKm: florist.delivery_radius_km,
+    deliveryModel: florist.delivery_model || "",
+    deliveryAreas: normalizeDeliveryAreas(florist.delivery_areas),
+
+    services: normalizeStringArray(florist.services),
+    styles: normalizeStringArray(florist.styles),
+    priceLevel: florist.price_level || "",
+    minimumBookingValue: florist.minimum_booking_value || "",
+    yearsInBusiness: florist.years_in_business || "",
+    teamSize: florist.team_size || "",
+    openingHours: normalizeOpeningHours(florist.opening_hours),
+
+    profileImageUrl: florist.profile_image_url || "",
+    logoUrl: florist.logo_url || "",
+    coverImageUrl: florist.cover_image_url || "",
 
     specialties: florist.specialties || [],
     qualityBadges: florist.quality_badges || [],
@@ -343,6 +490,22 @@ export async function PATCH(request: Request) {
       country:
         normalizeOptionalText(payload.country, 150) || "Sverige",
       delivery_radius_km: normalizeRadius(payload.delivery_radius_km),
+      delivery_model: normalizeOptionalText(payload.delivery_model, 150),
+      delivery_areas: normalizeDeliveryAreas(payload.delivery_areas),
+
+      services: normalizeStringArray(payload.services),
+      styles: normalizeStringArray(payload.styles),
+      price_level: normalizeOptionalText(payload.price_level, 100),
+      minimum_booking_value: normalizeOptionalText(
+        payload.minimum_booking_value,
+        100,
+      ),
+      years_in_business: normalizeOptionalText(
+        payload.years_in_business,
+        100,
+      ),
+      team_size: normalizeOptionalText(payload.team_size, 100),
+      opening_hours: normalizeOpeningHours(payload.opening_hours),
 
       specialties: normalizeStringArray(payload.specialties),
       quality_badges: normalizeStringArray(payload.quality_badges),

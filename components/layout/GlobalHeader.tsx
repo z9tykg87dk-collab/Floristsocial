@@ -3,9 +3,17 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Bell, Globe, Heart, Menu, MessageCircle, Palette, Search, ShieldAlert, ShoppingBag, X } from "lucide-react";
 import HeaderGuestAuthIcon from "@/components/HeaderGuestAuthIcon";
+
+type LoggedInFlorist = {
+  id: string;
+  email?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  role?: string | null;
+};
 
 export default function GlobalHeader() {
   const pathname = usePathname();
@@ -15,9 +23,59 @@ export default function GlobalHeader() {
   const [theme, setTheme] = useState("cerise");
   const [language, setLanguage] = useState("sv");
   const [openPanel, setOpenPanel] = useState<"search" | "language" | "theme" | "menu" | null>(null);
+  const [loggedInFlorist, setLoggedInFlorist] =
+    useState<LoggedInFlorist | null>(null);
 
   const isPublicShop =
     pathname.startsWith("/shop/") || pathname.startsWith("/public/florist/");
+
+  const isFloristInternalArea =
+    pathname.startsWith("/florist/") ||
+    pathname.startsWith("/florist-dashboard") ||
+    pathname === "/dashboard";
+
+  const showFloristAccountMenu =
+    Boolean(loggedInFlorist?.id) &&
+    isFloristInternalArea &&
+    !isPublicShop;
+
+  useEffect(() => {
+    let active = true;
+
+    async function loadLoggedInFlorist() {
+      try {
+        const response = await fetch("/api/me", {
+          method: "GET",
+          credentials: "include",
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          if (active) setLoggedInFlorist(null);
+          return;
+        }
+
+        const data = (await response.json()) as {
+          authenticated?: boolean;
+          florist?: LoggedInFlorist;
+        };
+
+        if (active && data.authenticated && data.florist?.id) {
+          setLoggedInFlorist(data.florist);
+        } else if (active) {
+          setLoggedInFlorist(null);
+        }
+      } catch {
+        if (active) setLoggedInFlorist(null);
+      }
+    }
+
+    void loadLoggedInFlorist();
+
+    return () => {
+      active = false;
+    };
+  }, [pathname]);
 
   function submitSearch(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -47,7 +105,7 @@ export default function GlobalHeader() {
     setOpenPanel(null);
   }
 
-  const menuLinks = [
+  const publicMenuLinks = [
     { label: "Beställa blommor", href: "/order/private/guest-v4" },
     { label: "Hitta florist", href: "/florists/map" },
     { label: "Sociala flödet", href: "/feed" },
@@ -56,8 +114,32 @@ export default function GlobalHeader() {
     { label: "Integritet / GDPR", href: "/privacy" },
     { label: "Cookies", href: "/cookies" },
     { label: "Kontakt", href: "/contact" },
-    { label: "Login", href: "/auth/sign-in" },
-    { label: "Registrera", href: "/register" },
+  ];
+
+  const accountMenuLinks = showFloristAccountMenu
+    ? [
+        {
+          label: "Redigera företagsprofil",
+          href: "/florist-dashboard/profile",
+        },
+        {
+          label: "Floristens dashboard",
+          href: "/dashboard",
+        },
+      ]
+    : [];
+
+  const guestMenuLinks = loggedInFlorist
+    ? []
+    : [
+        { label: "Login", href: "/auth/sign-in" },
+        { label: "Registrera", href: "/register" },
+      ];
+
+  const menuLinks = [
+    ...accountMenuLinks,
+    ...publicMenuLinks,
+    ...guestMenuLinks,
   ];
 
   return (
@@ -203,7 +285,7 @@ export default function GlobalHeader() {
             ) : null}
           </div>
 
-          {!isPublicShop ? (
+          {!isPublicShop && !loggedInFlorist ? (
             <div className="hidden items-center gap-2 lg:flex">
               <Link
                 href="/login"

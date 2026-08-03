@@ -172,8 +172,6 @@ function uniqueLabels(items: string[]) {
 function collectRegisteredServices(florist: Florist) {
   const rawLabels = [
     ...labelsFromArray(florist.services),
-    ...labelsFromArray(florist.specialties),
-    ...labelsFromArray(florist.specialities),
     ...labelsFromArray(florist.service_specialties),
     ...labelsFromArray(florist.selected_services),
     ...labelsFromArray(florist.offered_services),
@@ -510,6 +508,24 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
   const name = getName(florist);
   const services = collectRegisteredServices(florist);
   const styles = collectRegisteredStyles(florist);
+
+  const specialties = uniqueLabels(
+    labelsFromArray((florist as Florist).specialties),
+  );
+  const qualityBadges = uniqueLabels(
+    labelsFromArray((florist as Florist).quality_badges),
+  );
+  const sustainabilityOptions = uniqueLabels(
+    labelsFromArray((florist as Florist).sustainability_options),
+  );
+  const sustainabilityText = text((florist as Florist).sustainability_text);
+
+  const hasProfileHighlights =
+    specialties.length > 0 ||
+    qualityBadges.length > 0 ||
+    sustainabilityOptions.length > 0 ||
+    sustainabilityText.length > 0;
+
   const openingHours = asArray(florist.opening_hours);
   const today = getTodayStatus(openingHours);
   const description = splitDescription(
@@ -530,7 +546,8 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
   const deliveryModel =
     text(florist.delivery_model) || "Lokal leverans";
 
-  const logo = text(florist.logo_url, florist.profile_image_url);
+  const profileImage = text(florist.profile_image_url);
+  const logo = text(florist.logo_url);
   const firstPostWithImage = imagePosts.find((post) => postImage(post));
   const cover = safeImage(
     text(
@@ -655,15 +672,28 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
                       boxShadow: "0 16px 35px rgba(15,23,42,0.16)",
                     }}
                   >
-                    {logo ? (
+                    {profileImage ? (
+                      <img
+                        src={profileImage}
+                        alt={`${name} profilbild`}
+                        style={{
+                          height: "100%",
+                          width: "100%",
+                          objectFit: "cover",
+                          display: "block",
+                        }}
+                      />
+                    ) : logo ? (
                       <img
                         src={logo}
                         alt={`${name} logotyp`}
                         style={{
                           height: "100%",
                           width: "100%",
-                          objectFit: "cover",
+                          objectFit: "contain",
+                          padding: 14,
                           display: "block",
+                          background: "white",
                         }}
                       />
                     ) : (
@@ -678,6 +708,36 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
                         <UserRound size={48} />
                       </div>
                     )}
+
+                    {logo && profileImage ? (
+                      <div
+                        style={{
+                          position: "absolute",
+                          left: 4,
+                          bottom: 4,
+                          height: 38,
+                          width: 38,
+                          overflow: "hidden",
+                          borderRadius: 12,
+                          border: "3px solid white",
+                          background: "white",
+                          boxShadow: "0 8px 18px rgba(15,23,42,0.18)",
+                        }}
+                      >
+                        <img
+                          src={logo}
+                          alt={`${name} logotyp`}
+                          style={{
+                            height: "100%",
+                            width: "100%",
+                            objectFit: "contain",
+                            padding: 4,
+                            display: "block",
+                          }}
+                        />
+                      </div>
+                    ) : null}
+
                     <span
                       style={{
                         position: "absolute",
@@ -1462,6 +1522,94 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
           </section>
 
 
+          {hasProfileHighlights ? (
+            <section
+              style={{
+                marginTop: 20,
+                borderRadius: 26,
+                background: "white",
+                padding: 20,
+                boxShadow: "0 10px 35px rgba(15,23,42,0.04)",
+                border: "1px solid #e7e2dc",
+              }}
+            >
+              <SectionTop
+                title="Specialiteter, kvalitet & hållbarhet"
+                subtitle="Dessa uppgifter är angivna av floristen."
+              />
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                  gap: 28,
+                }}
+              >
+                {specialties.length > 0 ? (
+                  <ProfileDetailBox
+                    title="Specialiteter"
+                    items={specialties}
+                    tone="pink"
+                  />
+                ) : null}
+
+                {qualityBadges.length > 0 ? (
+                  <ProfileDetailBox
+                    title="Kvalitet och styrkor"
+                    items={qualityBadges}
+                    tone="green"
+                  />
+                ) : null}
+
+                {sustainabilityOptions.length > 0 ? (
+                  <ProfileDetailBox
+                    title="Hållbarhetsarbete"
+                    items={sustainabilityOptions}
+                    tone="lime"
+                  />
+                ) : null}
+              </div>
+
+              {sustainabilityText ? (
+                <div
+                  style={{
+                    marginTop: 24,
+                    borderRadius: 20,
+                    border: "1px solid #d7eee2",
+                    background: "#f2fbf6",
+                    padding: 18,
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 9,
+                      color: "#166534",
+                      fontSize: 15,
+                      fontWeight: 950,
+                    }}
+                  >
+                    <Sparkles size={19} />
+                    Floristens beskrivning av hållbarhetsarbetet
+                  </div>
+
+                  <p
+                    style={{
+                      margin: "10px 0 0",
+                      whiteSpace: "pre-wrap",
+                      fontSize: 14,
+                      lineHeight: 1.75,
+                      color: "#365314",
+                    }}
+                  >
+                    {sustainabilityText}
+                  </p>
+                </div>
+              ) : null}
+            </section>
+          ) : null}
+
           <section
             style={{
               marginTop: 20,
@@ -1480,11 +1628,20 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
               style={{
                 display: "grid",
                 gridTemplateColumns: "1fr 1fr",
-                gap: 28,
+                gap: 20,
               }}
             >
-              <TagGroup title="Tjänster" items={services} />
-              <TagGroup title="Stilar" items={styles} />
+              <ProfileDetailBox
+                title="Tjänster"
+                items={services}
+                tone="pink"
+              />
+
+              <ProfileDetailBox
+                title="Stilar"
+                items={styles}
+                tone="green"
+              />
             </div>
           </section>
         </div>
@@ -2240,6 +2397,98 @@ function OpeningHoursCompact({ hours }: { hours: any[] }) {
           </span>
         </div>
       ))}
+    </div>
+  );
+}
+
+function ProfileDetailBox({
+  title,
+  items,
+  tone,
+}: {
+  title: string;
+  items: string[];
+  tone: "pink" | "green" | "lime";
+}) {
+  const palette = {
+    pink: {
+      background: "#fff7fb",
+      border: "#ffd5e7",
+      title: "#be185d",
+      chipBackground: "#ffffff",
+      chipBorder: "#fbcfe8",
+      chipText: "#9d174d",
+    },
+    green: {
+      background: "#f4fbf7",
+      border: "#ccebd8",
+      title: "#15803d",
+      chipBackground: "#ffffff",
+      chipBorder: "#bbf7d0",
+      chipText: "#166534",
+    },
+    lime: {
+      background: "#f7fee7",
+      border: "#d9f99d",
+      title: "#4d7c0f",
+      chipBackground: "#ffffff",
+      chipBorder: "#d9f99d",
+      chipText: "#3f6212",
+    },
+  } as const;
+
+  const colors = palette[tone];
+
+  return (
+    <div
+      style={{
+        height: "100%",
+        borderRadius: 22,
+        border: `1px solid ${colors.border}`,
+        background: colors.background,
+        padding: 18,
+        boxShadow: "0 8px 24px rgba(15,23,42,0.04)",
+      }}
+    >
+      <h3
+        style={{
+          margin: 0,
+          fontSize: 16,
+          fontWeight: 900,
+          color: colors.title,
+        }}
+      >
+        {title}
+      </h3>
+
+      <div
+        style={{
+          marginTop: 12,
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 8,
+        }}
+      >
+        {items.map((item) => (
+          <span
+            key={item}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              borderRadius: 999,
+              border: `1px solid ${colors.chipBorder}`,
+              background: colors.chipBackground,
+              padding: "7px 10px",
+              fontSize: 13,
+              fontWeight: 800,
+              color: colors.chipText,
+              lineHeight: 1.25,
+            }}
+          >
+            {item}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }

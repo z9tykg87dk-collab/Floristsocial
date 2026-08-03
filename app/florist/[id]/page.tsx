@@ -1,4 +1,8 @@
 import Link from "next/link";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 import {
   Bell,
   Box,
@@ -567,7 +571,8 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
   const deliveryModel =
     text(florist.delivery_model) || "Lokal leverans";
 
-  const logo = text(florist.logo_url, florist.profile_image_url);
+  const profileImage = text(florist.profile_image_url);
+  const logo = text(florist.logo_url);
   const firstPostWithImage = imagePosts.find((post) => postImage(post));
   const cover = safeImage(
     text(
@@ -692,15 +697,28 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
                       boxShadow: "0 16px 35px rgba(15,23,42,0.16)",
                     }}
                   >
-                    {logo ? (
+                    {profileImage ? (
+                      <img
+                        src={profileImage}
+                        alt={`${name} profilbild`}
+                        style={{
+                          height: "100%",
+                          width: "100%",
+                          objectFit: "cover",
+                          display: "block",
+                        }}
+                      />
+                    ) : logo ? (
                       <img
                         src={logo}
                         alt={`${name} logotyp`}
                         style={{
                           height: "100%",
                           width: "100%",
-                          objectFit: "cover",
+                          objectFit: "contain",
+                          padding: 14,
                           display: "block",
+                          background: "white",
                         }}
                       />
                     ) : (
@@ -715,6 +733,36 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
                         <UserRound size={48} />
                       </div>
                     )}
+
+                    {logo && profileImage ? (
+                      <div
+                        style={{
+                          position: "absolute",
+                          left: 4,
+                          bottom: 4,
+                          height: 38,
+                          width: 38,
+                          overflow: "hidden",
+                          borderRadius: 12,
+                          border: "3px solid white",
+                          background: "white",
+                          boxShadow: "0 8px 18px rgba(15,23,42,0.18)",
+                        }}
+                      >
+                        <img
+                          src={logo}
+                          alt={`${name} logotyp`}
+                          style={{
+                            height: "100%",
+                            width: "100%",
+                            objectFit: "contain",
+                            padding: 4,
+                            display: "block",
+                          }}
+                        />
+                      </div>
+                    ) : null}
+
                     <span
                       style={{
                         position: "absolute",
@@ -809,6 +857,7 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
                   }}
                 >
                   <MapButton name={name} address={getAddress(florist)} />
+
                   <Action
                     href={`/messages/new?floristId=${florist.id}`}
                     icon={<MessageCircle size={18} />}
@@ -1767,11 +1816,20 @@ export default async function FloristSocialProfilePage({ params }: PageProps) {
               style={{
                 display: "grid",
                 gridTemplateColumns: "1fr 1fr",
-                gap: 28,
+                gap: 20,
               }}
             >
-              <TagGroup title="Tjänster" items={services} />
-              <TagGroup title="Stilar" items={styles} />
+              <ProfileDetailBox
+                title="Tjänster"
+                items={services}
+                tone="pink"
+              />
+
+              <ProfileDetailBox
+                title="Stilar"
+                items={styles}
+                tone="green"
+              />
             </div>
           </section>
 
@@ -2585,6 +2643,93 @@ function OpeningHoursCompact({ hours }: { hours: any[] }) {
         </div>
       ))}
     </div>
+  );
+}
+
+function ProfileDetailBox({
+  title,
+  items,
+  tone,
+}: {
+  title: string;
+  items: string[];
+  tone: "pink" | "green";
+}) {
+  const palette = {
+    pink: {
+      background: "#fff7fb",
+      border: "#ffd5e7",
+      heading: "#be185d",
+      tagBackground: "#ffffff",
+      tagBorder: "#fbcfe8",
+      tagText: "#9d174d",
+    },
+    green: {
+      background: "#f4fbf7",
+      border: "#ccebd8",
+      heading: "#15803d",
+      tagBackground: "#ffffff",
+      tagBorder: "#bbf7d0",
+      tagText: "#166534",
+    },
+  } as const;
+
+  const colors = palette[tone];
+
+  return (
+    <section
+      style={{
+        minHeight: 150,
+        height: "100%",
+        borderRadius: 22,
+        border: `1px solid ${colors.border}`,
+        background: colors.background,
+        padding: 18,
+        boxShadow: "0 8px 24px rgba(15,23,42,0.04)",
+      }}
+    >
+      <h3
+        style={{
+          margin: 0,
+          fontSize: 16,
+          fontWeight: 950,
+          color: colors.heading,
+          letterSpacing: "-0.01em",
+        }}
+      >
+        {title}
+      </h3>
+
+      <div
+        style={{
+          marginTop: 12,
+          display: "flex",
+          flexWrap: "wrap",
+          alignItems: "flex-start",
+          gap: 8,
+        }}
+      >
+        {items.map((item) => (
+          <span
+            key={item}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              borderRadius: 999,
+              border: `1px solid ${colors.tagBorder}`,
+              background: colors.tagBackground,
+              padding: "7px 11px",
+              fontSize: 13,
+              fontWeight: 800,
+              lineHeight: 1.25,
+              color: colors.tagText,
+            }}
+          >
+            {item}
+          </span>
+        ))}
+      </div>
+    </section>
   );
 }
 
